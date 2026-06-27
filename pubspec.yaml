@@ -24,6 +24,13 @@ dependencies:
   # --- Sonido de alarma personalizado ---
   audioplayers: ^6.1.0
 
+  # --- Fechas en español ("Hoy a las 14:00", "Mañana") ---
+  intl: ^0.19.0
+
+  # --- Sistema de cuidadores: generar y escanear QR ---
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^6.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
