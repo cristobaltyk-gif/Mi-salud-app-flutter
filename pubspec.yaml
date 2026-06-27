@@ -1,0 +1,37 @@
+name: misalud_app
+description: "MiSalud — App de paciente con recordatorios de medicamentos (Instituto de Cirugía Articular)"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # --- Networking ---
+  http: ^1.2.2
+  shared_preferences: ^2.3.2          # guardar JWT token localmente
+
+  # --- Notificaciones locales / Alarmas ---
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4                    # requerido por flutter_local_notifications para programar horarios exactos
+  permission_handler: ^11.3.1         # pedir permisos de notificación/alarma exacta en Android 13+
+
+  # --- Sonido de alarma personalizado ---
+  audioplayers: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/sounds/
+    - assets/images/
