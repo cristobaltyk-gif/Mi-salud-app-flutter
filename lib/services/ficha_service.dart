@@ -9,6 +9,12 @@
 /// accumulation en client.js), acá NO asumimos que cada chunk de red
 /// trae una línea SSE completa. Se acumula en un buffer y solo se
 /// procesan líneas completas terminadas en '\n'.
+///
+/// v1.1: agregado obtenerFichaCuidado() para ver la ficha de un paciente
+/// cuidado (GET /api/ficha/cuidado/{rut_paciente}). explicarFicha() y
+/// explicarEvento() aceptan ahora un rutPaciente opcional — solo válido
+/// si la sesión actual tiene vínculo confirmado con nivel_acceso="completo"
+/// hacia ese RUT (el backend valida, este servicio solo pasa el parámetro).
 library;
 
 import 'dart:async';
@@ -16,6 +22,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/evento_clinico.dart';
+import '../models/ficha_cuidado.dart';
 import 'storage_service.dart';
 
 class FichaException implements Exception {
@@ -25,7 +32,6 @@ class FichaException implements Exception {
   String toString() => mensaje;
 }
 
-/// Eventos que puede emitir el stream de explicación.
 sealed class ExplicacionEvento {}
 
 class ExplicacionTexto extends ExplicacionEvento {
@@ -64,23 +70,47 @@ class FichaService {
     return FichaResumen.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
   }
 
+  /// GET /api/ficha/cuidado/{rut_paciente} — ficha de un paciente cuidado,
+  /// filtrada según nivel_acceso. 403 si no hay vínculo confirmado.
+  static Future<FichaCuidado> obtenerFichaCuidado(String rutPaciente) async {
+    final headers = await _authHeaders();
+    final res = await http.get(
+      Uri.parse(AppConfig.fichaCuidadoEndpoint(rutPaciente)),
+      headers: headers,
+    );
+
+    if (res.statusCode != 200) {
+      throw FichaException(_detailDe(res));
+    }
+
+    return FichaCuidado.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
+  }
+
+  static String _detailDe(http.Response r) {
+    try {
+      final body = jsonDecode(r.body);
+      return body['detail']?.toString() ?? 'Error inesperado (${r.statusCode})';
+    } catch (_) {
+      return 'Error inesperado (${r.statusCode})';
+    }
+  }
+
   /// GET /api/ficha/explicar — explicación general en lenguaje simple, vía SSE.
-  static Stream<ExplicacionEvento> explicarFicha() {
-    return _streamSSE(AppConfig.fichaExplicarEndpoint);
+  /// rutPaciente opcional: solo válido para cuidador con nivel_acceso="completo".
+  static Stream<ExplicacionEvento> explicarFicha({String? rutPaciente}) {
+    final url = rutPaciente != null
+        ? '${AppConfig.fichaExplicarEndpoint}?rut_paciente=$rutPaciente'
+        : AppConfig.fichaExplicarEndpoint;
+    return _streamSSE(url);
   }
 
   /// GET /api/ficha/evento/{id} — explicación de una consulta puntual, vía SSE.
-  static Stream<ExplicacionEvento> explicarEvento(int eventoId) {
-    return _streamSSE(AppConfig.fichaEventoExplicarEndpoint(eventoId));
+  static Stream<ExplicacionEvento> explicarEvento(int eventoId, {String? rutPaciente}) {
+    final base = AppConfig.fichaEventoExplicarEndpoint(eventoId);
+    final url = rutPaciente != null ? '$base?rut_paciente=$rutPaciente' : base;
+    return _streamSSE(url);
   }
 
-  /// Núcleo común de manejo de Server-Sent Events.
-  ///
-  /// El backend manda líneas con el prefijo "data: " seguidas de un JSON.
-  /// Formatos posibles del JSON, según ficha_router.py:
-  ///   {"text": "..."}    → fragmento de texto
-  ///   {"error": "..."}   → error de conexión con Claude
-  ///   {"done": true}     → fin del stream
   static Stream<ExplicacionEvento> _streamSSE(String url) async* {
     final headers = await _authHeaders();
     final client = http.Client();
@@ -96,17 +126,13 @@ class FichaService {
         return;
       }
 
-      // Buffer de acumulación — un chunk de red puede traer una línea
-      // SSE incompleta, o varias líneas de una vez. Nunca asumir 1:1.
       String buffer = '';
 
       await for (final chunk in response.stream.transform(utf8.decoder)) {
         buffer += chunk;
 
-        // Procesar solo líneas completas (terminadas en \n).
-        // La última porción incompleta queda en el buffer para el próximo chunk.
         final partes = buffer.split('\n');
-        buffer = partes.removeLast(); // posible línea incompleta, se guarda
+        buffer = partes.removeLast();
 
         for (final linea in partes) {
           final lineaLimpia = linea.trim();
@@ -119,7 +145,7 @@ class FichaService {
           try {
             parsed = jsonDecode(dataStr) as Map<String, dynamic>;
           } catch (_) {
-            continue; // línea no era JSON válido, se ignora (igual que el catch silencioso del backend)
+            continue;
           }
 
           if (parsed.containsKey('error')) {
