@@ -9,6 +9,10 @@
 ///
 /// Nota de diseño: en MiSalud, paciente y cuidador usan la MISMA cuenta —
 /// no hay un rol separado. Por eso esta pantalla muestra ambos lados.
+///
+/// v1.1: cada tarjeta de "A quién cuido" ahora navega a FichaCuidadoScreen
+/// al tocarla — antes no tenía ningún onTap, era el mismo gap que existía
+/// en MisCuidados.jsx del lado web (ya corregido ahí).
 library;
 
 import 'package:flutter/material.dart';
@@ -16,6 +20,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/cuidador.dart';
 import '../services/cuidador_service.dart';
+import 'ficha_cuidado_screen.dart';
 
 class CuidadorScreen extends StatefulWidget {
   const CuidadorScreen({super.key});
@@ -136,7 +141,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
         return Colors.orange;
       case 'expirado':
         return Colors.grey;
-      default: // revocado
+      default:
         return Colors.red;
     }
   }
@@ -485,6 +490,14 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
     }
   }
 
+  void _verFicha(String rutPaciente) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FichaCuidadoScreen(rutPaciente: rutPaciente),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -543,6 +556,8 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
                       'Acceso: ${c.nivelAcceso}'
                       '${c.relacion != null && c.relacion!.isNotEmpty ? ' · ${c.relacion}' : ''}',
                     ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _verFicha(c.rutPaciente),
                   ),
                 );
               },
