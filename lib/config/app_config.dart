@@ -9,9 +9,6 @@ library;
 class AppConfig {
   AppConfig._(); // no instanciable
 
-  /// TODO(cristobal): reemplazar por la URL real del servicio MiSalud en Render.
-  /// Ejemplo de formato esperado: https://misalud-backend.onrender.com
-  /// o el dominio propio si lo tienes: https://api.misalud.icarticular.cl
   static const String backendBaseUrl = 'https://REEMPLAZAR-URL-BACKEND-MISALUD.onrender.com';
 
   // --- Endpoints de autenticación (auth_router.py, prefix /api/auth) ---
@@ -30,6 +27,11 @@ class AppConfig {
   static String fichaEventoExplicarEndpoint(int eventoId) =>
       '$fichaBase/evento/$eventoId'; // SSE
 
+  /// GET /api/ficha/cuidado/{rut_paciente} — ficha de un paciente cuidado,
+  /// filtrada según nivel_acceso (medicamentos | indicaciones | completo).
+  static String fichaCuidadoEndpoint(String rutPaciente) =>
+      '$fichaBase/cuidado/$rutPaciente';
+
   // --- Endpoints de recordatorios (recordatorios_router.py, prefix /api/recordatorios) ---
   static const String recordatoriosBase = '$backendBaseUrl/api/recordatorios';
   static String recordatoriosGenerarEndpoint(int eventoId) =>
@@ -38,12 +40,6 @@ class AppConfig {
       '$recordatoriosBase/mis-recordatorios';
   static String recordatorioEditarEndpoint(int recordatorioId) =>
       '$recordatoriosBase/$recordatorioId';
-
-  /// NOTA: no existe (aún) un endpoint para marcar un DISPARO individual
-  /// como "tomado" por el paciente — eso solo lo hace el scheduler del
-  /// servidor al enviar el push. Pendiente de construir en el backend.
-  /// Por ahora alarm_service.dart maneja el estado "tomado" solo en
-  /// memoria/local, sin avisar al servidor.
 
   // --- Endpoints de cuidador (cuidador_router.py, prefix /api/cuidador) ---
   static const String cuidadorBase = '$backendBaseUrl/api/cuidador';
@@ -57,6 +53,16 @@ class AppConfig {
   static const String cuidadorEscanearEndpoint = '$cuidadorBase/escanear';
   static const String cuidadorMisCuidadosEndpoint = '$cuidadorBase/mis-cuidados';
 
+  // --- Endpoints de ficha compartida (ficha_compartida_router.py, prefix /api/compartir) ---
+  // Todos aceptan rut_paciente opcional para representación de cuidador
+  // con nivel_acceso="completo" — ver acceso_medico_service.dart.
+  static const String compartirBase = '$backendBaseUrl/api/compartir';
+  static const String compartirGenerarEndpoint = '$compartirBase/generar';
+  static const String compartirMisLinksEndpoint = '$compartirBase/mis-links';
+  static String compartirRevocarEndpoint(int linkId) =>
+      '$compartirBase/$linkId';
+  static const String compartirEnviarEndpoint = '$compartirBase/enviar';
+
   // --- Almacenamiento local (shared_preferences keys) ---
   static const String prefsJwtKey = 'misalud_jwt_token';
   static const String prefsRutKey = 'misalud_rut_paciente';
@@ -68,9 +74,5 @@ class AppConfig {
   static const String notifChannelDescription =
       'Alarmas sonoras para recordatorios de medicamentos y controles';
 
-  /// Nombre del archivo de sonido (sin extensión) usado como alarma.
-  /// Debe existir como assets/sounds/alarma.mp3 Y como
-  /// android/app/src/main/res/raw/alarma.mp3 (Android exige el sonido
-  /// de notificación empaquetado nativamente, no solo como Flutter asset).
   static const String alarmSoundName = 'alarma';
 }
