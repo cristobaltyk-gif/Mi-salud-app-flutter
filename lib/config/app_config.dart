@@ -1,20 +1,15 @@
 /// lib/config/app_config.dart
 ///
 /// Configuración central de la app MiSalud.
-/// IMPORTANTE: BACKEND_BASE_URL es la ÚNICA línea que debes editar
-/// cuando confirmes la URL real del backend de MiSalud en Render.
-/// No hay otra copia de esta URL en ningún otro archivo del proyecto.
 library;
 
 class AppConfig {
   AppConfig._(); // no instanciable
 
-  static const String backendBaseUrl = 'https://REEMPLAZAR-URL-BACKEND-MISALUD.onrender.com';
+  static const String backendBaseUrl = 'https://misalud-backend.onrender.com';
 
   /// Backend de ICA (distinto del backend de MiSalud) — usado solo para
-  /// descargar PDFs clínicos (Documentospdf/pdfPacienteRouter.py), ya
-  /// que los generadores de PDF y los eventos clínicos viven en la base
-  /// de datos de ICA, no en la de MiSalud.
+  /// descargar PDFs clínicos (Documentospdf/pdfPacienteRouter.py).
   static const String icaBaseUrl = 'https://services.icarticular.cl';
 
   // --- Endpoints de autenticación (auth_router.py, prefix /api/auth) ---
