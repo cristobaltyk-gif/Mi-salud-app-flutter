@@ -1,16 +1,22 @@
 /// lib/screens/login_screen.dart
 ///
-/// Pantalla de inicio de sesión. Diferencia los 3 casos de error reales
-/// de POST /api/auth/login (auth_router.py v1.5):
-///   404 → RUT no registrado
-///   401 "Cuenta no activada" → redirige a activar cuenta
-///   401 "Contraseña incorrecta" → mensaje de error normal
+/// v1.1: FIX — el campo RUT ahora normaliza en tiempo real mientras el
+/// usuario escribe: elimina puntos/espacios/caracteres inválidos y agrega
+/// el guión antes del dígito verificador (ej: "123456789" → "12345678-9").
 library;
 
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'activar_cuenta_screen.dart';
 import 'dashboard_screen.dart';
+
+String _normalizarRut(String raw) {
+  final limpio = raw.replaceAll(RegExp(r'[^0-9kK]'), '').toUpperCase();
+  if (limpio.length < 2) return limpio;
+  final cuerpo = limpio.substring(0, limpio.length - 1);
+  final dv = limpio[limpio.length - 1];
+  return '$cuerpo-$dv';
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,6 +37,16 @@ class _LoginScreenState extends State<LoginScreen> {
     _rutController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _onRutChanged(String value) {
+    final normalizado = _normalizarRut(value);
+    if (normalizado != value) {
+      _rutController.value = _rutController.value.copyWith(
+        text: normalizado,
+        selection: TextSelection.collapsed(offset: normalizado.length),
+      );
+    }
   }
 
   Future<void> _intentarLogin() async {
@@ -56,8 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } on AuthException catch (e) {
       if (!mounted) return;
 
-      // Cuenta no activada: lo más útil es llevar directo a activar,
-      // no solo mostrar el error y dejar al paciente sin saber qué hacer.
       if (e.statusCode == 401 && e.mensaje == 'Cuenta no activada') {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -108,6 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _rutController,
                   keyboardType: TextInputType.text,
                   textInputAction: TextInputAction.next,
+                  onChanged: _onRutChanged,
                   decoration: const InputDecoration(
                     labelText: 'RUT',
                     hintText: '12345678-9',
