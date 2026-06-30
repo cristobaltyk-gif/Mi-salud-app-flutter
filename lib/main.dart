@@ -3,9 +3,16 @@
 /// Punto de entrada. Inicializa el servicio de alarmas ANTES de levantar
 /// la UI (necesario para que el canal de Android exista desde el arranque),
 /// y decide la pantalla inicial según si hay una sesión guardada.
+///
+/// v1.1: FIX — se agrega initializeDateFormatting('es') antes de runApp.
+/// recordatorios_screen.dart usa DateFormat(..., 'es') para mostrar
+/// "Mañana a las 08:00" / nombres de día en español — el paquete intl
+/// exige inicializar explícitamente los datos de un locale antes de
+/// usarlo, o lanza LocaleDataException en tiempo de ejecución.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'services/alarm_service.dart';
 import 'services/storage_service.dart';
 import 'screens/login_screen.dart';
@@ -17,6 +24,10 @@ void main() async {
   // Debe inicializarse antes de runApp para que el canal de notificaciones
   // de Android exista desde el primer frame.
   await AlarmService.inicializar();
+
+  // Requerido por DateFormat(..., 'es') en recordatorios_screen.dart —
+  // sin esto, formatear fechas en español lanza LocaleDataException.
+  await initializeDateFormatting('es');
 
   runApp(const MiSaludApp());
 }
