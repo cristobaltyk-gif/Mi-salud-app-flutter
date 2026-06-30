@@ -12,14 +12,18 @@
 ///
 /// v1.1: agregado obtenerFichaCuidado() para ver la ficha de un paciente
 /// cuidado (GET /api/ficha/cuidado/{rut_paciente}). explicarFicha() y
-/// explicarEvento() aceptan ahora un rutPaciente opcional — solo válido
-/// si la sesión actual tiene vínculo confirmado con nivel_acceso="completo"
-/// hacia ese RUT (el backend valida, este servicio solo pasa el parámetro).
+/// explicarEvento() aceptan ahora un rutPaciente opcional.
+///
+/// v1.2: agregado descargarPdf() — descarga el PDF (backend de ICA) y
+/// lo guarda en un archivo temporal, devolviendo la ruta local. El
+/// caller (pantalla) abre el archivo con un visor de PDF.
 library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../config/app_config.dart';
 import '../models/evento_clinico.dart';
 import '../models/ficha_cuidado.dart';
@@ -55,7 +59,6 @@ class FichaService {
     return {'Authorization': 'Bearer $token'};
   }
 
-  /// GET /api/ficha/resumen — JSON normal, sin streaming.
   static Future<FichaResumen> obtenerResumen() async {
     final headers = await _authHeaders();
     final res = await http.get(
@@ -70,8 +73,6 @@ class FichaService {
     return FichaResumen.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
   }
 
-  /// GET /api/ficha/cuidado/{rut_paciente} — ficha de un paciente cuidado,
-  /// filtrada según nivel_acceso. 403 si no hay vínculo confirmado.
   static Future<FichaCuidado> obtenerFichaCuidado(String rutPaciente) async {
     final headers = await _authHeaders();
     final res = await http.get(
@@ -86,6 +87,28 @@ class FichaService {
     return FichaCuidado.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
   }
 
+  static Future<String> descargarPdf(
+    int eventoId,
+    String tipo, {
+    String? rutPaciente,
+  }) async {
+    final headers = await _authHeaders();
+    final url = AppConfig.pdfDescargarEndpoint(eventoId, tipo, rutPaciente: rutPaciente);
+
+    final res = await http.get(Uri.parse(url), headers: headers);
+
+    if (res.statusCode != 200) {
+      throw FichaException(_detailDe(res));
+    }
+
+    final dir = await getTemporaryDirectory();
+    final filename = '${tipo}_$eventoId.pdf';
+    final file = File('${dir.path}/$filename');
+    await file.writeAsBytes(res.bodyBytes);
+
+    return file.path;
+  }
+
   static String _detailDe(http.Response r) {
     try {
       final body = jsonDecode(r.body);
@@ -95,8 +118,6 @@ class FichaService {
     }
   }
 
-  /// GET /api/ficha/explicar — explicación general en lenguaje simple, vía SSE.
-  /// rutPaciente opcional: solo válido para cuidador con nivel_acceso="completo".
   static Stream<ExplicacionEvento> explicarFicha({String? rutPaciente}) {
     final url = rutPaciente != null
         ? '${AppConfig.fichaExplicarEndpoint}?rut_paciente=$rutPaciente'
@@ -104,7 +125,6 @@ class FichaService {
     return _streamSSE(url);
   }
 
-  /// GET /api/ficha/evento/{id} — explicación de una consulta puntual, vía SSE.
   static Stream<ExplicacionEvento> explicarEvento(int eventoId, {String? rutPaciente}) {
     final base = AppConfig.fichaEventoExplicarEndpoint(eventoId);
     final url = rutPaciente != null ? '$base?rut_paciente=$rutPaciente' : base;
