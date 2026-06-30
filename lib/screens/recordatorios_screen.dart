@@ -36,7 +36,7 @@ class _RecordatoriosScreenState extends State<RecordatoriosScreen> {
   }
 
   void _cargar() {
-    setState(() => _futureRecordatorios = RecordatoriosService.misRecordatorios());
+    setState(() { _futureRecordatorios = RecordatoriosService.misRecordatorios(); });
   }
 
   @override
