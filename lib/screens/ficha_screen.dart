@@ -35,7 +35,7 @@ class _FichaScreenState extends State<FichaScreen> {
   }
 
   void _cargar() {
-    setState(() => _futureResumen = FichaService.obtenerResumen());
+    setState(() { _futureResumen = FichaService.obtenerResumen(); });
   }
 
   @override
