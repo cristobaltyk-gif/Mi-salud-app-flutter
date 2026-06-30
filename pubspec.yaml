@@ -31,6 +31,10 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^6.0.2
 
+  # --- Descarga y apertura de PDFs clínicos (recetas, informes, órdenes) ---
+  path_provider: ^2.1.4
+  open_file: ^3.5.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
