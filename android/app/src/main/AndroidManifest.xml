@@ -1,4 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Requeridos por flutter_local_notifications / AlarmService para
+         programar alarmas exactas de medicamentos en Android moderno.
+         Sin estos, AlarmService.pedirPermisos() siempre falla con
+         "exact_alarms_not_permitted" / "notifications not permitted",
+         aunque el código Dart esté correcto — el permiso debe existir
+         primero en el manifiesto antes de poder pedirse en runtime. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <application
         android:label="misalud_app"
         android:name="${applicationName}"
