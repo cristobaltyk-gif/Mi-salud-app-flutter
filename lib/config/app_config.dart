@@ -11,6 +11,12 @@ class AppConfig {
 
   static const String backendBaseUrl = 'https://REEMPLAZAR-URL-BACKEND-MISALUD.onrender.com';
 
+  /// Backend de ICA (distinto del backend de MiSalud) — usado solo para
+  /// descargar PDFs clínicos (Documentospdf/pdfPacienteRouter.py), ya
+  /// que los generadores de PDF y los eventos clínicos viven en la base
+  /// de datos de ICA, no en la de MiSalud.
+  static const String icaBaseUrl = 'https://services.icarticular.cl';
+
   // --- Endpoints de autenticación (auth_router.py, prefix /api/auth) ---
   static const String authBase = '$backendBaseUrl/api/auth';
   static const String loginEndpoint = '$authBase/login';
@@ -27,10 +33,15 @@ class AppConfig {
   static String fichaEventoExplicarEndpoint(int eventoId) =>
       '$fichaBase/evento/$eventoId'; // SSE
 
-  /// GET /api/ficha/cuidado/{rut_paciente} — ficha de un paciente cuidado,
-  /// filtrada según nivel_acceso (medicamentos | indicaciones | completo).
   static String fichaCuidadoEndpoint(String rutPaciente) =>
       '$fichaBase/cuidado/$rutPaciente';
+
+  // --- Endpoints de PDF clínico (Documentospdf/pdfPacienteRouter.py,
+  //     backend de ICA, prefix /api/paciente/pdf) ---
+  static String pdfDescargarEndpoint(int eventoId, String tipo, {String? rutPaciente}) {
+    final base = '$icaBaseUrl/api/paciente/pdf/$eventoId/$tipo';
+    return rutPaciente != null ? '$base?rut_paciente=$rutPaciente' : base;
+  }
 
   // --- Endpoints de recordatorios (recordatorios_router.py, prefix /api/recordatorios) ---
   static const String recordatoriosBase = '$backendBaseUrl/api/recordatorios';
@@ -54,8 +65,6 @@ class AppConfig {
   static const String cuidadorMisCuidadosEndpoint = '$cuidadorBase/mis-cuidados';
 
   // --- Endpoints de ficha compartida (ficha_compartida_router.py, prefix /api/compartir) ---
-  // Todos aceptan rut_paciente opcional para representación de cuidador
-  // con nivel_acceso="completo" — ver acceso_medico_service.dart.
   static const String compartirBase = '$backendBaseUrl/api/compartir';
   static const String compartirGenerarEndpoint = '$compartirBase/generar';
   static const String compartirMisLinksEndpoint = '$compartirBase/mis-links';
