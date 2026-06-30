@@ -12,6 +12,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Requerido por flutter_local_notifications — sin esto, Gradle
+        // falla con "Dependency ':flutter_local_notifications' requires
+        // core library desugaring to be enabled for :app."
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -32,6 +36,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    // Requerido junto con isCoreLibraryDesugaringEnabled — provee las
+    // APIs de java.time/java.util necesarias en versiones de Android
+    // anteriores a la 26, que flutter_local_notifications usa.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 kotlin {
