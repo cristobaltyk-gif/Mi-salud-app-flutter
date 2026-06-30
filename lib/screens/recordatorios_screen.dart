@@ -5,6 +5,11 @@
 /// qué dosis, y a qué hora es la próxima toma — que es exactamente
 /// `proximoDisparo`, ya programado como alarma local por AlarmService
 /// (ver dashboard_screen.dart, que llama a reprogramarTodas al sincronizar).
+///
+/// v1.1: FIX — las variables locales `mañana`/`esMañana` usaban la letra
+/// ñ, que Dart no permite en identificadores (solo en strings y
+/// comentarios). Renombradas a `manana`/`esManana` — el texto visible
+/// para el usuario ('Mañana a las...') no cambia.
 library;
 
 import 'package:flutter/material.dart';
@@ -13,8 +18,6 @@ import '../models/recordatorio.dart';
 import '../services/recordatorios_service.dart';
 
 class RecordatoriosScreen extends StatefulWidget {
-  /// Se llama después de cualquier cambio (editar) para que el dashboard
-  /// vuelva a sincronizar las alarmas locales con el horario actualizado.
   final Future<void> Function() onRecordatoriosCambiaron;
 
   const RecordatoriosScreen({super.key, required this.onRecordatoriosCambiaron});
@@ -90,9 +93,6 @@ class _RecordatoriosScreenState extends State<RecordatoriosScreen> {
             );
           }
 
-          // Ordenados por próximo disparo — el más urgente primero.
-          // (el backend ya los entrega así, pero se ordena de nuevo por
-          // si el usuario hizo pull-to-refresh y algo cambió de orden)
           final ordenados = [...recordatorios]
             ..sort((a, b) {
               if (a.proximoDisparo == null) return 1;
@@ -121,13 +121,13 @@ class _RecordatorioCard extends StatelessWidget {
 
     final ahora = DateTime.now();
     final esHoy = disparo.year == ahora.year && disparo.month == ahora.month && disparo.day == ahora.day;
-    final mañana = ahora.add(const Duration(days: 1));
-    final esMañana = disparo.year == mañana.year && disparo.month == mañana.month && disparo.day == mañana.day;
+    final manana = ahora.add(const Duration(days: 1));
+    final esManana = disparo.year == manana.year && disparo.month == manana.month && disparo.day == manana.day;
 
     final hora = DateFormat('HH:mm').format(disparo);
 
     if (esHoy) return 'Hoy a las $hora';
-    if (esMañana) return 'Mañana a las $hora';
+    if (esManana) return 'Mañana a las $hora';
     return '${DateFormat('EEEE d MMM', 'es').format(disparo)} a las $hora';
   }
 
