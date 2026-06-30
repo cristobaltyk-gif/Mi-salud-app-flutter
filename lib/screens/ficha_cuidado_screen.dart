@@ -38,7 +38,7 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
   }
 
   void _cargar() {
-    setState(() => _futureFicha = FichaService.obtenerFichaCuidado(widget.rutPaciente));
+    setState(() { _futureFicha = FichaService.obtenerFichaCuidado(widget.rutPaciente); });
   }
 
   @override
