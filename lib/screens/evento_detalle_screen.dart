@@ -1,18 +1,20 @@
 /// lib/screens/evento_detalle_screen.dart
 ///
-/// Detalle de una consulta clínica puntual. Muestra los campos reales que
-/// retorna GET /api/ficha/resumen para el `contenido` de cada evento, y
-/// permite pedir una explicación de ESA consulta en particular vía
-/// GET /api/ficha/evento/{id} (streaming SSE).
+/// Detalle de una consulta clínica puntual. Muestra diagnóstico, receta,
+/// indicaciones, exámenes, orden kinesiológica e indicación quirúrgica —
+/// cada uno con su botón de descarga PDF. El campo "atención" (texto libre
+/// clínico sin documento asociado) no se muestra al paciente.
+/// El botón "Explícame esta consulta en simple" llama a Claude vía SSE.
 library;
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
 
 class EventoDetalleScreen extends StatelessWidget {
   final EventoClinico evento;
-
   const EventoDetalleScreen({super.key, required this.evento});
 
   @override
@@ -43,7 +45,8 @@ class EventoDetalleScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text('Tipo de consulta: ${evento.tipo}', style: TextStyle(color: Colors.grey[600])),
+                  Text('Tipo de consulta: ${evento.tipo}',
+                      style: TextStyle(color: Colors.grey[600])),
                 ],
               ),
             ),
@@ -56,27 +59,53 @@ class EventoDetalleScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (contenido.diagnostico.isNotEmpty)
-            _SeccionDetalle(titulo: 'Diagnóstico', texto: contenido.diagnostico, icono: Icons.assignment_outlined),
-          if (contenido.atencion.isNotEmpty)
-            _SeccionDetalle(titulo: 'Atención', texto: contenido.atencion, icono: Icons.notes_outlined),
-          if (contenido.indicaciones.isNotEmpty)
-            _SeccionDetalle(titulo: 'Indicaciones', texto: contenido.indicaciones, icono: Icons.checklist_outlined),
+            _SeccionDetalle(
+              titulo: 'Diagnóstico',
+              texto: contenido.diagnostico,
+              icono: Icons.assignment_outlined,
+              eventoId: evento.id,
+              tipoPdf: null,
+            ),
           if (contenido.receta.isNotEmpty)
-            _SeccionDetalle(titulo: 'Receta', texto: contenido.receta, icono: Icons.medication_outlined),
+            _SeccionDetalle(
+              titulo: 'Receta',
+              texto: contenido.receta,
+              icono: Icons.medication_outlined,
+              eventoId: evento.id,
+              tipoPdf: 'receta',
+            ),
+          if (contenido.indicaciones.isNotEmpty)
+            _SeccionDetalle(
+              titulo: 'Indicaciones',
+              texto: contenido.indicaciones,
+              icono: Icons.checklist_outlined,
+              eventoId: evento.id,
+              tipoPdf: 'informe',
+            ),
+          if (contenido.examenes.isNotEmpty)
+            _SeccionDetalle(
+              titulo: 'Exámenes',
+              texto: contenido.examenes,
+              icono: Icons.science_outlined,
+              eventoId: evento.id,
+              tipoPdf: 'examenes',
+            ),
           if (contenido.ordenKinesiologia.isNotEmpty)
             _SeccionDetalle(
               titulo: 'Orden de kinesiología',
               texto: contenido.ordenKinesiologia,
               icono: Icons.accessibility_new_outlined,
+              eventoId: evento.id,
+              tipoPdf: 'kinesiologia',
             ),
           if (contenido.indicacionQuirurgica.isNotEmpty)
             _SeccionDetalle(
               titulo: 'Indicación quirúrgica',
               texto: contenido.indicacionQuirurgica,
               icono: Icons.healing_outlined,
+              eventoId: evento.id,
+              tipoPdf: 'quirurgica',
             ),
-          if (contenido.examenes.isNotEmpty)
-            _SeccionDetalle(titulo: 'Exámenes', texto: contenido.examenes, icono: Icons.science_outlined),
           if (!contenido.tieneContenido)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
@@ -101,12 +130,43 @@ class EventoDetalleScreen extends StatelessWidget {
   }
 }
 
-class _SeccionDetalle extends StatelessWidget {
+class _SeccionDetalle extends StatefulWidget {
   final String titulo;
   final String texto;
   final IconData icono;
+  final int eventoId;
+  final String? tipoPdf;
 
-  const _SeccionDetalle({required this.titulo, required this.texto, required this.icono});
+  const _SeccionDetalle({
+    required this.titulo,
+    required this.texto,
+    required this.icono,
+    required this.eventoId,
+    required this.tipoPdf,
+  });
+
+  @override
+  State<_SeccionDetalle> createState() => _SeccionDetalleState();
+}
+
+class _SeccionDetalleState extends State<_SeccionDetalle> {
+  bool _descargando = false;
+
+  Future<void> _descargarYAbrir() async {
+    setState(() => _descargando = true);
+    try {
+      final ruta = await FichaService.descargarPdf(widget.eventoId, widget.tipoPdf!);
+      await OpenFile.open(ruta);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir el PDF: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _descargando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,13 +179,33 @@ class _SeccionDetalle extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icono, size: 20, color: const Color(0xFF2563EB)),
+                Icon(widget.icono, size: 20, color: const Color(0xFF2563EB)),
                 const SizedBox(width: 8),
-                Text(titulo, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                Expanded(
+                  child: Text(
+                    widget.titulo,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (widget.tipoPdf != null)
+                  TextButton.icon(
+                    onPressed: _descargando ? null : _descargarYAbrir,
+                    icon: _descargando
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_outlined, size: 16),
+                    label: const Text('PDF'),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(texto, style: const TextStyle(height: 1.4)),
+            Text(widget.texto, style: const TextStyle(height: 1.4)),
           ],
         ),
       ),
@@ -133,8 +213,6 @@ class _SeccionDetalle extends StatelessWidget {
   }
 }
 
-/// Misma lógica de streaming que la hoja de Ficha general, pero apuntando
-/// al endpoint de un evento específico.
 class _ExplicacionEventoSheet extends StatefulWidget {
   final int eventoId;
   const _ExplicacionEventoSheet({required this.eventoId});
@@ -188,14 +266,16 @@ class _ExplicacionEventoSheetState extends State<_ExplicacionEventoSheet> {
                 children: [
                   const Icon(Icons.auto_awesome, color: Color(0xFF2563EB)),
                   const SizedBox(width: 8),
-                  Text('Esta consulta, en simple', style: Theme.of(context).textTheme.titleMedium),
+                  Text('Esta consulta, en simple',
+                      style: Theme.of(context).textTheme.titleMedium),
                 ],
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  child: Text(_texto.toString(), style: const TextStyle(fontSize: 15, height: 1.5)),
+                  child: Text(_texto.toString(),
+                      style: const TextStyle(fontSize: 15, height: 1.5)),
                 ),
               ),
               if (_error != null)
