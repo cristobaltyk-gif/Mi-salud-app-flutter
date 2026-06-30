@@ -90,7 +90,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
   }
 
   void _cargar() {
-    setState(() => _futureInvitaciones = CuidadorService.misInvitaciones());
+    setState(() { _futureInvitaciones = CuidadorService.misInvitaciones(); });
   }
 
   Future<void> _abrirNuevaInvitacion() async {
@@ -468,7 +468,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
   }
 
   void _cargar() {
-    setState(() => _futureCuidados = CuidadorService.misCuidados());
+    setState(() { _futureCuidados = CuidadorService.misCuidados(); });
   }
 
   Future<void> _escanear() async {
