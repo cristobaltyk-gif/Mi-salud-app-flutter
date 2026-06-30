@@ -3,6 +3,14 @@
 /// Muestra el resumen de la ficha (GET /api/ficha/resumen) y permite pedir
 /// una explicación en lenguaje simple vía streaming SSE. Cada evento de la
 /// lista lleva a EventoDetalleScreen para su propia explicación puntual.
+///
+/// v1.1: agregada sección de antecedentes críticos (alergias,
+/// medicamentos, crónicas) en la pantalla inicial — igual que
+/// Dashboard.jsx en la web, siempre visible con mensaje claro cuando
+/// está vacía. Botón "Ver todos mis antecedentes →" abre
+/// AntecedentesScreen, que muestra las 6 categorías completas, cada
+/// una siempre visible con su propio mensaje de "sin registros" — antes
+/// esta vista completa no existía en absoluto en Flutter.
 library;
 
 import 'package:flutter/material.dart';
@@ -81,6 +89,8 @@ class _FichaScreenState extends State<FichaScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              _SeccionAntecedentesCriticos(antecedentes: resumen.antecedentes),
+              const SizedBox(height: 16),
               Text(
                 'Historial de consultas',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -112,6 +122,178 @@ class _FichaScreenState extends State<FichaScreen> {
       builder: (_) => _ExplicacionSheet(
         titulo: 'Tu historial, explicado simple',
         stream: FichaService.explicarFicha(),
+      ),
+    );
+  }
+}
+
+/// Igual rol que el bloque "Información médica importante" en
+/// Dashboard.jsx (web): siempre visible, con mensaje claro de
+/// "sin registros" cuando una categoría está vacía. Resume solo
+/// alergias, medicamentos (habituales) y enfermedades crónicas — el
+/// resto de categorías (cirugías, antecedentes familiares, otros) se
+/// ven en la vista completa (AntecedentesScreen).
+class _SeccionAntecedentesCriticos extends StatelessWidget {
+  final Map<String, dynamic> antecedentes;
+  const _SeccionAntecedentesCriticos({required this.antecedentes});
+
+  List<dynamic> _items(String key) => antecedentes[key] as List<dynamic>? ?? [];
+
+  @override
+  Widget build(BuildContext context) {
+    final alergias = _items('alergia');
+    final medicamentos = _items('medicamento_habitual');
+    final cronicas = _items('enfermedad_cronica');
+
+    return Card(
+      color: const Color(0xFFFFFDF0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFFDE68A)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Text('🏥', style: TextStyle(fontSize: 16)),
+                SizedBox(width: 8),
+                Text(
+                  'Información médica importante',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            _CategoriaCritica(
+              titulo: '⚠️ Alergias',
+              colorTitulo: const Color(0xFFDC2626),
+              items: alergias,
+              colorTarjeta: const Color(0xFFFEF2F2),
+              colorTextoTarjeta: const Color(0xFF991B1B),
+              mensajeVacio: 'Sin alergias conocidas registradas',
+            ),
+            const SizedBox(height: 12),
+
+            _CategoriaCritica(
+              titulo: '💊 Medicamentos habituales',
+              colorTitulo: const Color(0xFF1D4ED8),
+              items: medicamentos,
+              colorTarjeta: const Color(0xFFEFF6FF),
+              colorTextoTarjeta: const Color(0xFF1E40AF),
+              mensajeVacio: 'Sin medicamentos habituales registrados',
+            ),
+            const SizedBox(height: 12),
+
+            _CategoriaCritica(
+              titulo: '🩺 Enfermedades crónicas',
+              colorTitulo: const Color(0xFF065F46),
+              items: cronicas,
+              colorTarjeta: const Color(0xFFF0FDF4),
+              colorTextoTarjeta: const Color(0xFF065F46),
+              mensajeVacio: 'Sin enfermedades crónicas registradas',
+            ),
+
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFEF9C3),
+                  foregroundColor: const Color(0xFF92400E),
+                  side: const BorderSide(color: Color(0xFFFDE68A)),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AntecedentesScreen(antecedentes: antecedentes),
+                    ),
+                  );
+                },
+                child: const Text('Ver todos mis antecedentes →'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoriaCritica extends StatelessWidget {
+  final String titulo;
+  final Color colorTitulo;
+  final List<dynamic> items;
+  final Color colorTarjeta;
+  final Color colorTextoTarjeta;
+  final String mensajeVacio;
+
+  const _CategoriaCritica({
+    required this.titulo,
+    required this.colorTitulo,
+    required this.items,
+    required this.colorTarjeta,
+    required this.colorTextoTarjeta,
+    required this.mensajeVacio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titulo.toUpperCase(),
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: colorTitulo),
+        ),
+        const SizedBox(height: 6),
+        if (items.isEmpty)
+          _TarjetaTexto(
+            texto: mensajeVacio,
+            color: const Color(0xFFF8FAFC),
+            colorTexto: const Color(0xFF94A3B8),
+            italica: true,
+          )
+        else
+          ...items.map((it) => _TarjetaTexto(
+                texto: '${(it as Map)['descripcion'] ?? ''}',
+                color: colorTarjeta,
+                colorTexto: colorTextoTarjeta,
+              )),
+      ],
+    );
+  }
+}
+class _TarjetaTexto extends StatelessWidget {
+  final String texto;
+  final Color color;
+  final Color colorTexto;
+  final bool italica;
+
+  const _TarjetaTexto({
+    required this.texto,
+    required this.color,
+    required this.colorTexto,
+    this.italica = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+      child: Text(
+        texto,
+        style: TextStyle(
+          fontSize: 13,
+          color: colorTexto,
+          fontStyle: italica ? FontStyle.italic : FontStyle.normal,
+          fontWeight: italica ? FontWeight.normal : FontWeight.w500,
+        ),
       ),
     );
   }
@@ -269,6 +451,95 @@ class _ErrorConReintentar extends StatelessWidget {
             FilledButton(onPressed: onReintentar, child: const Text('Reintentar')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// ────────────────────────────────────────────────────────────────────
+/// Vista completa de antecedentes — las 6 categorías, siempre todas
+/// visibles, cada una con su propio mensaje cuando está vacía. Mismo
+/// patrón que la sección "Mis antecedentes" en Ficha.jsx (web).
+/// ────────────────────────────────────────────────────────────────────
+class AntecedentesScreen extends StatelessWidget {
+  final Map<String, dynamic> antecedentes;
+  const AntecedentesScreen({super.key, required this.antecedentes});
+
+  static const _categorias = [
+    ('enfermedad_cronica', '🩺 Enfermedades crónicas', 'Sin enfermedades crónicas registradas'),
+    ('cirugia', '🔬 Cirugías', 'Sin cirugías registradas'),
+    ('alergia', '⚠️ Alergias', 'Sin alergias conocidas registradas'),
+    ('medicamento_habitual', '💊 Medicamentos habituales', 'Sin medicamentos habituales registrados'),
+    ('antecedente_familiar', '👨‍👩‍👧 Antecedentes familiares', 'Sin antecedentes familiares registrados'),
+    ('otro', '📋 Otros antecedentes', 'Sin otros antecedentes registrados'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mis antecedentes')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: _categorias.map((cat) {
+          final (key, titulo, vacioLabel) = cat;
+          final items = antecedentes[key] as List<dynamic>? ?? [];
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF134E4A))),
+                  const SizedBox(height: 10),
+                  if (items.isEmpty)
+                    _TarjetaTexto(
+                      texto: vacioLabel,
+                      color: const Color(0xFFF8FAFC),
+                      colorTexto: const Color(0xFF94A3B8),
+                      italica: true,
+                    )
+                  else
+                    ...items.map((it) {
+                      final m = it as Map;
+                      final descripcion = m['descripcion'] ?? '';
+                      final fechaInicio = m['fecha_inicio'];
+                      final registradoPor = m['registrado_por'];
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF9),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF99F6E4)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('$descripcion', style: const TextStyle(fontSize: 13, color: Color(0xFF134E4A))),
+                            if (fechaInicio != null || registradoPor != null) ...[
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  if (fechaInicio != null)
+                                    Text('Desde $fechaInicio', style: const TextStyle(fontSize: 11, color: Color(0xFF5EEAD4))),
+                                  if (registradoPor != null)
+                                    Text('· $registradoPor', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
