@@ -16,7 +16,10 @@ library;
 import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
+import '../services/storage_service.dart';
 import 'evento_detalle_screen.dart';
+import 'compartir_ficha_cuidado_screen.dart';
+import 'cuidador_screen.dart';
 
 class FichaScreen extends StatefulWidget {
   const FichaScreen({super.key});
@@ -51,7 +54,7 @@ class _FichaScreenState extends State<FichaScreen> {
 
           if (snapshot.hasError) {
             return _ErrorConReintentar(
-              mensaje: 'No se pudo cargar tu ficha: ${snapshot.error}',
+              mensaje: 'No se pudo cargar tu ficha: \${snapshot.error}',
               onReintentar: _cargar,
             );
           }
@@ -60,54 +63,70 @@ class _FichaScreenState extends State<FichaScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        resumen.paciente.nombreCompleto,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${resumen.totalConsultas} consultas registradas'
-                        '${resumen.ultimaConsulta != null ? ' · última: ${resumen.ultimaConsulta}' : ''}',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => _abrirExplicacionGeneral(context),
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Explícame mi historial en simple'),
-                      ),
-                    ],
-                  ),
-                ),
+              // Saludo
+              Text(
+                'Hola, \${resumen.paciente.nombreCompleto.split(' ').first} 👋',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF134E4A),
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '¿Cómo te sientes hoy?',
+                style: TextStyle(color: const Color(0xFF0F766E), fontSize: 14),
               ),
               const SizedBox(height: 16),
               _SeccionAntecedentesCriticos(antecedentes: resumen.antecedentes),
-              const SizedBox(height: 16),
-              Text(
-                'Historial de consultas',
-                style: Theme.of(context).textTheme.titleMedium,
+              const SizedBox(height: 12),
+              // Botón Mi ficha clínica → abre ConsultasScreen
+              _BotonAcceso(
+                icono: '📋',
+                titulo: 'Mi ficha clínica',
+                subtitulo: 'Revisa tu historial médico explicado en lenguaje simple',
+                color: const Color(0xFF0F766E),
+                colorBorde: const Color(0xFF99F6E4),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ConsultasScreen(resumen: resumen, onExplicar: _abrirExplicacionGeneral),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
-              if (resumen.eventos.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'Aún no tienes consultas registradas',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
+              _BotonAcceso(
+                icono: '🔐',
+                titulo: 'Autorizar acceso a médico',
+                subtitulo: 'Genera un acceso temporal para que un médico externo revise tu ficha',
+                color: const Color(0xFF4C1D95),
+                colorBorde: const Color(0xFFDDD6FE),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _AutorizarAccesoMedico(),
                   ),
-                )
-              else
-                ...resumen.eventos.map((ev) => _EventoCard(evento: ev)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _BotonAcceso(
+                icono: '👤',
+                titulo: 'Agregar cuidador',
+                subtitulo: 'Autoriza a alguien para recibir tus recordatorios de medicamentos',
+                color: const Color(0xFF4C1D95),
+                colorBorde: const Color(0xFFDDD6FE),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CuidadorScreen()),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _BotonAcceso(
+                icono: '🧑‍🤝‍🧑',
+                titulo: 'A quienes cuido',
+                subtitulo: 'Revisa los pacientes que tienes vinculados',
+                color: const Color(0xFF4C1D95),
+                colorBorde: const Color(0xFFDDD6FE),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CuidadorScreen()),
+                ),
+              ),
             ],
           );
         },
@@ -451,6 +470,166 @@ class _ErrorConReintentar extends StatelessWidget {
             FilledButton(onPressed: onReintentar, child: const Text('Reintentar')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AutorizarAccesoMedico extends StatefulWidget {
+  const _AutorizarAccesoMedico();
+
+  @override
+  State<_AutorizarAccesoMedico> createState() => _AutorizarAccesoMedicoState();
+}
+
+class _AutorizarAccesoMedicoState extends State<_AutorizarAccesoMedico> {
+  @override
+  void initState() {
+    super.initState();
+    _navegar();
+  }
+
+  Future<void> _navegar() async {
+    final rut = await StorageService.obtenerRut();
+    if (!mounted || rut == null) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rut),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _BotonAcceso extends StatelessWidget {
+  final String icono;
+  final String titulo;
+  final String subtitulo;
+  final Color color;
+  final Color colorBorde;
+  final VoidCallback onTap;
+
+  const _BotonAcceso({
+    required this.icono,
+    required this.titulo,
+    required this.subtitulo,
+    required this.color,
+    required this.colorBorde,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorBorde),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Text(icono, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(titulo,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                            fontSize: 15)),
+                    const SizedBox(height: 2),
+                    Text(subtitulo,
+                        style: TextStyle(color: color.withOpacity(0.7), fontSize: 12)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: color.withOpacity(0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pantalla de consultas — se abre al tocar "Mi ficha clínica"
+class ConsultasScreen extends StatelessWidget {
+  final FichaResumen resumen;
+  final void Function(BuildContext) onExplicar;
+
+  const ConsultasScreen({
+    super.key,
+    required this.resumen,
+    required this.onExplicar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mi ficha clínica'),
+        backgroundColor: const Color(0xFF0F766E),
+        foregroundColor: Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    resumen.paciente.nombreCompleto,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${resumen.totalConsultas} consultas registradas'
+                    '${resumen.ultimaConsulta != null ? " · última: ${resumen.ultimaConsulta}" : ""}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => onExplicar(context),
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Explícame mi historial en simple'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Tus consultas (${resumen.totalConsultas})',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (resumen.eventos.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('Aún no tienes consultas registradas',
+                    style: TextStyle(color: Colors.grey[600])),
+              ),
+            )
+          else
+            ...resumen.eventos.map((ev) => _EventoCard(evento: ev)),
+        ],
       ),
     );
   }
