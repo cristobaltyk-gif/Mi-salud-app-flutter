@@ -259,21 +259,55 @@ class _VistaCompleta extends StatelessWidget {
           ),
         ),
 
-        if (alergias.isNotEmpty) ...[
+        // Antecedentes médicos importantes
+        if (ficha.antecedentes != null) ...[
           const SizedBox(height: 16),
           Card(
-            color: Colors.amber[50],
+            color: const Color(0xFFFFFDF0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Color(0xFFFDE68A)),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('⚠️ ALERGIAS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                  const SizedBox(height: 8),
-                  ...alergias.map((a) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text('${(a as Map)['descripcion'] ?? ''}'),
-                      )),
+                  const Row(
+                    children: [
+                      Text('🏥', style: TextStyle(fontSize: 15)),
+                      SizedBox(width: 8),
+                      Text('Antecedentes médicos',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _FilaAntecedente(
+                    titulo: '⚠️ ALERGIAS',
+                    colorTitulo: const Color(0xFFDC2626),
+                    items: ficha.antecedentes!['alergia'] as List<dynamic>? ?? [],
+                    vacio: 'Sin alergias conocidas',
+                    colorFondo: const Color(0xFFFEF2F2),
+                    colorTexto: const Color(0xFF991B1B),
+                  ),
+                  const SizedBox(height: 10),
+                  _FilaAntecedente(
+                    titulo: '💊 MEDICAMENTOS',
+                    colorTitulo: const Color(0xFF1D4ED8),
+                    items: ficha.antecedentes!['medicamento_habitual'] as List<dynamic>? ?? [],
+                    vacio: 'Sin medicamentos habituales',
+                    colorFondo: const Color(0xFFEFF6FF),
+                    colorTexto: const Color(0xFF1E40AF),
+                  ),
+                  const SizedBox(height: 10),
+                  _FilaAntecedente(
+                    titulo: '🩺 CRÓNICAS',
+                    colorTitulo: const Color(0xFF065F46),
+                    items: ficha.antecedentes!['enfermedad_cronica'] as List<dynamic>? ?? [],
+                    vacio: 'Sin enfermedades crónicas',
+                    colorFondo: const Color(0xFFF0FDF4),
+                    colorTexto: const Color(0xFF065F46),
+                  ),
                 ],
               ),
             ),
@@ -294,6 +328,55 @@ class _VistaCompleta extends StatelessWidget {
           Text('Sin consultas registradas', style: TextStyle(color: Colors.grey[500]))
         else
           ...ficha.eventos.map((ev) => _EventoCard(ev: ev, rutPaciente: rutPaciente)),
+      ],
+    );
+  }
+}
+
+class _FilaAntecedente extends StatelessWidget {
+  final String titulo;
+  final Color colorTitulo;
+  final List<dynamic> items;
+  final String vacio;
+  final Color colorFondo;
+  final Color colorTexto;
+
+  const _FilaAntecedente({
+    required this.titulo,
+    required this.colorTitulo,
+    required this.items,
+    required this.vacio,
+    required this.colorFondo,
+    required this.colorTexto,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
+                letterSpacing: 0.8, color: colorTitulo)),
+        const SizedBox(height: 4),
+        if (items.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8)),
+            child: Text(vacio,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8),
+                    fontStyle: FontStyle.italic)),
+          )
+        else
+          ...items.map((it) => Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                    color: colorFondo, borderRadius: BorderRadius.circular(8)),
+                child: Text('${(it as Map)['descripcion'] ?? ''}',
+                    style: TextStyle(fontSize: 12, color: colorTexto, fontWeight: FontWeight.w500)),
+              )),
       ],
     );
   }
