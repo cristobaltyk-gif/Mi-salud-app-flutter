@@ -1,10 +1,21 @@
 /// lib/models/evento_clinico.dart
-///
-/// Representa un evento/consulta clínica. Campos calzan exactamente con
-/// el array `eventos` de GET /api/ficha/resumen (ficha_router.py v1.4).
 library;
 
 import 'paciente.dart';
+
+class FotoEvento {
+  final String comentario;
+  final String data;
+
+  FotoEvento({required this.comentario, required this.data});
+
+  factory FotoEvento.fromJson(Map<String, dynamic> json) {
+    return FotoEvento(
+      comentario: json['comentario'] ?? '',
+      data: json['data'] ?? '',
+    );
+  }
+}
 
 class ContenidoEvento {
   final String atencion;
@@ -15,6 +26,7 @@ class ContenidoEvento {
   final String indicacionQuirurgica;
   final String examenes;
   final int? fotosCount;
+  final List<FotoEvento> fotosDermatologia;
 
   ContenidoEvento({
     this.atencion = '',
@@ -25,6 +37,7 @@ class ContenidoEvento {
     this.indicacionQuirurgica = '',
     this.examenes = '',
     this.fotosCount,
+    this.fotosDermatologia = const [],
   });
 
   factory ContenidoEvento.fromJson(Map<String, dynamic> json) {
@@ -37,10 +50,12 @@ class ContenidoEvento {
       indicacionQuirurgica: json['indicacion_quirurgica'] ?? '',
       examenes: json['examenes'] ?? '',
       fotosCount: json['fotos_count'],
+      fotosDermatologia: (json['fotos_dermatologia'] as List<dynamic>? ?? [])
+          .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
+          .toList(),
     );
   }
 
-  /// True si hay al menos un campo clínico con contenido.
   bool get tieneContenido =>
       atencion.isNotEmpty ||
       diagnostico.isNotEmpty ||
@@ -48,12 +63,13 @@ class ContenidoEvento {
       receta.isNotEmpty ||
       ordenKinesiologia.isNotEmpty ||
       indicacionQuirurgica.isNotEmpty ||
-      examenes.isNotEmpty;
+      examenes.isNotEmpty ||
+      fotosDermatologia.isNotEmpty;
 }
 
 class EventoClinico {
   final int id;
-  final String fecha; // formato YYYY-MM-DD (ya recortado por el backend)
+  final String fecha;
   final String tipo;
   final String medico;
   final String diagnostico;
@@ -82,7 +98,6 @@ class EventoClinico {
   }
 }
 
-/// Resultado completo de GET /api/ficha/resumen
 class FichaResumen {
   final Paciente paciente;
   final int totalConsultas;
