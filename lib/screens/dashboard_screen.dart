@@ -1,9 +1,4 @@
 /// lib/screens/dashboard_screen.dart
-///
-/// Pantalla principal con navegación inferior de 3 pestañas. Al entrar,
-/// sincroniza los recordatorios vigentes con el backend y reprograma TODAS
-/// las alarmas locales — así la app siempre refleja el horario más
-/// reciente, sin depender de que llegue ningún push del servidor.
 library;
 
 import 'package:flutter/material.dart';
@@ -33,22 +28,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _sincronizarAlarmas();
   }
 
-  /// Trae los recordatorios vigentes del backend y reprograma TODAS las
-  /// alarmas locales a partir de ahí. Cancela las anteriores primero
-  /// (ver AlarmService.reprogramarTodas) para no duplicar notificaciones
-  /// si esta pantalla se vuelve a abrir varias veces.
   Future<void> _sincronizarAlarmas() async {
     setState(() {
       _sincronizando = true;
       _errorSincronizacion = null;
     });
-
     try {
-      // Permisos de notificación/alarma exacta — se pide acá, la primera
-      // vez que el paciente entra al dashboard, con contexto (ya inició
-      // sesión, ya sabe que la app maneja sus medicamentos).
       await AlarmService.pedirPermisos();
-
       final recordatorios = await RecordatoriosService.misRecordatorios();
       await AlarmService.reprogramarTodas(recordatorios);
     } catch (e) {
@@ -66,13 +52,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         content: const Text('¿Seguro que quieres salir de tu cuenta?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Salir')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Salir'),
+          ),
         ],
       ),
     );
-
     if (confirmar != true) return;
-
     await AlarmService.cancelarTodas();
     await AuthService.logout();
     if (!mounted) return;
@@ -82,7 +70,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  static const _titulos = ['Mi Ficha', 'Mis Recordatorios', 'Cuidadores'];
+  static const _tabs = [
+    (icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
+    (icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
+    (icono: Icons.people_outline, iconoActivo: Icons.people, label: 'Cuidadores'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -93,20 +85,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF0FDF9),
       appBar: AppBar(
-        title: Text(_titulos[_tabActual]),
+        backgroundColor: const Color(0xFF0F766E),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            const Icon(Icons.health_and_safety_outlined, size: 22, color: Colors.white),
+            const SizedBox(width: 8),
+            const Text('MiSalud',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+          ],
+        ),
         actions: [
           if (_sincronizando)
             const Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                width: 18, height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               ),
             ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Cerrar sesión',
             onPressed: _cerrarSesion,
           ),
@@ -118,20 +120,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               width: double.infinity,
               color: Colors.orange[50],
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_outlined, color: Colors.orange[800], size: 20),
+                  Icon(Icons.warning_amber_outlined, color: Colors.orange[800], size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'No se pudieron actualizar las alarmas: $_errorSincronizacion',
-                      style: TextStyle(color: Colors.orange[900], fontSize: 13),
+                      'No se pudieron actualizar las alarmas',
+                      style: TextStyle(color: Colors.orange[900], fontSize: 12),
                     ),
                   ),
                   TextButton(
+                    style: TextButton.styleFrom(foregroundColor: Colors.orange[800]),
                     onPressed: _sincronizarAlarmas,
-                    child: const Text('Reintentar'),
+                    child: const Text('Reintentar', style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ),
@@ -139,14 +142,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(child: paginas[_tabActual]),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tabActual,
-        onDestinationSelected: (i) => setState(() => _tabActual = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.folder_shared_outlined), label: 'Ficha'),
-          NavigationDestination(icon: Icon(Icons.alarm_outlined), label: 'Recordatorios'),
-          NavigationDestination(icon: Icon(Icons.people_outline), label: 'Cuidadores'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -2)),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(_tabs.length, (i) {
+                final tab = _tabs[i];
+                final activo = _tabActual == i;
+                return GestureDetector(
+                  onTap: () => setState(() => _tabActual = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: activo ? const Color(0xFF0F766E).withOpacity(0.1) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          activo ? tab.iconoActivo : tab.icono,
+                          color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                          size: 24,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          tab.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
+                            color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
       ),
     );
   }
