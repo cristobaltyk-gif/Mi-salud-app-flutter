@@ -1,8 +1,4 @@
 /// lib/screens/login_screen.dart
-///
-/// v1.1: FIX — el campo RUT ahora normaliza en tiempo real mientras el
-/// usuario escribe: elimina puntos/espacios/caracteres inválidos y agrega
-/// el guión antes del dígito verificador (ej: "123456789" → "12345678-9").
 library;
 
 import 'package:flutter/material.dart';
@@ -20,7 +16,6 @@ String _normalizarRut(String raw) {
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -52,17 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _intentarLogin() async {
     final rut = _rutController.text.trim();
     final password = _passwordController.text;
-
     if (rut.isEmpty || password.isEmpty) {
       setState(() => _error = 'Ingresa tu RUT y tu contraseña');
       return;
     }
-
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
-
+    setState(() { _cargando = true; _error = null; });
     try {
       await AuthService.login(rut, password);
       if (!mounted) return;
@@ -71,19 +60,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } on AuthException catch (e) {
       if (!mounted) return;
-
       if (e.statusCode == 401 && e.mensaje == 'Cuenta no activada') {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ActivarCuentaScreen(rutInicial: rut),
-          ),
+          MaterialPageRoute(builder: (_) => ActivarCuentaScreen(rutInicial: rut)),
         );
         return;
       }
-
       setState(() => _error = e.mensaje);
     } catch (_) {
-      setState(() => _error = 'No se pudo conectar. Revisa tu conexión a internet.');
+      setState(() => _error = 'No se pudo conectar. Revisa tu conexión.');
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -92,111 +77,155 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.health_and_safety_outlined, size: 72, color: Color(0xFF2563EB)),
-                const SizedBox(height: 16),
-                Text(
-                  'MiSalud',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Instituto de Cirugía Articular',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                ),
-                const SizedBox(height: 40),
-                TextField(
-                  controller: _rutController,
-                  keyboardType: TextInputType.text,
-                  textInputAction: TextInputAction.next,
-                  onChanged: _onRutChanged,
-                  decoration: const InputDecoration(
-                    labelText: 'RUT',
-                    hintText: '12345678-9',
-                    prefixIcon: Icon(Icons.badge_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _ocultarPassword,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _intentarLogin(),
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: Icon(_ocultarPassword ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
-                    ),
-                  ),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F766E), Color(0xFF134E4A), Color(0xFF042F2E)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
+                      color: Colors.white.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                     ),
-                    child: Row(
+                    child: const Icon(Icons.health_and_safety_outlined, size: 48, color: Colors.white),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'MiSalud',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Instituto de Cirugía Articular',
+                    style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7)),
+                  ),
+                  const SizedBox(height: 40),
+                  // Card de formulario
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 8)),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _error!,
-                            style: TextStyle(color: Colors.red[700]),
+                        const Text(
+                          'Ingresa a tu cuenta',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF134E4A)),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _rutController,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.next,
+                          onChanged: _onRutChanged,
+                          decoration: InputDecoration(
+                            labelText: 'RUT',
+                            hintText: '12345678-9',
+                            prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF0F766E)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF0F766E), width: 2),
+                            ),
+                            labelStyle: const TextStyle(color: Color(0xFF0F766E)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _ocultarPassword,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _intentarLogin(),
+                          decoration: InputDecoration(
+                            labelText: 'Contraseña',
+                            prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF0F766E)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF0F766E), width: 2),
+                            ),
+                            labelStyle: const TextStyle(color: Color(0xFF0F766E)),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _ocultarPassword ? Icons.visibility_off : Icons.visibility,
+                                color: const Color(0xFF0F766E),
+                              ),
+                              onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                            ),
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.red[200]!),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.red[700], size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(_error!, style: TextStyle(color: Colors.red[700], fontSize: 13))),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _cargando ? null : _intentarLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0F766E),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: _cargando
+                                ? const SizedBox(height: 20, width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Text('Ingresar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _cargando ? null : _intentarLogin,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: _cargando ? null : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ActivarCuentaScreen()),
+                      );
+                    },
+                    child: Text(
+                      '¿Primera vez? Activa tu cuenta',
+                      style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
+                    ),
                   ),
-                  child: _cargando
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Ingresar'),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: _cargando
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ActivarCuentaScreen(),
-                            ),
-                          );
-                        },
-                  child: const Text('¿Primera vez? Activa tu cuenta'),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
