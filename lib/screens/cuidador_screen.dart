@@ -90,7 +90,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
   }
 
   void _cargar() {
-    setState(() { _futureInvitaciones = CuidadorService.misInvitaciones(); });
+    setState(() => _futureInvitaciones = CuidadorService.misInvitaciones());
   }
 
   Future<void> _abrirNuevaInvitacion() async {
@@ -468,7 +468,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
   }
 
   void _cargar() {
-    setState(() { _futureCuidados = CuidadorService.misCuidados(); });
+    setState(() => _futureCuidados = CuidadorService.misCuidados());
   }
 
   Future<void> _escanear() async {
@@ -597,7 +597,75 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Escanear código')),
-      body: MobileScanner(onDetect: _onDetect),
+      body: Stack(
+        children: [
+          MobileScanner(onDetect: _onDetect),
+          // Overlay con zona de escaneo marcada
+          CustomPaint(
+            painter: _QROverlayPainter(),
+            child: const SizedBox.expand(),
+          ),
+          // Instrucción al usuario
+          Positioned(
+            bottom: 60,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Apunta al código QR del paciente',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+class _QROverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final obscuro = Paint()..color = Colors.black54;
+    final borde = Paint()
+      ..color = const Color(0xFF0F766E)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    // Zona de escaneo centrada — 65% del ancho
+    final lado = size.width * 0.65;
+    final izq = (size.width - lado) / 2;
+    final arr = (size.height - lado) / 2;
+    final rect = Rect.fromLTWH(izq, arr, lado, lado);
+
+    // Oscurecer todo excepto el recuadro
+    final path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(12)))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, obscuro);
+
+    // Esquinas del recuadro
+    final esq = lado * 0.18;
+    final esquinas = [
+      [rect.left, rect.top, esq, 0, 0, esq],
+      [rect.right, rect.top, -esq, 0, 0, esq],
+      [rect.left, rect.bottom, esq, 0, 0, -esq],
+      [rect.right, rect.bottom, -esq, 0, 0, -esq],
+    ];
+    for (final e in esquinas) {
+      canvas.drawLine(Offset(e[0], e[1]), Offset(e[0] + e[2], e[1] + e[3]), borde);
+      canvas.drawLine(Offset(e[0], e[1]), Offset(e[0] + e[4], e[1] + e[5]), borde);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_QROverlayPainter old) => false;
 }
