@@ -69,10 +69,6 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════
-// TAB 1 — El paciente invita y administra sus cuidadores
-// ════════════════════════════════════════════════════════════════════════
-
 class _MisCuidadoresTab extends StatefulWidget {
   const _MisCuidadoresTab();
 
@@ -90,7 +86,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
   }
 
   void _cargar() {
-    setState(() => _futureInvitaciones = CuidadorService.misInvitaciones());
+    setState(() { _futureInvitaciones = CuidadorService.misInvitaciones(); });
   }
 
   Future<void> _abrirNuevaInvitacion() async {
@@ -119,7 +115,6 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
       ),
     );
     if (confirmar != true) return;
-
     try {
       if (inv.estado == 'pendiente') {
         await CuidadorService.revocarInvitacion(inv.id);
@@ -135,27 +130,19 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
 
   Color _colorEstado(String estado) {
     switch (estado) {
-      case 'vinculado':
-        return Colors.green;
-      case 'pendiente':
-        return Colors.orange;
-      case 'expirado':
-        return Colors.grey;
-      default:
-        return Colors.red;
+      case 'vinculado': return Colors.green;
+      case 'pendiente': return Colors.orange;
+      case 'expirado': return Colors.grey;
+      default: return Colors.red;
     }
   }
 
   String _textoEstado(String estado) {
     switch (estado) {
-      case 'vinculado':
-        return 'Vinculado';
-      case 'pendiente':
-        return 'Esperando que escanee el QR';
-      case 'expirado':
-        return 'Expiró sin confirmar';
-      default:
-        return 'Revocado';
+      case 'vinculado': return 'Vinculado';
+      case 'pendiente': return 'Esperando que escanee el QR';
+      case 'expirado': return 'Expiró sin confirmar';
+      default: return 'Revocado';
     }
   }
 
@@ -178,37 +165,26 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
             if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             }
-
             final invitaciones = snapshot.data!;
             if (invitaciones.isEmpty) {
-              return ListView(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 80),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(Icons.people_outline, size: 56, color: Colors.grey[400]),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Aún no has invitado a ningún cuidador',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
+              return ListView(children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: Center(child: Column(children: [
+                    Icon(Icons.people_outline, size: 56, color: Colors.grey[400]),
+                    const SizedBox(height: 12),
+                    Text('Aún no has invitado a ningún cuidador',
+                        style: TextStyle(color: Colors.grey[600])),
+                  ])),
+                ),
+              ]);
             }
-
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               itemCount: invitaciones.length,
               itemBuilder: (context, i) {
                 final inv = invitaciones[i];
                 final puedeRevocar = inv.estado == 'pendiente' || inv.estado == 'vinculado';
-
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
@@ -223,10 +199,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
                       style: TextStyle(color: _colorEstado(inv.estado)),
                     ),
                     trailing: puedeRevocar
-                        ? IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => _revocar(inv),
-                          )
+                        ? IconButton(icon: const Icon(Icons.close), onPressed: () => _revocar(inv))
                         : null,
                   ),
                 );
@@ -239,11 +212,8 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
   }
 }
 
-/// Hoja para crear una nueva invitación: datos del cuidador + nivel de
-/// acceso + genera el QR final con el token recibido.
 class _NuevaInvitacionSheet extends StatefulWidget {
   const _NuevaInvitacionSheet();
-
   @override
   State<_NuevaInvitacionSheet> createState() => _NuevaInvitacionSheetState();
 }
@@ -253,13 +223,11 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
   final _apellidosController = TextEditingController();
   final _rutController = TextEditingController();
   final _relacionController = TextEditingController();
-
   List<NivelAcceso>? _niveles;
   String? _nivelSeleccionado;
   bool _cargandoNiveles = true;
   bool _enviando = false;
   String? _error;
-
   InvitacionGenerada? _invitacionCreada;
 
   @override
@@ -292,12 +260,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
       setState(() => _error = 'Completa nombre, apellidos, RUT y nivel de acceso');
       return;
     }
-
-    setState(() {
-      _enviando = true;
-      _error = null;
-    });
-
+    setState(() { _enviando = true; _error = null; });
     try {
       final invitacion = await CuidadorService.invitar(
         cuidadorNombre: _nombreController.text.trim(),
@@ -322,9 +285,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
       minChildSize: 0.5,
       expand: false,
       builder: (context, scrollController) {
-        if (_invitacionCreada != null) {
-          return _vistaQRGenerado(scrollController);
-        }
+        if (_invitacionCreada != null) return _vistaQRGenerado(scrollController);
         return _vistaFormulario(scrollController);
       },
     );
@@ -361,20 +322,11 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              inv.textoConsentimiento,
-              style: const TextStyle(fontSize: 13, height: 1.4),
-            ),
+            decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(8)),
+            child: Text(inv.textoConsentimiento, style: const TextStyle(fontSize: 13, height: 1.4)),
           ),
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Listo'),
-          ),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Listo')),
         ],
       ),
     );
@@ -389,33 +341,19 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
         children: [
           Text('Invitar a un cuidador', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 16),
-          TextField(
-            controller: _nombreController,
-            decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
-          ),
+          TextField(controller: _nombreController,
+              decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder())),
           const SizedBox(height: 12),
-          TextField(
-            controller: _apellidosController,
-            decoration: const InputDecoration(labelText: 'Apellidos', border: OutlineInputBorder()),
-          ),
+          TextField(controller: _apellidosController,
+              decoration: const InputDecoration(labelText: 'Apellidos', border: OutlineInputBorder())),
           const SizedBox(height: 12),
-          TextField(
-            controller: _rutController,
-            decoration: const InputDecoration(
-              labelText: 'RUT del cuidador',
-              hintText: '12345678-9',
-              border: OutlineInputBorder(),
-            ),
-          ),
+          TextField(controller: _rutController,
+              decoration: const InputDecoration(labelText: 'RUT del cuidador',
+                  hintText: '12345678-9', border: OutlineInputBorder())),
           const SizedBox(height: 12),
-          TextField(
-            controller: _relacionController,
-            decoration: const InputDecoration(
-              labelText: 'Relación (opcional)',
-              hintText: 'Hijo, esposa, cuidador...',
-              border: OutlineInputBorder(),
-            ),
-          ),
+          TextField(controller: _relacionController,
+              decoration: const InputDecoration(labelText: 'Relación (opcional)',
+                  hintText: 'Hijo, esposa, cuidador...', border: OutlineInputBorder())),
           const SizedBox(height: 16),
           if (_cargandoNiveles)
             const Center(child: CircularProgressIndicator())
@@ -435,10 +373,8 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
           FilledButton(
             onPressed: _enviando ? null : _generar,
             child: _enviando
-                ? const SizedBox(
-                    height: 20, width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
+                ? const SizedBox(height: 20, width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Text('Generar código QR'),
           ),
         ],
@@ -446,11 +382,6 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
     );
   }
 }
-
-// ════════════════════════════════════════════════════════════════════════
-// TAB 2 — Esta cuenta, vista como cuidador de otras personas
-// ════════════════════════════════════════════════════════════════════════
-
 class _AQuienCuidoTab extends StatefulWidget {
   const _AQuienCuidoTab();
 
@@ -468,7 +399,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
   }
 
   void _cargar() {
-    setState(() => _futureCuidados = CuidadorService.misCuidados());
+    setState(() { _futureCuidados = CuidadorService.misCuidados(); });
   }
 
   Future<void> _escanear() async {
@@ -476,7 +407,6 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
       MaterialPageRoute(builder: (_) => const _EscanearQRScreen()),
     );
     if (token == null) return;
-
     try {
       await CuidadorService.escanearQR(token);
       _cargar();
@@ -492,9 +422,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
 
   void _verFicha(String rutPaciente) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => FichaCuidadoScreen(rutPaciente: rutPaciente),
-      ),
+      MaterialPageRoute(builder: (_) => FichaCuidadoScreen(rutPaciente: rutPaciente)),
     );
   }
 
@@ -517,31 +445,23 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
             if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             }
-
             final cuidados = snapshot.data!;
             if (cuidados.isEmpty) {
-              return ListView(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 80),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(Icons.qr_code_scanner, size: 56, color: Colors.grey[400]),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No cuidas a nadie todavía.\nEscanea el código que te compartan.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
+              return ListView(children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: Center(child: Column(children: [
+                    Icon(Icons.qr_code_scanner, size: 56, color: Colors.grey[400]),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No cuidas a nadie todavía.\nEscanea el código que te compartan.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
-                  ),
-                ],
-              );
+                  ])),
+                ),
+              ]);
             }
-
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               itemCount: cuidados.length,
@@ -569,8 +489,6 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
   }
 }
 
-/// Pantalla de cámara para escanear el QR. Retorna el token leído vía
-/// Navigator.pop al detectar el primer código válido.
 class _EscanearQRScreen extends StatefulWidget {
   const _EscanearQRScreen();
 
@@ -585,10 +503,8 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
     if (_yaDetectado) return;
     final codigos = capture.barcodes;
     if (codigos.isEmpty) return;
-
     final valor = codigos.first.rawValue;
     if (valor == null || valor.isEmpty) return;
-
     _yaDetectado = true;
     Navigator.of(context).pop(valor);
   }
@@ -600,12 +516,10 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
-          // Overlay con zona de escaneo marcada
           CustomPaint(
             painter: _QROverlayPainter(),
             child: const SizedBox.expand(),
           ),
-          // Instrucción al usuario
           Positioned(
             bottom: 60,
             left: 0,
@@ -639,22 +553,19 @@ class _QROverlayPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
-    // Zona de escaneo centrada — 65% del ancho
     final lado = size.width * 0.65;
     final izq = (size.width - lado) / 2;
     final arr = (size.height - lado) / 2;
     final rect = Rect.fromLTWH(izq, arr, lado, lado);
 
-    // Oscurecer todo excepto el recuadro
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(12)))
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, obscuro);
 
-    // Esquinas del recuadro
     final esq = lado * 0.18;
-    final esquinas = [
+    final esquinas = <List<double>>[
       [rect.left, rect.top, esq, 0, 0, esq],
       [rect.right, rect.top, -esq, 0, 0, esq],
       [rect.left, rect.bottom, esq, 0, 0, -esq],
