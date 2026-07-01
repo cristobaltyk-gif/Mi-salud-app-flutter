@@ -58,6 +58,7 @@ class EventoDetalleScreen extends StatelessWidget {
             label: const Text('Explícame esta consulta en simple'),
           ),
           const SizedBox(height: 16),
+          // Diagnóstico — sin PDF (no es un documento descargable)
           if (contenido.diagnostico.isNotEmpty)
             _SeccionDetalle(
               titulo: 'Diagnóstico',
@@ -66,6 +67,7 @@ class EventoDetalleScreen extends StatelessWidget {
               eventoId: evento.id,
               tipoPdf: null,
             ),
+          // Documentos descargables
           if (contenido.receta.isNotEmpty)
             _SeccionDetalle(
               titulo: 'Receta',
