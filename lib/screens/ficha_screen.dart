@@ -1,16 +1,4 @@
 /// lib/screens/ficha_screen.dart
-///
-/// Muestra el resumen de la ficha (GET /api/ficha/resumen) y permite pedir
-/// una explicación en lenguaje simple vía streaming SSE. Cada evento de la
-/// lista lleva a EventoDetalleScreen para su propia explicación puntual.
-///
-/// v1.1: agregada sección de antecedentes críticos (alergias,
-/// medicamentos, crónicas) en la pantalla inicial — igual que
-/// Dashboard.jsx en la web, siempre visible con mensaje claro cuando
-/// está vacía. Botón "Ver todos mis antecedentes →" abre
-/// AntecedentesScreen, que muestra las 6 categorías completas, cada
-/// una siempre visible con su propio mensaje de "sin registros" — antes
-/// esta vista completa no existía en absoluto en Flutter.
 library;
 
 import 'package:flutter/material.dart';
@@ -19,11 +7,9 @@ import '../services/ficha_service.dart';
 import '../services/storage_service.dart';
 import 'evento_detalle_screen.dart';
 import 'compartir_ficha_cuidado_screen.dart';
-import 'cuidador_screen.dart';
 
 class FichaScreen extends StatefulWidget {
   const FichaScreen({super.key});
-
   @override
   State<FichaScreen> createState() => _FichaScreenState();
 }
@@ -51,35 +37,29 @@ class _FichaScreenState extends State<FichaScreen> {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
             return _ErrorConReintentar(
-              mensaje: 'No se pudo cargar tu ficha: \${snapshot.error}',
+              mensaje: 'No se pudo cargar tu ficha: ${snapshot.error}',
               onReintentar: _cargar,
             );
           }
-
           final resumen = snapshot.data!;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Saludo
               Text(
-                'Hola, \${resumen.paciente.nombreCompleto.split(' ').first} 👋',
+                'Hola, ${resumen.paciente.nombreCompleto.split(' ').first} 👋',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF134E4A),
                     ),
               ),
               const SizedBox(height: 4),
-              Text(
-                '¿Cómo te sientes hoy?',
-                style: TextStyle(color: const Color(0xFF0F766E), fontSize: 14),
-              ),
+              Text('¿Cómo te sientes hoy?',
+                  style: TextStyle(color: const Color(0xFF0F766E), fontSize: 14)),
               const SizedBox(height: 16),
               _SeccionAntecedentesCriticos(antecedentes: resumen.antecedentes),
               const SizedBox(height: 12),
-              // Botón Mi ficha clínica → abre ConsultasScreen
               _BotonAcceso(
                 icono: '📋',
                 titulo: 'Mi ficha clínica',
@@ -99,33 +79,15 @@ class _FichaScreenState extends State<FichaScreen> {
                 subtitulo: 'Genera un acceso temporal para que un médico externo revise tu ficha',
                 color: const Color(0xFF4C1D95),
                 colorBorde: const Color(0xFFDDD6FE),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _AutorizarAccesoMedico(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _BotonAcceso(
-                icono: '👤',
-                titulo: 'Agregar cuidador',
-                subtitulo: 'Autoriza a alguien para recibir tus recordatorios de medicamentos',
-                color: const Color(0xFF4C1D95),
-                colorBorde: const Color(0xFFDDD6FE),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CuidadorScreen()),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _BotonAcceso(
-                icono: '🧑‍🤝‍🧑',
-                titulo: 'A quienes cuido',
-                subtitulo: 'Revisa los pacientes que tienes vinculados',
-                color: const Color(0xFF4C1D95),
-                colorBorde: const Color(0xFFDDD6FE),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CuidadorScreen()),
-                ),
+                onTap: () async {
+                  final rut = await StorageService.obtenerRut();
+                  if (!context.mounted || rut == null) return;
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rut),
+                    ),
+                  );
+                },
               ),
             ],
           );
@@ -146,12 +108,6 @@ class _FichaScreenState extends State<FichaScreen> {
   }
 }
 
-/// Igual rol que el bloque "Información médica importante" en
-/// Dashboard.jsx (web): siempre visible, con mensaje claro de
-/// "sin registros" cuando una categoría está vacía. Resume solo
-/// alergias, medicamentos (habituales) y enfermedades crónicas — el
-/// resto de categorías (cirugías, antecedentes familiares, otros) se
-/// ven en la vista completa (AntecedentesScreen).
 class _SeccionAntecedentesCriticos extends StatelessWidget {
   final Map<String, dynamic> antecedentes;
   const _SeccionAntecedentesCriticos({required this.antecedentes});
@@ -179,14 +135,11 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
               children: [
                 Text('🏥', style: TextStyle(fontSize: 16)),
                 SizedBox(width: 8),
-                Text(
-                  'Información médica importante',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13),
-                ),
+                Text('Información médica importante',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13)),
               ],
             ),
             const SizedBox(height: 12),
-
             _CategoriaCritica(
               titulo: '⚠️ Alergias',
               colorTitulo: const Color(0xFFDC2626),
@@ -196,7 +149,6 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
               mensajeVacio: 'Sin alergias conocidas registradas',
             ),
             const SizedBox(height: 12),
-
             _CategoriaCritica(
               titulo: '💊 Medicamentos habituales',
               colorTitulo: const Color(0xFF1D4ED8),
@@ -206,7 +158,6 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
               mensajeVacio: 'Sin medicamentos habituales registrados',
             ),
             const SizedBox(height: 12),
-
             _CategoriaCritica(
               titulo: '🩺 Enfermedades crónicas',
               colorTitulo: const Color(0xFF065F46),
@@ -215,7 +166,6 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
               colorTextoTarjeta: const Color(0xFF065F46),
               mensajeVacio: 'Sin enfermedades crónicas registradas',
             ),
-
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -225,13 +175,11 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
                   foregroundColor: const Color(0xFF92400E),
                   side: const BorderSide(color: Color(0xFFFDE68A)),
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AntecedentesScreen(antecedentes: antecedentes),
-                    ),
-                  );
-                },
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AntecedentesScreen(antecedentes: antecedentes),
+                  ),
+                ),
                 child: const Text('Ver todos mis antecedentes →'),
               ),
             ),
@@ -264,10 +212,9 @@ class _CategoriaCritica extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          titulo.toUpperCase(),
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: colorTitulo),
-        ),
+        Text(titulo.toUpperCase(),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                letterSpacing: 0.8, color: colorTitulo)),
         const SizedBox(height: 6),
         if (items.isEmpty)
           _TarjetaTexto(
@@ -286,6 +233,7 @@ class _CategoriaCritica extends StatelessWidget {
     );
   }
 }
+
 class _TarjetaTexto extends StatelessWidget {
   final String texto;
   final Color color;
@@ -305,15 +253,13 @@ class _TarjetaTexto extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
-      child: Text(
-        texto,
-        style: TextStyle(
-          fontSize: 13,
-          color: colorTexto,
-          fontStyle: italica ? FontStyle.italic : FontStyle.normal,
-          fontWeight: italica ? FontWeight.normal : FontWeight.w500,
-        ),
-      ),
+      child: Text(texto,
+          style: TextStyle(
+            fontSize: 13,
+            color: colorTexto,
+            fontStyle: italica ? FontStyle.italic : FontStyle.normal,
+            fontWeight: italica ? FontWeight.normal : FontWeight.w500,
+          )),
     );
   }
 }
@@ -324,12 +270,9 @@ class _EventoCard extends StatelessWidget {
 
   IconData get _icono {
     switch (evento.tipo) {
-      case 'control':
-        return Icons.event_available_outlined;
-      case 'cirugia':
-        return Icons.medical_services_outlined;
-      default:
-        return Icons.description_outlined;
+      case 'control': return Icons.event_available_outlined;
+      case 'cirugia': return Icons.medical_services_outlined;
+      default: return Icons.description_outlined;
     }
   }
 
@@ -346,21 +289,13 @@ class _EventoCard extends StatelessWidget {
         ),
         subtitle: Text('${evento.fecha} · ${evento.medico}'),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => EventoDetalleScreen(evento: evento),
-            ),
-          );
-        },
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => EventoDetalleScreen(evento: evento)),
+        ),
       ),
     );
   }
 }
-
-/// Hoja inferior que muestra el texto llegando en streaming SSE, palabra
-/// por palabra, igual que se ve en la web. Reutilizable desde Ficha y
-/// desde EventoDetalle.
 class _ExplicacionSheet extends StatefulWidget {
   final String titulo;
   final Stream<ExplicacionEvento> stream;
@@ -425,10 +360,8 @@ class _ExplicacionSheetState extends State<_ExplicacionSheet> {
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  child: Text(
-                    _texto.toString(),
-                    style: const TextStyle(fontSize: 15, height: 1.5),
-                  ),
+                  child: Text(_texto.toString(),
+                      style: const TextStyle(fontSize: 15, height: 1.5)),
                 ),
               ),
               if (_error != null)
@@ -475,38 +408,6 @@ class _ErrorConReintentar extends StatelessWidget {
   }
 }
 
-class _AutorizarAccesoMedico extends StatefulWidget {
-  const _AutorizarAccesoMedico();
-
-  @override
-  State<_AutorizarAccesoMedico> createState() => _AutorizarAccesoMedicoState();
-}
-
-class _AutorizarAccesoMedicoState extends State<_AutorizarAccesoMedico> {
-  @override
-  void initState() {
-    super.initState();
-    _navegar();
-  }
-
-  Future<void> _navegar() async {
-    final rut = await StorageService.obtenerRut();
-    if (!mounted || rut == null) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rut),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
 class _BotonAcceso extends StatelessWidget {
   final String icono;
   final String titulo;
@@ -545,10 +446,8 @@ class _BotonAcceso extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(titulo,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: color,
-                            fontSize: 15)),
+                        style: TextStyle(fontWeight: FontWeight.w600,
+                            color: color, fontSize: 15)),
                     const SizedBox(height: 2),
                     Text(subtitulo,
                         style: TextStyle(color: color.withOpacity(0.7), fontSize: 12)),
@@ -564,7 +463,6 @@ class _BotonAcceso extends StatelessWidget {
   }
 }
 
-/// Pantalla de consultas — se abre al tocar "Mi ficha clínica"
 class ConsultasScreen extends StatelessWidget {
   final FichaResumen resumen;
   final void Function(BuildContext) onExplicar;
@@ -592,13 +490,9 @@ class ConsultasScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    resumen.paciente.nombreCompleto,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                  Text(resumen.paciente.nombreCompleto,
+                      style: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
                     '${resumen.totalConsultas} consultas registradas'
@@ -635,11 +529,6 @@ class ConsultasScreen extends StatelessWidget {
   }
 }
 
-/// ────────────────────────────────────────────────────────────────────
-/// Vista completa de antecedentes — las 6 categorías, siempre todas
-/// visibles, cada una con su propio mensaje cuando está vacía. Mismo
-/// patrón que la sección "Mis antecedentes" en Ficha.jsx (web).
-/// ────────────────────────────────────────────────────────────────────
 class AntecedentesScreen extends StatelessWidget {
   final Map<String, dynamic> antecedentes;
   const AntecedentesScreen({super.key, required this.antecedentes});
@@ -662,7 +551,6 @@ class AntecedentesScreen extends StatelessWidget {
         children: _categorias.map((cat) {
           final (key, titulo, vacioLabel) = cat;
           final items = antecedentes[key] as List<dynamic>? ?? [];
-
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
@@ -670,7 +558,9 @@ class AntecedentesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(titulo, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF134E4A))),
+                  Text(titulo,
+                      style: const TextStyle(fontWeight: FontWeight.w600,
+                          color: Color(0xFF134E4A))),
                   const SizedBox(height: 10),
                   if (items.isEmpty)
                     _TarjetaTexto(
@@ -685,7 +575,6 @@ class AntecedentesScreen extends StatelessWidget {
                       final descripcion = m['descripcion'] ?? '';
                       final fechaInicio = m['fecha_inicio'];
                       final registradoPor = m['registrado_por'];
-
                       return Container(
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -697,18 +586,18 @@ class AntecedentesScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('$descripcion', style: const TextStyle(fontSize: 13, color: Color(0xFF134E4A))),
+                            Text('$descripcion',
+                                style: const TextStyle(fontSize: 13, color: Color(0xFF134E4A))),
                             if (fechaInicio != null || registradoPor != null) ...[
                               const SizedBox(height: 4),
-                              Wrap(
-                                spacing: 8,
-                                children: [
-                                  if (fechaInicio != null)
-                                    Text('Desde $fechaInicio', style: const TextStyle(fontSize: 11, color: Color(0xFF5EEAD4))),
-                                  if (registradoPor != null)
-                                    Text('· $registradoPor', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                                ],
-                              ),
+                              Wrap(spacing: 8, children: [
+                                if (fechaInicio != null)
+                                  Text('Desde $fechaInicio',
+                                      style: const TextStyle(fontSize: 11, color: Color(0xFF5EEAD4))),
+                                if (registradoPor != null)
+                                  Text('· $registradoPor',
+                                      style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                              ]),
                             ],
                           ],
                         ),
