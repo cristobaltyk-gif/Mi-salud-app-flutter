@@ -1,22 +1,10 @@
 /// lib/services/alarm_service.dart
 ///
-/// Programa ALARMAS LOCALES en el dispositivo a partir de los horarios
-/// que retorna el backend (campo `proximo_disparo` de cada Recordatorio).
-///
-/// Importante — límites reales de la plataforma (explicados al usuario
-/// antes de construir esto):
-///   - Android: con flutter_local_notifications + canal de alta prioridad,
-///     sonido custom, y `fullScreenIntent: true`, se logra una alarma que
-///     suena fuerte y puede mostrar una pantalla incluso con el teléfono
-///     bloqueado. Esto SÍ se acerca al comportamiento de un despertador.
-///   - iOS: las notificaciones locales NO pueden forzar pantalla completa
-///     ni saltarse Modo No Molestar salvo que la app tenga el entitlement
-///     de "Critical Alerts" aprobado por Apple (trámite aparte, pendiente).
-///
-/// v1.1: FIX — zonedSchedule() en flutter_local_notifications 18.0.1
-/// todavía exige el parámetro `uiLocalNotificationDateInterpretation`
-/// (removido en versiones posteriores). Se agrega con valor
-/// `absoluteTime` — el horario ya viene en hora absoluta de Chile.
+/// v1.2: agrega reprogramarDesdeStorage() — lee los recordatorios
+/// guardados localmente y reprograma las alarmas sin necesitar token
+/// ni conexión al backend. Se llama desde main.dart al arrancar la app,
+/// ANTES de verificar sesión, para que las alarmas funcionen aunque
+/// el token haya expirado.
 library;
 
 import 'dart:io';
@@ -26,6 +14,7 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:permission_handler/permission_handler.dart';
 import '../config/app_config.dart';
 import '../models/recordatorio.dart';
+import 'storage_service.dart';
 
 class AlarmService {
   static final FlutterLocalNotificationsPlugin _plugin =
@@ -80,7 +69,6 @@ class AlarmService {
       final alarmaExacta = await Permission.scheduleExactAlarm.request();
       return notif.isGranted && alarmaExacta.isGranted;
     }
-
     if (Platform.isIOS) {
       final result = await _plugin
           .resolvePlatformSpecificImplementation<
@@ -88,22 +76,43 @@ class AlarmService {
           ?.requestPermissions(alert: true, badge: true, sound: true);
       return result ?? false;
     }
-
     return true;
   }
 
+  /// Reprograma alarmas desde el backend (requiere token válido).
+  /// Guarda los recordatorios en storage para uso offline.
   static Future<void> reprogramarTodas(List<Recordatorio> recordatorios) async {
+    // Guardar en storage para poder reprogramar sin token
+    await StorageService.guardarRecordatorios(
+      recordatorios.map((r) => r.toJson()).toList(),
+    );
     await _plugin.cancelAll();
-
     for (final r in recordatorios) {
       if (r.proximoDisparo == null) continue;
       await _programarUna(r);
     }
   }
 
+  /// Reprograma alarmas desde storage local — no necesita token ni
+  /// conexión. Se llama al arrancar la app para que las alarmas
+  /// funcionen aunque el token haya expirado.
+  static Future<void> reprogramarDesdeStorage() async {
+    try {
+      final raw = await StorageService.obtenerRecordatorios();
+      if (raw.isEmpty) return;
+      final recordatorios = raw.map((e) => Recordatorio.fromJson(e)).toList();
+      await _plugin.cancelAll();
+      for (final r in recordatorios) {
+        if (r.proximoDisparo == null) continue;
+        await _programarUna(r);
+      }
+    } catch (_) {
+      // Si falla (primera instalación, datos corruptos), no crashear
+    }
+  }
+
   static Future<void> _programarUna(Recordatorio r) async {
     final horario = tz.TZDateTime.from(r.proximoDisparo!, tz.local);
-
     if (horario.isBefore(tz.TZDateTime.now(tz.local))) return;
 
     final androidDetails = AndroidNotificationDetails(
