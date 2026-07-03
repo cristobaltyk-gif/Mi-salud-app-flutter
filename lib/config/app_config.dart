@@ -71,6 +71,7 @@ class AppConfig {
   static const String prefsJwtKey = 'misalud_jwt_token';
   static const String prefsRutKey = 'misalud_rut_paciente';
   static const String prefsNombreKey = 'misalud_nombre_paciente';
+  static const String prefsRecordatoriosKey = 'misalud_recordatorios';
 
   // --- Notificaciones / Alarmas ---
   static const String notifChannelId = 'misalud_alarmas_medicamentos';
