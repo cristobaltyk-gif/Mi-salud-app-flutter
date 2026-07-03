@@ -1,14 +1,8 @@
 /// lib/main.dart
 ///
-/// Punto de entrada. Inicializa el servicio de alarmas ANTES de levantar
-/// la UI (necesario para que el canal de Android exista desde el arranque),
-/// y decide la pantalla inicial según si hay una sesión guardada.
-///
-/// v1.1: FIX — se agrega initializeDateFormatting('es') antes de runApp.
-/// recordatorios_screen.dart usa DateFormat(..., 'es') para mostrar
-/// "Mañana a las 08:00" / nombres de día en español — el paquete intl
-/// exige inicializar explícitamente los datos de un locale antes de
-/// usarlo, o lanza LocaleDataException en tiempo de ejecución.
+/// v1.2: agrega reprogramarDesdeStorage() después de inicializar() —
+/// reprograma las alarmas locales desde storage sin necesitar token ni
+/// conexión, para que funcionen aunque el JWT haya expirado.
 library;
 
 import 'package:flutter/material.dart';
@@ -21,12 +15,13 @@ import 'screens/dashboard_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Debe inicializarse antes de runApp para que el canal de notificaciones
-  // de Android exista desde el primer frame.
   await AlarmService.inicializar();
 
-  // Requerido por DateFormat(..., 'es') en recordatorios_screen.dart —
-  // sin esto, formatear fechas en español lanza LocaleDataException.
+  // Reprograma alarmas desde storage local — no necesita token ni
+  // conexión. Garantiza que las alarmas funcionen aunque el JWT
+  // haya expirado o la app se haya reiniciado.
+  await AlarmService.reprogramarDesdeStorage();
+
   await initializeDateFormatting('es');
 
   runApp(const MiSaludApp());
@@ -42,7 +37,7 @@ class MiSaludApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF2563EB), // azul clínico, neutro
+        colorSchemeSeed: const Color(0xFF2563EB),
         fontFamily: 'Roboto',
       ),
       home: const _DecidirInicio(),
@@ -50,10 +45,6 @@ class MiSaludApp extends StatelessWidget {
   }
 }
 
-/// Pantalla invisible que decide a dónde ir según si hay sesión guardada.
-/// No es una "splash screen" visual con logo — solo resuelve el routing
-/// inicial. Si más adelante quieres un splash con branding, se agrega
-/// aquí mismo antes del FutureBuilder.
 class _DecidirInicio extends StatelessWidget {
   const _DecidirInicio();
 
@@ -67,7 +58,6 @@ class _DecidirInicio extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
         final haySesion = snapshot.data ?? false;
         return haySesion ? const DashboardScreen() : const LoginScreen();
       },
