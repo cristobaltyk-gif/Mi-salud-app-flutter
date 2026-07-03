@@ -10,21 +10,17 @@ class Recordatorio {
   final int id;
   final String rutPaciente;
   final int? eventoId;
-  final String tipo; // ej: "medicamento"
-  final String descripcion; // nombre del medicamento/control
-  final String? detalle; // ej: "Amoxicilina — 500mg"
+  final String tipo;
+  final String descripcion;
+  final String? detalle;
   final DateTime fechaInicio;
-  final int? frecuenciaHoras; // null = dosis única (control/indicación)
+  final int? frecuenciaHoras;
   final int? duracionDias;
   final DateTime? fechaFin;
   final bool activo;
   final bool editadoPorUsuario;
   final DateTime createdAt;
   final String creadoPor;
-
-  /// Hora del próximo disparo NO enviado. Null si no quedan disparos
-  /// pendientes (tratamiento terminado). Esto es lo que la UI debe
-  /// mostrar como "próxima toma", nunca `fechaInicio` directamente.
   final DateTime? proximoDisparo;
 
   Recordatorio({
@@ -70,10 +66,28 @@ class Recordatorio {
     );
   }
 
-  /// Es un recordatorio recurrente (medicamento con frecuencia) vs.
-  /// un disparo único (control, indicación puntual).
   bool get esRecurrente => frecuenciaHoras != null;
 
-  /// Nombre a mostrar en pantalla: prioriza `detalle` (incluye dosis) si existe.
-  String get textoMostrar => (detalle != null && detalle!.isNotEmpty) ? detalle! : descripcion;
+  String get textoMostrar =>
+      (detalle != null && detalle!.isNotEmpty) ? detalle! : descripcion;
+
+  /// Serializa a JSON para guardar en storage local.
+  /// Permite reprogramar alarmas sin token ni conexión.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'rut_paciente': rutPaciente,
+    'evento_id': eventoId,
+    'tipo': tipo,
+    'descripcion': descripcion,
+    'detalle': detalle,
+    'fecha_inicio': fechaInicio.toIso8601String(),
+    'frecuencia_horas': frecuenciaHoras,
+    'duracion_dias': duracionDias,
+    'fecha_fin': fechaFin?.toIso8601String(),
+    'activo': activo,
+    'editado_por_usuario': editadoPorUsuario,
+    'created_at': createdAt.toIso8601String(),
+    'creado_por': creadoPor,
+    'proximo_disparo': proximoDisparo?.toIso8601String(),
+  };
 }
