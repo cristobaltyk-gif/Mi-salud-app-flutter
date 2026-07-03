@@ -28,6 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _sincronizarAlarmas();
   }
 
+  /// Sincroniza con el backend si hay token válido y actualiza storage.
+  /// Si falla (token expirado, sin conexión), las alarmas siguen
+  /// funcionando desde storage — no se cancelan ni se muestran como error.
   Future<void> _sincronizarAlarmas() async {
     setState(() {
       _sincronizando = true;
@@ -38,7 +41,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final recordatorios = await RecordatoriosService.misRecordatorios();
       await AlarmService.reprogramarTodas(recordatorios);
     } catch (e) {
-      setState(() => _errorSincronizacion = e.toString());
+      // No mostrar error de autenticación al usuario — las alarmas
+      // siguen activas desde storage (reprogramadas en main.dart).
+      final msg = e.toString();
+      if (!msg.contains('401') && !msg.contains('sesión')) {
+        setState(() => _errorSincronizacion = msg);
+      }
     } finally {
       if (mounted) setState(() => _sincronizando = false);
     }
@@ -90,11 +98,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: const Color(0xFF0F766E),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.health_and_safety_outlined, size: 22, color: Colors.white),
-            const SizedBox(width: 8),
-            const Text('MiSalud',
+            Icon(Icons.health_and_safety_outlined, size: 22, color: Colors.white),
+            SizedBox(width: 8),
+            Text('MiSalud',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
           ],
         ),
@@ -126,10 +134,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Icon(Icons.warning_amber_outlined, color: Colors.orange[800], size: 18),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'No se pudieron actualizar las alarmas',
-                      style: TextStyle(color: Colors.orange[900], fontSize: 12),
-                    ),
+                    child: Text('No se pudieron actualizar las alarmas',
+                        style: TextStyle(color: Colors.orange[900], fontSize: 12)),
                   ),
                   TextButton(
                     style: TextButton.styleFrom(foregroundColor: Colors.orange[800]),
@@ -175,14 +181,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           size: 24,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          tab.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
-                            color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
-                          ),
-                        ),
+                        Text(tab.label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
+                              color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                            )),
                       ],
                     ),
                   ),
