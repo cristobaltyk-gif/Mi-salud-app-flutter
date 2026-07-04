@@ -6,12 +6,6 @@ import '../services/auth_service.dart';
 import 'activar_cuenta_screen.dart';
 import 'dashboard_screen.dart';
 
-// --- Colores de marca HypokratIA ---
-const Color kHypoBlue = Color(0xFF1A3B8C);
-const Color kHypoBlueDark = Color(0xFF0F235A);
-const Color kHypoTeal = Color(0xFF0F9B8E);
-const Color kHypoTealDark = Color(0xFF0B2E45);
-
 String _normalizarRut(String raw) {
   final limpio = raw.replaceAll(RegExp(r'[^0-9kK]'), '').toUpperCase();
   if (limpio.length < 2) return limpio;
@@ -88,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [kHypoBlue, kHypoTealDark, Color(0xFF071A26)],
+            colors: [Color(0xFF1A3B8C), Color(0xFF123566), Color(0xFF0B2E45)],
           ),
         ),
         child: SafeArea(
@@ -100,31 +94,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   // Logo
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 96,
+                    height: 96,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4)),
+                        BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 18, offset: const Offset(0, 6)),
                       ],
                     ),
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(16),
                     child: Image.asset(
                       'assets/images/hypokratia_icon.png',
                       fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 1),
-                      children: [
-                        TextSpan(text: 'Hypokrat', style: TextStyle(color: Colors.white)),
-                        TextSpan(text: 'IA', style: TextStyle(color: kHypoTeal)),
-                      ],
-                    ),
+                  const Text(
+                    'HypokratIA',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -147,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const Text(
                           'Ingresa a tu cuenta',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kHypoBlueDark),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F235A)),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
@@ -159,13 +147,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: InputDecoration(
                             labelText: 'RUT',
                             hintText: '12345678-9',
-                            prefixIcon: const Icon(Icons.badge_outlined, color: kHypoTeal),
+                            prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF0F9B8E)),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: kHypoTeal, width: 2),
+                              borderSide: const BorderSide(color: Color(0xFF0F9B8E), width: 2),
                             ),
-                            labelStyle: const TextStyle(color: kHypoTeal),
+                            labelStyle: const TextStyle(color: Color(0xFF0F9B8E)),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -176,17 +164,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           onSubmitted: (_) => _intentarLogin(),
                           decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            prefixIcon: const Icon(Icons.lock_outline, color: kHypoTeal),
+                            prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF0F9B8E)),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: kHypoTeal, width: 2),
+                              borderSide: const BorderSide(color: Color(0xFF0F9B8E), width: 2),
                             ),
-                            labelStyle: const TextStyle(color: kHypoTeal),
+                            labelStyle: const TextStyle(color: Color(0xFF0F9B8E)),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _ocultarPassword ? Icons.visibility_off : Icons.visibility,
-                                color: kHypoTeal,
+                                color: const Color(0xFF0F9B8E),
                               ),
                               onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
                             ),
@@ -216,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: ElevatedButton(
                             onPressed: _cargando ? null : _intentarLogin,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: kHypoBlue,
+                              backgroundColor: const Color(0xFF1A3B8C),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               elevation: 0,
