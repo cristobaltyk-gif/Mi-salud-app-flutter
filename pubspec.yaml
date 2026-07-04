@@ -1,5 +1,5 @@
-name: misalud_app
-description: "MiSalud — App de paciente con recordatorios de medicamentos (Instituto de Cirugía Articular)"
+name: hypokratia_app
+description: "HypokratIA — Software Médico. App de paciente con recordatorios de medicamentos (Instituto de Cirugía Articular)"
 publish_to: 'none'
 version: 1.0.0+1
 
