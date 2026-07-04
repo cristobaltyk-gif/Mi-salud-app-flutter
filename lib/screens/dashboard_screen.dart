@@ -28,9 +28,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _sincronizarAlarmas();
   }
 
-  /// Sincroniza con el backend si hay token válido y actualiza storage.
-  /// Si falla (token expirado, sin conexión), las alarmas siguen
-  /// funcionando desde storage — no se cancelan ni se muestran como error.
   Future<void> _sincronizarAlarmas() async {
     setState(() {
       _sincronizando = true;
@@ -41,8 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final recordatorios = await RecordatoriosService.misRecordatorios();
       await AlarmService.reprogramarTodas(recordatorios);
     } catch (e) {
-      // No mostrar error de autenticación al usuario — las alarmas
-      // siguen activas desde storage (reprogramadas en main.dart).
       final msg = e.toString();
       if (!msg.contains('401') && !msg.contains('sesión')) {
         setState(() => _errorSincronizacion = msg);
@@ -93,16 +88,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0FDF9),
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F766E),
+        backgroundColor: const Color(0xFF1A3B8C),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.health_and_safety_outlined, size: 22, color: Colors.white),
-            SizedBox(width: 8),
-            Text('MiSalud',
+            Image.asset(
+              'assets/images/hypokratia_icon.png',
+              width: 22,
+              height: 22,
+            ),
+            const SizedBox(width: 8),
+            const Text('HypokratIA',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
           ],
         ),
@@ -169,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: activo ? const Color(0xFF0F766E).withOpacity(0.1) : Colors.transparent,
+                      color: activo ? const Color(0xFF1A3B8C).withOpacity(0.1) : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
@@ -177,7 +176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Icon(
                           activo ? tab.iconoActivo : tab.icono,
-                          color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                          color: activo ? const Color(0xFF1A3B8C) : Colors.grey[500],
                           size: 24,
                         ),
                         const SizedBox(height: 4),
@@ -185,7 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
-                              color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                              color: activo ? const Color(0xFF1A3B8C) : Colors.grey[500],
                             )),
                       ],
                     ),
