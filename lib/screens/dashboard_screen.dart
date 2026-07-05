@@ -8,7 +8,6 @@ import '../services/alarm_service.dart';
 import 'ficha_screen.dart';
 import 'recordatorios_screen.dart';
 import 'cuidador_screen.dart';
-import 'credenciales_screen.dart';
 import 'login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -78,7 +77,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     (icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
     (icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
     (icono: Icons.people_outline, iconoActivo: Icons.people, label: 'Cuidadores'),
-    (icono: Icons.card_membership_outlined, iconoActivo: Icons.card_membership, label: 'Credenciales'),
   ];
 
   @override
@@ -87,7 +85,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const FichaScreen(),
       RecordatoriosScreen(onRecordatoriosCambiaron: _sincronizarAlarmas),
       const CuidadorScreen(),
-      const CredencialesScreen(),
     ];
 
     return Scaffold(
