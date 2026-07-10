@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/recordatorio.dart';
 import '../services/recordatorios_service.dart';
+import '../services/alarm_service.dart';
 
 class RecordatoriosScreen extends StatefulWidget {
   final Future<void> Function() onRecordatoriosCambiaron;
@@ -24,7 +25,22 @@ class _RecordatoriosScreenState extends State<RecordatoriosScreen> {
   }
 
   void _cargar() {
-    setState(() { _futureRecordatorios = RecordatoriosService.misRecordatorios(); });
+    setState(() { _futureRecordatorios = _cargarYProgramar(); });
+  }
+
+  /// Trae los recordatorios del backend Y reprograma las alarmas
+  /// locales del teléfono en el mismo paso. Antes esto solo pintaba
+  /// la UI y nunca llamaba a AlarmService — por eso no sonaba nada.
+  Future<List<Recordatorio>> _cargarYProgramar() async {
+    final recordatorios = await RecordatoriosService.misRecordatorios();
+    try {
+      await AlarmService.reprogramarTodas(recordatorios);
+    } catch (e) {
+      // No queremos que un fallo al programar alarmas rompa la UI
+      // que sí pudo cargar los recordatorios desde el backend.
+      debugPrint('Error reprogramando alarmas: $e');
+    }
+    return recordatorios;
   }
 
   @override
