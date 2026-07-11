@@ -68,7 +68,7 @@ class _PantallaDiagnosticoState extends State<_PantallaDiagnostico> {
     _log('✅ reprogramarDesdeStorage() completo');
 
     _log('Iniciando FCM (Firebase)...');
-    await FcmService.inicializar();
+    await FcmService.inicializar(onLog: _log);
     _log('✅ FcmService.inicializar() completo');
 
     _log('Cargando formato de fecha español...');
