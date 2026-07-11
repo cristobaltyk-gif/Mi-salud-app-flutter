@@ -4,14 +4,10 @@
 /// (disparado por HypokratIA cada vez que ICA notifica un evento nuevo
 /// o cambio de agenda), reprograma las alarmas locales sin que el
 /// paciente tenga que abrir la app.
-///
-/// PENDIENTE del lado backend: el endpoint que recibe y guarda el
-/// token FCM del dispositivo (tabla dispositivos_fcm) aún no existe
-/// en misalud-backend. registrarTokenEnBackend() está armado pero
-/// apunta a un endpoint que hay que crear antes de que esto funcione
-/// de punta a punta.
 library;
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../config/app_config.dart';
@@ -75,24 +71,21 @@ class FcmService {
     _inicializado = true;
   }
 
-  /// Envía el token FCM al backend para guardarlo asociado al paciente.
-  /// PENDIENTE: el endpoint /api/dispositivos/registrar (o el nombre que
-  /// se decida) todavía no existe en misalud-backend — hay que crearlo
-  /// junto con la tabla dispositivos_fcm antes de que este POST funcione.
+  /// Envía el token FCM al backend para guardarlo asociado al paciente,
+  /// vía POST /api/dispositivos/registrar.
   static Future<void> registrarTokenEnBackend(String token) async {
     try {
       final tokenSesion = await StorageService.obtenerToken();
       if (tokenSesion == null) return; // sin sesión activa, no hay a quién asociarlo
 
-      // TODO: reemplazar por el endpoint real cuando exista en el backend.
-      // await http.post(
-      //   Uri.parse(AppConfig.dispositivosRegistrarEndpoint),
-      //   headers: {
-      //     'Authorization': 'Bearer $tokenSesion',
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: jsonEncode({'fcm_token': token, 'plataforma': 'android'}),
-      // );
+      await http.post(
+        Uri.parse(AppConfig.dispositivosRegistrarEndpoint),
+        headers: {
+          'Authorization': 'Bearer $tokenSesion',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'fcm_token': token, 'plataforma': 'android'}),
+      );
     } catch (e) {
       // ignore: avoid_print
       print('Error registrando token FCM: $e');
