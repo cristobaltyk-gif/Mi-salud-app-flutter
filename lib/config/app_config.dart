@@ -47,6 +47,10 @@ class AppConfig {
   static String recordatorioEditarEndpoint(int recordatorioId) =>
       '$recordatoriosBase/$recordatorioId';
 
+  // --- Endpoints de dispositivos (dispositivos_router.py, prefix /api/dispositivos) ---
+  static const String dispositivosBase = '$backendBaseUrl/api/dispositivos';
+  static const String dispositivosRegistrarEndpoint = '$dispositivosBase/registrar';
+
   // --- Endpoints de cuidador (cuidador_router.py, prefix /api/cuidador) ---
   static const String cuidadorBase = '$backendBaseUrl/api/cuidador';
   static const String cuidadorInvitarEndpoint = '$cuidadorBase/invitar';
