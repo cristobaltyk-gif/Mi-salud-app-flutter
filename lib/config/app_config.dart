@@ -42,6 +42,8 @@ class AppConfig {
   static const String recordatoriosBase = '$backendBaseUrl/api/recordatorios';
   static String recordatoriosGenerarEndpoint(int eventoId) =>
       '$recordatoriosBase/generar/$eventoId';
+  static const String recordatoriosGenerarAgendaEndpoint =
+      '$recordatoriosBase/generar-agenda';
   static const String recordatoriosMisRecordatoriosEndpoint =
       '$recordatoriosBase/mis-recordatorios';
   static String recordatorioEditarEndpoint(int recordatorioId) =>
