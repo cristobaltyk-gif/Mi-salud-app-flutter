@@ -4,6 +4,11 @@
 /// (disparado por HypokratIA cada vez que ICA notifica un evento nuevo
 /// o cambio de agenda), reprograma las alarmas locales sin que el
 /// paciente tenga que abrir la app.
+///
+/// v1.2 TEMPORAL — DIAGNÓSTICO. inicializar() acepta un callback
+/// opcional onLog que se llama entre cada sub-paso interno. Usado
+/// junto con la versión de diagnóstico de main.dart para ver en
+/// pantalla exactamente cuál de los 6 pasos internos no completa.
 library;
 
 import 'dart:convert';
@@ -15,9 +20,6 @@ import 'alarm_service.dart';
 import 'recordatorios_service.dart';
 import 'storage_service.dart';
 
-/// Debe ser función de nivel superior (no método de clase) y llevar
-/// este pragma — Firebase la ejecuta en un isolate separado cuando
-/// llega un mensaje con la app cerrada o en background.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await _reprogramarDesdeNotificacion();
@@ -28,9 +30,6 @@ Future<void> _reprogramarDesdeNotificacion() async {
     final recordatorios = await RecordatoriosService.misRecordatorios();
     await AlarmService.reprogramarTodas(recordatorios);
   } catch (e) {
-    // Sin conexión o token expirado en este momento — no es crítico,
-    // AlarmService.reprogramarDesdeStorage() ya cubre el caso de que
-    // el próximo arranque de la app reprograme desde lo último guardado.
     // ignore: avoid_print
     print('Error reprogramando desde FCM: $e');
   }
@@ -40,43 +39,59 @@ class FcmService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static bool _inicializado = false;
 
-  static Future<void> inicializar() async {
-    if (_inicializado) return;
+  static Future<void> inicializar({void Function(String)? onLog}) async {
+    void log(String texto) => onLog?.call(texto);
 
+    if (_inicializado) {
+      log('  (ya estaba inicializado, se omite)');
+      return;
+    }
+
+    log('  → Firebase.initializeApp()...');
     await Firebase.initializeApp();
+    log('  ✓ Firebase.initializeApp() ok');
 
+    log('  → registrando background handler...');
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    log('  ✓ background handler registrado');
 
+    log('  → requestPermission()...');
     await _messaging.requestPermission(
       alert: false,
       badge: false,
       sound: false,
     );
+    log('  ✓ requestPermission() ok');
 
-    // Mensaje recibido con la app abierta (foreground) — mismo tratamiento.
+    log('  → registrando listener onMessage...');
     FirebaseMessaging.onMessage.listen((message) async {
       await _reprogramarDesdeNotificacion();
     });
+    log('  ✓ listener onMessage registrado');
 
+    log('  → getToken()...');
     final token = await _messaging.getToken();
+    log('  ✓ getToken() ok: ${token != null ? "token obtenido" : "null"}');
+
     if (token != null) {
+      log('  → registrarTokenEnBackend()...');
       await registrarTokenEnBackend(token);
+      log('  ✓ registrarTokenEnBackend() ok');
     }
 
-    // Firebase puede rotar el token — hay que volver a registrarlo si cambia.
+    log('  → registrando listener onTokenRefresh...');
     _messaging.onTokenRefresh.listen((nuevoToken) {
       registrarTokenEnBackend(nuevoToken);
     });
+    log('  ✓ listener onTokenRefresh registrado');
 
     _inicializado = true;
   }
 
-  /// Envía el token FCM al backend para guardarlo asociado al paciente,
-  /// vía POST /api/dispositivos/registrar.
   static Future<void> registrarTokenEnBackend(String token) async {
     try {
       final tokenSesion = await StorageService.obtenerToken();
-      if (tokenSesion == null) return; // sin sesión activa, no hay a quién asociarlo
+      if (tokenSesion == null) return;
 
       await http.post(
         Uri.parse(AppConfig.dispositivosRegistrarEndpoint),
