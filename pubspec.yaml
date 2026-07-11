@@ -21,6 +21,10 @@ dependencies:
   timezone: ^0.9.4                    # requerido por flutter_local_notifications para programar horarios exactos
   permission_handler: ^11.3.1         # pedir permisos de notificación/alarma exacta en Android 13+
 
+  # --- Firebase Cloud Messaging (alarmas se actualizan solas, sin abrir la app) ---
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+
   # --- Sonido de alarma personalizado ---
   audioplayers: ^6.1.0
 
