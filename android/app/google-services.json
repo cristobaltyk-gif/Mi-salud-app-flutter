@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "170893622938",
+    "project_id": "hypokratia",
+    "storage_bucket": "hypokratia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:170893622938:android:54ae5638e457d502c4e923",
+        "android_client_info": {
+          "package_name": "health.hypokratia.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjTZFhQyeruN1bWW2c_LIZ6bDIIMGOq20"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
