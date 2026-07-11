@@ -1,11 +1,11 @@
 /// lib/services/recordatorios_service.dart
 ///
-/// Cliente HTTP para recordatorios_router.py. No se incluye
-/// POST /push/suscribir — ese endpoint es para el flujo Web Push del
-/// frontend React (VAPID/Service Worker). La app Flutter no se suscribe
-/// a push del servidor; programa notificaciones LOCALES en el propio
-/// dispositivo a partir de los horarios que retorna este servicio
-/// (ver alarm_service.dart).
+/// Cliente HTTP para recordatorios_router.py y agenda_recordatorios.py.
+/// No se incluye POST /push/suscribir — ese endpoint es para el flujo
+/// Web Push del frontend React (VAPID/Service Worker). La app Flutter
+/// no se suscribe a push del servidor; programa notificaciones LOCALES
+/// en el propio dispositivo a partir de los horarios que retorna este
+/// servicio (ver alarm_service.dart).
 library;
 
 import 'dart:convert';
@@ -66,6 +66,28 @@ class RecordatoriosService {
 
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     final creados = body['creados'] as List<dynamic>;
+    return creados.map((e) => Recordatorio.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// POST /api/recordatorios/generar-agenda
+  /// Revisa la agenda del paciente y genera los recordatorios de su
+  /// próxima reserva, si tiene una. Se llama al abrir la app, como
+  /// respaldo si el webhook de ICA falló o no llegó a dispararse.
+  /// No lanza excepción si no hay reserva — eso es un estado normal,
+  /// no un error (el backend retorna estado "sin_reserva" con 200 OK).
+  static Future<List<Recordatorio>> generarDesdeAgenda() async {
+    final headers = await _authHeaders();
+    final res = await http.post(
+      Uri.parse(AppConfig.recordatoriosGenerarAgendaEndpoint),
+      headers: headers,
+    );
+
+    if (res.statusCode != 200) {
+      throw RecordatoriosException('No se pudo revisar la agenda (${res.statusCode})');
+    }
+
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    final creados = body['creados'] as List<dynamic>? ?? [];
     return creados.map((e) => Recordatorio.fromJson(e as Map<String, dynamic>)).toList();
   }
 
