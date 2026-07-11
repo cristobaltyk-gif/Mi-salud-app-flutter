@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.misalud_app"
+    namespace = "health.hypokratia.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
