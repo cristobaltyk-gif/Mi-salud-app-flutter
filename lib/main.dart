@@ -1,5 +1,14 @@
 /// lib/main.dart
 ///
+/// v1.5: agrega RecordatoriosService.generarDesdeAgenda() al iniciar
+/// la app — revisa la agenda del paciente y genera los recordatorios
+/// de su próxima reserva, si tiene una. Respaldo en caso de que el
+/// webhook de ICA haya fallado o no se haya disparado. Se ejecuta
+/// después de reprogramarDesdeStorage() y antes de FcmService, sin
+/// bloquear el resto del arranque si falla — no hay sesión aún
+/// verificada, pero AlarmService.reprogramarDesdeStorage() ya corrió,
+/// así que un fallo acá no compromete lo esencial.
+///
 /// v1.4: FcmService.inicializar() ahora recibe el parámetro onLog
 /// (opcional, no se usa en producción — solo lo usa la pantalla de
 /// diagnóstico temporal que se usó para encontrar el bug de
@@ -19,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'services/alarm_service.dart';
 import 'services/fcm_service.dart';
+import 'services/recordatorios_service.dart';
 import 'services/storage_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -32,6 +42,17 @@ void main() async {
   // conexión. Garantiza que las alarmas funcionen aunque el JWT
   // haya expirado o la app se haya reiniciado.
   await AlarmService.reprogramarDesdeStorage();
+
+  // Revisa la agenda del paciente y genera los recordatorios de su
+  // próxima reserva, si tiene una y hay sesión activa. Respaldo si
+  // el webhook de ICA falló. No bloquea el arranque si falla (ej. sin
+  // sesión aún, o sin conexión) — el resto de la app sigue igual.
+  try {
+    await RecordatoriosService.generarDesdeAgenda();
+  } catch (e) {
+    // ignore: avoid_print
+    print('Error generando recordatorios de agenda al iniciar: $e');
+  }
 
   await FcmService.inicializar();
 
