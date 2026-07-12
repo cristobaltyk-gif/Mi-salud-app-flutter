@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/recordatorios_service.dart';
 import '../services/alarm_service.dart';
+import '../services/fcm_service.dart';
 import 'ficha_screen.dart';
 import 'recordatorios_screen.dart';
 import 'cuidador_screen.dart';
@@ -35,6 +36,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     try {
       await AlarmService.pedirPermisos();
+      // Cubre el caso de sesión ya guardada (usuario que entra directo
+      // acá sin pasar por LoginScreen, ej. reabrió la app sin cerrar
+      // sesión). Reintenta el registro del token FCM cada vez que se
+      // entra al Dashboard con sesión garantizada — si el token ya
+      // estaba registrado, el backend simplemente lo sobrescribe.
+      await FcmService.registrarTokenSiHaySesion();
       await RecordatoriosService.generarDesdeAgenda();
       final recordatorios = await RecordatoriosService.misRecordatorios();
       await AlarmService.reprogramarTodas(recordatorios);
