@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     try {
       await AlarmService.pedirPermisos();
+      await RecordatoriosService.generarDesdeAgenda();
       final recordatorios = await RecordatoriosService.misRecordatorios();
       await AlarmService.reprogramarTodas(recordatorios);
     } catch (e) {
