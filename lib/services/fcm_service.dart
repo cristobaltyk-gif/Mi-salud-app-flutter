@@ -5,10 +5,16 @@
 /// o cambio de agenda), reprograma las alarmas locales sin que el
 /// paciente tenga que abrir la app.
 ///
+/// v1.3 — se agrega manejo del tipo "recordatorio_ahora": lo manda
+/// recordatorios_scheduler.py en el momento EXACTO en que un disparo
+/// vence, con el título y cuerpo reales del recordatorio. Al
+/// recibirlo, se muestra la notificación DE INMEDIATO vía
+/// AlarmService.mostrarAhora() — no se re-sincroniza la lista, se
+/// muestra directo. El tipo anterior (data sin "tipo" propio, o
+/// "recordatorios_actualizados") sigue reprogramando como antes.
+///
 /// v1.2 TEMPORAL — DIAGNÓSTICO. inicializar() acepta un callback
-/// opcional onLog que se llama entre cada sub-paso interno. Usado
-/// junto con la versión de diagnóstico de main.dart para ver en
-/// pantalla exactamente cuál de los 6 pasos internos no completa.
+/// opcional onLog que se llama entre cada sub-paso interno.
 library;
 
 import 'dart:convert';
@@ -22,6 +28,25 @@ import 'storage_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await _procesarMensaje(message);
+}
+
+Future<void> _procesarMensaje(RemoteMessage message) async {
+  final tipo = message.data['tipo'];
+
+  if (tipo == 'recordatorio_ahora') {
+    final titulo = message.data['titulo'] ?? 'Recordatorio';
+    final cuerpo = message.data['cuerpo'] ?? '';
+    try {
+      await AlarmService.inicializar();
+      await AlarmService.mostrarAhora(titulo, cuerpo);
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error mostrando recordatorio inmediato: $e');
+    }
+    return;
+  }
+
   await _reprogramarDesdeNotificacion();
 }
 
@@ -65,7 +90,7 @@ class FcmService {
 
     log('  → registrando listener onMessage...');
     FirebaseMessaging.onMessage.listen((message) async {
-      await _reprogramarDesdeNotificacion();
+      await _procesarMensaje(message);
     });
     log('  ✓ listener onMessage registrado');
 
