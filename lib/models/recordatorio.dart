@@ -4,6 +4,16 @@
 /// GET /api/recordatorios/mis-recordatorios (recordatorios_store.py:
 /// get_recordatorios_paciente). Es la fila completa de la tabla SQL más
 /// el campo calculado `proximo_disparo`.
+///
+/// v1.1 — FIX: parseFecha() ahora llama .toLocal() después de
+/// DateTime.parse(). Antes, un string con offset UTC (como los que
+/// manda el backend) se parseaba a un DateTime marcado como UTC, pero
+/// nunca se convertía a hora local — la pantalla de recordatorios
+/// imprimía directamente los valores UTC como si fueran locales, sin
+/// restar ni sumar nada. Como Chile está en UTC-4/-3, esto desplazaba
+/// cada horario mostrado varias horas hacia adelante (y a veces al día
+/// siguiente), haciendo que recordatorios cercanos parecieran estar
+/// muy lejos en el tiempo.
 library;
 
 class Recordatorio {
@@ -44,7 +54,7 @@ class Recordatorio {
   factory Recordatorio.fromJson(Map<String, dynamic> json) {
     DateTime? parseFecha(dynamic v) {
       if (v == null) return null;
-      return DateTime.parse(v as String);
+      return DateTime.parse(v as String).toLocal();
     }
 
     return Recordatorio(
