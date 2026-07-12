@@ -15,6 +15,16 @@
 ///
 /// v1.2 TEMPORAL — DIAGNÓSTICO. inicializar() acepta un callback
 /// opcional onLog que se llama entre cada sub-paso interno.
+///
+/// v1.4 — FIX: FcmService.inicializar() corre en main(), ANTES de que
+/// exista sesión (main() se ejecuta antes de que LoginScreen/Dashboard
+/// decidan qué mostrar). Por eso registrarTokenEnBackend() se salía en
+/// silencio (StorageService.obtenerToken() == null) y, como
+/// _inicializado quedaba en true igual, nunca se reintentaba — el
+/// token FCM real nunca llegaba al backend. Se agrega
+/// registrarTokenSiHaySesion(), método público que login_screen.dart
+/// llama explícitamente justo después de un login exitoso, cuando ya
+/// hay sesión guardada.
 library;
 
 import 'dart:convert';
@@ -129,6 +139,25 @@ class FcmService {
     } catch (e) {
       // ignore: avoid_print
       print('Error registrando token FCM: $e');
+    }
+  }
+
+  /// Se llama explícitamente justo después de un login exitoso (ver
+  /// login_screen.dart), cuando ya hay un JWT de sesión guardado en
+  /// StorageService. FcmService ya está inicializado desde main(), así
+  /// que _messaging.getToken() es inmediato (no vuelve a pedir
+  /// permisos ni reinicializa Firebase) — solo se reusa el token que
+  /// Firebase ya tenía y se reintenta el envío al backend, esta vez
+  /// con sesión válida.
+  static Future<void> registrarTokenSiHaySesion() async {
+    try {
+      final token = await _messaging.getToken();
+      if (token != null) {
+        await registrarTokenEnBackend(token);
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error registrando token FCM tras login: $e');
     }
   }
 }
