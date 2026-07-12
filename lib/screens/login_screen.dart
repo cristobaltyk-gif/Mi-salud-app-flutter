@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/fcm_service.dart';
 import 'activar_cuenta_screen.dart';
 import 'dashboard_screen.dart';
 
@@ -54,6 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { _cargando = true; _error = null; });
     try {
       await AuthService.login(rut, password);
+      // FcmService ya se inicializó en main(), pero en ese momento aún
+      // no había sesión guardada, así que el token FCM real nunca
+      // llegó al backend. Ahora que el login fue exitoso y hay un JWT
+      // guardado, reintentamos el registro del token.
+      await FcmService.registrarTokenSiHaySesion();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const DashboardScreen()),
