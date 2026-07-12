@@ -154,4 +154,45 @@ class AlarmService {
 
   static Future<void> cancelar(int recordatorioId) =>
       _plugin.cancel(recordatorioId);
+
+  /// Muestra la notificación DE INMEDIATO, sin programar nada con
+  /// anticipación — se llama cuando llega un FCM tipo "recordatorio_ahora"
+  /// con el contenido real del recordatorio (ver fcm_service.dart), justo
+  /// en el momento en que el servidor determinó que corresponde sonar.
+  /// Mismo patrón que WhatsApp: el mensaje llega, se muestra ahí mismo.
+  static Future<void> mostrarAhora(String titulo, String cuerpo) async {
+    final androidDetails = AndroidNotificationDetails(
+      AppConfig.notifChannelId,
+      AppConfig.notifChannelName,
+      channelDescription: AppConfig.notifChannelDescription,
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(AppConfig.alarmSoundName),
+      enableVibration: true,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
+      visibility: NotificationVisibility.public,
+      ongoing: true,
+      autoCancel: false,
+      ticker: titulo,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: '${AppConfig.alarmSoundName}.caf',
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+
+    final id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
+    await _plugin.show(
+      id,
+      titulo,
+      cuerpo,
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
+  }
 }
