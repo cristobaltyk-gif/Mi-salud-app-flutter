@@ -10,6 +10,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Requerido en Android 14+ (API 34) para que fullScreenIntent
+         funcione en las notificaciones — tanto en las programadas con
+         anticipación (_programarUna) como en las inmediatas al recibir
+         FCM (AlarmService.mostrarAhora). Sin este permiso, Android
+         puede degradar la notificación silenciosamente sin ningún
+         error visible en el código. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
 
     <application
         android:label="HypokratIA"
