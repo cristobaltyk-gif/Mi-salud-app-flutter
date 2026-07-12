@@ -1,5 +1,9 @@
 /// lib/services/alarm_service.dart
 ///
+/// v1.3: _programarUna() ahora envuelve zonedSchedule en try/catch y
+/// registra (print) cualquier error real al programar una alarma
+/// puntual, en vez de fallar en silencio.
+///
 /// v1.2: agrega reprogramarDesdeStorage() — lee los recordatorios
 /// guardados localmente y reprograma las alarmas sin necesitar token
 /// ni conexión al backend. Se llama desde main.dart al arrancar la app,
@@ -79,10 +83,7 @@ class AlarmService {
     return true;
   }
 
-  /// Reprograma alarmas desde el backend (requiere token válido).
-  /// Guarda los recordatorios en storage para uso offline.
   static Future<void> reprogramarTodas(List<Recordatorio> recordatorios) async {
-    // Guardar en storage para poder reprogramar sin token
     await StorageService.guardarRecordatorios(
       recordatorios.map((r) => r.toJson()).toList(),
     );
@@ -93,9 +94,6 @@ class AlarmService {
     }
   }
 
-  /// Reprograma alarmas desde storage local — no necesita token ni
-  /// conexión. Se llama al arrancar la app para que las alarmas
-  /// funcionen aunque el token haya expirado.
   static Future<void> reprogramarDesdeStorage() async {
     try {
       final raw = await StorageService.obtenerRecordatorios();
@@ -106,9 +104,7 @@ class AlarmService {
         if (r.proximoDisparo == null) continue;
         await _programarUna(r);
       }
-    } catch (_) {
-      // Si falla (primera instalación, datos corruptos), no crashear
-    }
+    } catch (_) {}
   }
 
   static Future<void> _programarUna(Recordatorio r) async {
@@ -140,17 +136,19 @@ class AlarmService {
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
-    await _plugin.zonedSchedule(
-      r.id,
-      'Hora de tu medicamento',
-      r.textoMostrar,
-      horario,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: 'recordatorio:${r.id}',
-    );
+    try {
+      await _plugin.zonedSchedule(
+        r.id,
+        'Hora de tu medicamento',
+        r.textoMostrar,
+        horario,
+        NotificationDetails(android: androidDetails, iOS: iosDetails),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: 'recordatorio:${r.id}',
+      );
+    } catch (_) {}
   }
 
   static Future<void> cancelarTodas() => _plugin.cancelAll();
