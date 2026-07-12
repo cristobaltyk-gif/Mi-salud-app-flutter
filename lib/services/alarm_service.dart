@@ -1,14 +1,4 @@
 /// lib/services/alarm_service.dart
-///
-/// v1.3: _programarUna() ahora envuelve zonedSchedule en try/catch y
-/// registra (print) cualquier error real al programar una alarma
-/// puntual, en vez de fallar en silencio.
-///
-/// v1.2: agrega reprogramarDesdeStorage() — lee los recordatorios
-/// guardados localmente y reprograma las alarmas sin necesitar token
-/// ni conexión al backend. Se llama desde main.dart al arrancar la app,
-/// ANTES de verificar sesión, para que las alarmas funcionen aunque
-/// el token haya expirado.
 library;
 
 import 'dart:io';
@@ -70,7 +60,16 @@ class AlarmService {
   static Future<bool> pedirPermisos() async {
     if (Platform.isAndroid) {
       final notif = await Permission.notification.request();
-      final alarmaExacta = await Permission.scheduleExactAlarm.request();
+
+      var alarmaExacta = await Permission.scheduleExactAlarm.status;
+      if (!alarmaExacta.isGranted) {
+        alarmaExacta = await Permission.scheduleExactAlarm.request();
+      }
+
+      if (!alarmaExacta.isGranted) {
+        await openAppSettings();
+      }
+
       return notif.isGranted && alarmaExacta.isGranted;
     }
     if (Platform.isIOS) {
