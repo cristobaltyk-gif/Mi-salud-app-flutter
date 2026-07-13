@@ -7,6 +7,15 @@
 /// no confundirlo con los propios. Color distinto al de urgencia
 /// (morado, el mismo tono que usa "Modo cuidador" en ficha_cuidado_screen.dart),
 /// para que ambas señales (urgencia vs. de quién es) no se pisen.
+///
+/// v1.2 — Las tarjetas de recordatorios tipo 'ejercicio' (plan
+/// domiciliario de kinesiología, con mediaPath no vacío) ahora son
+/// tocables: al tocarlas, abren MediaEjercicioScreen con la misma foto
+/// o video que se muestra al tocar la notificación — así el paciente
+/// puede volver a verlo cuando quiera, sin depender de la notificación
+/// (que ya pasó o se descartó). El resto de los tipos (medicamento,
+/// control, indicación) no cambia: no tienen media, no se agrega nada
+/// al tocarlos.
 library;
 
 import 'package:flutter/material.dart';
@@ -14,6 +23,7 @@ import 'package:intl/intl.dart';
 import '../models/recordatorio.dart';
 import '../services/recordatorios_service.dart';
 import '../services/alarm_service.dart';
+import 'media_ejercicio_screen.dart';
 
 class RecordatoriosScreen extends StatefulWidget {
   final Future<void> Function() onRecordatoriosCambiaron;
@@ -198,11 +208,26 @@ class _RecordatorioCard extends StatelessWidget {
     return '${DateFormat('EEEE d MMM', 'es').format(disparo)} a las $hora';
   }
 
+  void _abrirMedia(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MediaEjercicioScreen(
+          titulo: recordatorio.descripcion,
+          cuerpo: recordatorio.textoMostrar,
+          mediaPath: recordatorio.mediaPath!,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final urgente = recordatorio.proximoDisparo != null &&
         recordatorio.proximoDisparo!.difference(DateTime.now()).inHours < 2;
     final esCuidado = !recordatorio.esPropio && recordatorio.pacienteNombre != null;
+    final tieneMedia = recordatorio.tipo == 'ejercicio' &&
+        recordatorio.mediaPath != null &&
+        recordatorio.mediaPath!.isNotEmpty;
 
     final colorPrincipal = urgente ? const Color(0xFFEA580C) : const Color(0xFF0F766E);
     final colorFondo = urgente ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF9);
@@ -219,90 +244,100 @@ class _RecordatorioCard extends StatelessWidget {
           BoxShadow(color: colorPrincipal.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: colorPrincipal.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                recordatorio.esRecurrente ? Icons.medication_outlined : Icons.event_note_outlined,
-                color: colorPrincipal, size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (esCuidado) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _colorCuidadoFondo,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _colorCuidado.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.people_outline, size: 12, color: _colorCuidado),
-                          const SizedBox(width: 4),
-                          Text(
-                            recordatorio.pacienteNombre!,
-                            style: const TextStyle(
-                              color: _colorCuidado, fontSize: 11, fontWeight: FontWeight.w700,
-                            ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: tieneMedia ? () => _abrirMedia(context) : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    color: colorPrincipal.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    recordatorio.esRecurrente ? Icons.medication_outlined : Icons.event_note_outlined,
+                    color: colorPrincipal, size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (esCuidado) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _colorCuidadoFondo,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: _colorCuidado.withOpacity(0.3)),
                           ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.people_outline, size: 12, color: _colorCuidado),
+                              const SizedBox(width: 4),
+                              Text(
+                                recordatorio.pacienteNombre!,
+                                style: const TextStyle(
+                                  color: _colorCuidado, fontSize: 11, fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                      Text(recordatorio.textoMostrar,
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF134E4A))),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(Icons.alarm_outlined, size: 13, color: colorPrincipal),
+                          const SizedBox(width: 4),
+                          Text(_formatearProximoDisparo(),
+                              style: TextStyle(color: colorPrincipal, fontWeight: FontWeight.w600, fontSize: 13)),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                  ],
-                  Text(recordatorio.textoMostrar,
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF134E4A))),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(Icons.alarm_outlined, size: 13, color: colorPrincipal),
-                      const SizedBox(width: 4),
-                      Text(_formatearProximoDisparo(),
-                          style: TextStyle(color: colorPrincipal, fontWeight: FontWeight.w600, fontSize: 13)),
+                      if (recordatorio.esRecurrente) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colorPrincipal.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Cada ${recordatorio.frecuenciaHoras}h'
+                            '${recordatorio.duracionDias != null ? ' · ${recordatorio.duracionDias} días' : ''}',
+                            style: TextStyle(color: colorPrincipal, fontSize: 11, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  if (recordatorio.esRecurrente) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colorPrincipal.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Cada ${recordatorio.frecuenciaHoras}h'
-                        '${recordatorio.duracionDias != null ? ' · ${recordatorio.duracionDias} días' : ''}',
-                        style: TextStyle(color: colorPrincipal, fontSize: 11, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (urgente)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEA580C),
-                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('¡YA!', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-          ],
+                if (tieneMedia)
+                  Icon(Icons.play_circle_outline, color: colorPrincipal, size: 22),
+                if (urgente)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEA580C),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('¡YA!', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
