@@ -7,6 +7,15 @@
 /// descarga/apertura de PDF (open_file), y galería de fotos — igual
 /// funcionalidad que EventoCard en Ficha.jsx / FichaCuidado.jsx de la
 /// web. Antes solo mostraba un ListTile plano (diagnóstico + fecha).
+///
+/// v1.2 — Antes todo (antecedentes, recordatorios, historial, autorizar
+/// médico) se apilaba en un solo ListView largo, mezclado. Ahora la
+/// pantalla tiene una barra de pestañas abajo, igual estilo que
+/// dashboard_screen.dart: "Ficha" (antecedentes/indicaciones/historial
+/// según nivel de acceso), "Recordatorios" (medicamentos y controles,
+/// como listado propio) y "Autorizar médico" (solo si el nivel es
+/// completo). Cada pestaña es un listado simple y de un solo propósito,
+/// en vez de secciones apiladas.
 library;
 
 import 'dart:io';
@@ -28,8 +37,16 @@ class FichaCuidadoScreen extends StatefulWidget {
   State<FichaCuidadoScreen> createState() => _FichaCuidadoScreenState();
 }
 
+class _TabInfo {
+  final IconData icono;
+  final IconData iconoActivo;
+  final String label;
+  const _TabInfo({required this.icono, required this.iconoActivo, required this.label});
+}
+
 class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
   Future<FichaCuidado>? _futureFicha;
+  int _tabActual = 0;
 
   @override
   void initState() {
@@ -38,68 +55,165 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
   }
 
   void _cargar() {
-    setState(() { _futureFicha = FichaService.obtenerFichaCuidado(widget.rutPaciente); });
+    setState(() {
+      _tabActual = 0;
+      _futureFicha = FichaService.obtenerFichaCuidado(widget.rutPaciente);
+    });
+  }
+
+  List<_TabInfo> _tabsPara(FichaCuidado ficha) {
+    return [
+      const _TabInfo(icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
+      const _TabInfo(icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
+      if (ficha.esCompleto)
+        const _TabInfo(icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: FutureBuilder<FichaCuidado>(
-          future: _futureFicha,
-          builder: (context, snapshot) {
-            final nombrePaciente = snapshot.data?.paciente.nombreCompleto;
+    return FutureBuilder<FichaCuidado>(
+      future: _futureFicha,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-            return Column(
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: SafeArea(
+              child: Column(
+                children: [
+                  const _BannerModoCuidador(nombrePaciente: null),
+                  AppBar(
+                    title: const Text('Ficha del paciente'),
+                    backgroundColor: const Color(0xFF0F766E),
+                    foregroundColor: Colors.white,
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+                            const SizedBox(height: 12),
+                            Text('${snapshot.error}', textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            FilledButton(onPressed: _cargar, child: const Text('Reintentar')),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final ficha = snapshot.data!;
+        final tabs = _tabsPara(ficha);
+        final tabActual = _tabActual < tabs.length ? _tabActual : 0;
+
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
               children: [
-                _BannerModoCuidador(nombrePaciente: nombrePaciente),
+                _BannerModoCuidador(nombrePaciente: ficha.paciente.nombreCompleto),
                 AppBar(
-                  title: Text(nombrePaciente ?? 'Ficha del paciente'),
+                  title: Text(ficha.paciente.nombreCompleto),
                   backgroundColor: const Color(0xFF0F766E),
                   foregroundColor: Colors.white,
                 ),
                 Expanded(
-                  child: _buildContenido(snapshot),
+                  child: _buildTab(tabActual, ficha),
                 ),
               ],
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+          bottomNavigationBar: _BarraInferior(
+            tabs: tabs,
+            tabActual: tabActual,
+            onTap: (i) => setState(() => _tabActual = i),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildContenido(AsyncSnapshot<FichaCuidado> snapshot) {
-    if (snapshot.connectionState != ConnectionState.done) {
-      return const Center(child: CircularProgressIndicator());
+  Widget _buildTab(int index, FichaCuidado ficha) {
+    switch (index) {
+      case 0:
+        return _TabFicha(ficha: ficha, rutPaciente: widget.rutPaciente);
+      case 1:
+        return _TabRecordatorios(ficha: ficha);
+      case 2:
+        return _TabAutorizar(rutPaciente: widget.rutPaciente);
+      default:
+        return _TabFicha(ficha: ficha, rutPaciente: widget.rutPaciente);
     }
+  }
+}
 
-    if (snapshot.hasError) {
-      return Center(
+class _BarraInferior extends StatelessWidget {
+  final List<_TabInfo> tabs;
+  final int tabActual;
+  final ValueChanged<int> onTap;
+
+  const _BarraInferior({required this.tabs, required this.tabActual, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -2)),
+        ],
+      ),
+      child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
-              const SizedBox(height: 12),
-              Text('${snapshot.error}', textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: _cargar, child: const Text('Reintentar')),
-            ],
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(tabs.length, (i) {
+              final tab = tabs[i];
+              final activo = tabActual == i;
+              return GestureDetector(
+                onTap: () => onTap(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: activo ? const Color(0xFF0F766E).withOpacity(0.1) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        activo ? tab.iconoActivo : tab.icono,
+                        color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                        size: 24,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(tab.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
+                            color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
+                          )),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ),
-      );
-    }
-
-    final ficha = snapshot.data!;
-
-    if (ficha.esMedicamentos) return _VistaMedicamentos(ficha: ficha);
-    if (ficha.esIndicaciones) return _VistaIndicaciones(ficha: ficha);
-    if (ficha.esCompleto) {
-      return _VistaCompleta(ficha: ficha, rutPaciente: widget.rutPaciente);
-    }
-    return const Center(child: Text('Nivel de acceso no reconocido'));
+      ),
+    );
   }
 }
 
@@ -141,193 +255,204 @@ class _BannerModoCuidador extends StatelessWidget {
   }
 }
 
-class _VistaMedicamentos extends StatelessWidget {
-  final FichaCuidado ficha;
-  const _VistaMedicamentos({required this.ficha});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Acceso autorizado: medicamentos y controles',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-        const SizedBox(height: 12),
-        if (ficha.recordatorios.isEmpty)
-          _EstadoVacio(texto: 'Sin medicamentos ni controles vigentes')
-        else
-          ...ficha.recordatorios.map((r) => _TarjetaRecordatorio(r: r)),
-      ],
-    );
-  }
-}
-
-class _VistaIndicaciones extends StatelessWidget {
-  final FichaCuidado ficha;
-  const _VistaIndicaciones({required this.ficha});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Acceso autorizado: medicamentos, controles e indicaciones',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-        const SizedBox(height: 12),
-        if (ficha.recordatorios.isEmpty)
-          _EstadoVacio(texto: 'Sin medicamentos ni controles vigentes')
-        else
-          ...ficha.recordatorios.map((r) => _TarjetaRecordatorio(r: r)),
-        if (ficha.eventosConIndicaciones.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text('Indicaciones', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          ...ficha.eventosConIndicaciones.map((ev) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(ev.fecha, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                      const SizedBox(height: 6),
-                      Text(ev.indicaciones, style: const TextStyle(height: 1.4)),
-                    ],
-                  ),
-                ),
-              )),
-        ],
-      ],
-    );
-  }
-}
-
-class _VistaCompleta extends StatelessWidget {
+/// Pestaña "Ficha": contenido clínico según el nivel de acceso
+/// autorizado. Ya no incluye recordatorios ni "Autorizar médico" —
+/// ambos viven en sus propias pestañas.
+class _TabFicha extends StatelessWidget {
   final FichaCuidado ficha;
   final String rutPaciente;
-  const _VistaCompleta({required this.ficha, required this.rutPaciente});
+  const _TabFicha({required this.ficha, required this.rutPaciente});
 
   @override
   Widget build(BuildContext context) {
-    final alergias = (ficha.antecedentes?['alergia'] as List<dynamic>? ?? []);
+    if (ficha.esMedicamentos) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          _EstadoVacio(texto: 'Este nivel de acceso solo autoriza ver medicamentos y controles.\nRevisa la pestaña "Recordatorios".'),
+        ],
+      );
+    }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Acceso autorizado: completo',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-        const SizedBox(height: 12),
-
-        Card(
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rutPaciente),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.lock_outline, color: Color(0xFF4C1D95)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(
+    if (ficha.esIndicaciones) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Acceso autorizado: indicaciones',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+          const SizedBox(height: 12),
+          if (ficha.eventosConIndicaciones.isEmpty)
+            const _EstadoVacio(texto: 'Sin indicaciones registradas')
+          else
+            ...ficha.eventosConIndicaciones.map((ev) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Autorizar acceso a médico',
-                            style: TextStyle(fontWeight: FontWeight.w600, color: Colors.purple[800])),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Genera un acceso temporal para que un médico revise esta ficha',
-                          style: TextStyle(fontSize: 12, color: Colors.purple[300]),
-                        ),
+                        Text(ev.fecha, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                        const SizedBox(height: 6),
+                        Text(ev.indicaciones, style: const TextStyle(height: 1.4)),
                       ],
                     ),
                   ),
-                ],
+                )),
+        ],
+      );
+    }
+
+    if (ficha.esCompleto) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Acceso autorizado: completo',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+          const SizedBox(height: 12),
+
+          if (ficha.antecedentes != null) ...[
+            Card(
+              color: const Color(0xFFFFFDF0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFFFDE68A)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Text('🏥', style: TextStyle(fontSize: 15)),
+                        SizedBox(width: 8),
+                        Text('Antecedentes médicos',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _FilaAntecedente(
+                      titulo: '⚠️ ALERGIAS',
+                      colorTitulo: const Color(0xFFDC2626),
+                      items: ficha.antecedentes!['alergia'] as List<dynamic>? ?? [],
+                      vacio: 'Sin alergias conocidas',
+                      colorFondo: const Color(0xFFFEF2F2),
+                      colorTexto: const Color(0xFF991B1B),
+                    ),
+                    const SizedBox(height: 10),
+                    _FilaAntecedente(
+                      titulo: '💊 MEDICAMENTOS',
+                      colorTitulo: const Color(0xFF1D4ED8),
+                      items: ficha.antecedentes!['medicamento_habitual'] as List<dynamic>? ?? [],
+                      vacio: 'Sin medicamentos habituales',
+                      colorFondo: const Color(0xFFEFF6FF),
+                      colorTexto: const Color(0xFF1E40AF),
+                    ),
+                    const SizedBox(height: 10),
+                    _FilaAntecedente(
+                      titulo: '🩺 CRÓNICAS',
+                      colorTitulo: const Color(0xFF065F46),
+                      items: ficha.antecedentes!['enfermedad_cronica'] as List<dynamic>? ?? [],
+                      vacio: 'Sin enfermedades crónicas',
+                      colorFondo: const Color(0xFFF0FDF4),
+                      colorTexto: const Color(0xFF065F46),
+                    ),
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 16),
+          ],
+
+          Text('Historial de consultas', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (ficha.eventos.isEmpty)
+            Text('Sin consultas registradas', style: TextStyle(color: Colors.grey[500]))
+          else
+            ...ficha.eventos.map((ev) => _EventoCard(ev: ev, rutPaciente: rutPaciente)),
+        ],
+      );
+    }
+
+    return const Center(child: Text('Nivel de acceso no reconocido'));
+  }
+}
+
+/// Pestaña "Recordatorios": medicamentos y controles vigentes de este
+/// paciente, como listado propio y simple.
+class _TabRecordatorios extends StatelessWidget {
+  final FichaCuidado ficha;
+  const _TabRecordatorios({required this.ficha});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (ficha.recordatorios.isEmpty)
+          const _EstadoVacio(texto: 'Sin medicamentos ni controles vigentes')
+        else
+          ...ficha.recordatorios.map((r) => _TarjetaRecordatorio(r: r)),
+      ],
+    );
+  }
+}
+
+/// Pestaña "Autorizar médico": antes era una tarjeta apretada arriba
+/// del listado principal; ahora tiene su propio espacio, solo visible
+/// cuando el nivel de acceso es completo (ver _tabsPara en el State).
+class _TabAutorizar extends StatelessWidget {
+  final String rutPaciente;
+  const _TabAutorizar({required this.rutPaciente});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const SizedBox(height: 24),
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F3FF),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF4C1D95).withOpacity(0.3)),
+          ),
+          child: const Icon(Icons.lock_outline, color: Color(0xFF4C1D95), size: 32),
+        ),
+        const SizedBox(height: 20),
+        Center(
+          child: Text('Autorizar acceso a médico',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: Colors.purple[800])),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            'Genera un acceso temporal para que un médico revise esta ficha',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.purple[300]),
           ),
         ),
-
-        // Antecedentes médicos importantes
-        if (ficha.antecedentes != null) ...[
-          const SizedBox(height: 16),
-          Card(
-            color: const Color(0xFFFFFDF0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Color(0xFFFDE68A)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Text('🏥', style: TextStyle(fontSize: 15)),
-                      SizedBox(width: 8),
-                      Text('Antecedentes médicos',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _FilaAntecedente(
-                    titulo: '⚠️ ALERGIAS',
-                    colorTitulo: const Color(0xFFDC2626),
-                    items: ficha.antecedentes!['alergia'] as List<dynamic>? ?? [],
-                    vacio: 'Sin alergias conocidas',
-                    colorFondo: const Color(0xFFFEF2F2),
-                    colorTexto: const Color(0xFF991B1B),
-                  ),
-                  const SizedBox(height: 10),
-                  _FilaAntecedente(
-                    titulo: '💊 MEDICAMENTOS',
-                    colorTitulo: const Color(0xFF1D4ED8),
-                    items: ficha.antecedentes!['medicamento_habitual'] as List<dynamic>? ?? [],
-                    vacio: 'Sin medicamentos habituales',
-                    colorFondo: const Color(0xFFEFF6FF),
-                    colorTexto: const Color(0xFF1E40AF),
-                  ),
-                  const SizedBox(height: 10),
-                  _FilaAntecedente(
-                    titulo: '🩺 CRÓNICAS',
-                    colorTitulo: const Color(0xFF065F46),
-                    items: ficha.antecedentes!['enfermedad_cronica'] as List<dynamic>? ?? [],
-                    vacio: 'Sin enfermedades crónicas',
-                    colorFondo: const Color(0xFFF0FDF4),
-                    colorTexto: const Color(0xFF065F46),
-                  ),
-                ],
+        const SizedBox(height: 24),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF4C1D95)),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rutPaciente),
               ),
-            ),
+            );
+          },
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Text('Generar acceso'),
           ),
-        ],
-
-        if (ficha.recordatorios.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text('Medicamentos y controles', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          ...ficha.recordatorios.map((r) => _TarjetaRecordatorio(r: r)),
-        ],
-
-        const SizedBox(height: 16),
-        Text('Historial de consultas', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        if (ficha.eventos.isEmpty)
-          Text('Sin consultas registradas', style: TextStyle(color: Colors.grey[500]))
-        else
-          ...ficha.eventos.map((ev) => _EventoCard(ev: ev, rutPaciente: rutPaciente)),
+        ),
       ],
     );
   }
@@ -740,7 +865,7 @@ class _EstadoVacio extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Text(texto, style: TextStyle(color: Colors.grey[500])),
+        child: Text(texto, style: TextStyle(color: Colors.grey[500]), textAlign: TextAlign.center),
       ),
     );
   }
