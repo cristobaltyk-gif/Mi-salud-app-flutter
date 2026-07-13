@@ -1,4 +1,12 @@
 /// lib/screens/recordatorios_screen.dart
+///
+/// v1.1 — /mis-recordatorios ahora fusiona los recordatorios propios
+/// con los de cada paciente que esta cuenta cuide (recordatorios_router.py).
+/// Se agrega un badge con el nombre del paciente en cada tarjeta cuando
+/// el recordatorio no es propio (recordatorio.esPropio == false), para
+/// no confundirlo con los propios. Color distinto al de urgencia
+/// (morado, el mismo tono que usa "Modo cuidador" en ficha_cuidado_screen.dart),
+/// para que ambas señales (urgencia vs. de quién es) no se pisen.
 library;
 
 import 'package:flutter/material.dart';
@@ -31,6 +39,12 @@ class _RecordatoriosScreenState extends State<RecordatoriosScreen> {
   /// Trae los recordatorios del backend Y reprograma las alarmas
   /// locales del teléfono en el mismo paso. Antes esto solo pintaba
   /// la UI y nunca llamaba a AlarmService — por eso no sonaba nada.
+  ///
+  /// La lista que retorna el backend ya viene fusionada (propios +
+  /// de pacientes cuidados), así que reprogramarTodas() programa
+  /// ambos grupos de alarmas de una sola vez, sin distinción — los
+  /// IDs de recordatorio son globales en la base, no chocan entre
+  /// pacientes distintos.
   Future<List<Recordatorio>> _cargarYProgramar() async {
     final recordatorios = await RecordatoriosService.misRecordatorios();
     try {
@@ -168,6 +182,9 @@ class _RecordatorioCard extends StatelessWidget {
   final Recordatorio recordatorio;
   const _RecordatorioCard({required this.recordatorio});
 
+  static const _colorCuidado = Color(0xFF6D28D9);
+  static const _colorCuidadoFondo = Color(0xFFF5F3FF);
+
   String _formatearProximoDisparo() {
     final disparo = recordatorio.proximoDisparo;
     if (disparo == null) return 'Sin próxima toma';
@@ -185,6 +202,7 @@ class _RecordatorioCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final urgente = recordatorio.proximoDisparo != null &&
         recordatorio.proximoDisparo!.difference(DateTime.now()).inHours < 2;
+    final esCuidado = !recordatorio.esPropio && recordatorio.pacienteNombre != null;
 
     final colorPrincipal = urgente ? const Color(0xFFEA580C) : const Color(0xFF0F766E);
     final colorFondo = urgente ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF9);
@@ -195,7 +213,8 @@ class _RecordatorioCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorFondo,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorBorde),
+        border: Border.all(color: esCuidado ? _colorCuidado.withOpacity(0.4) : colorBorde,
+            width: esCuidado ? 1.4 : 1),
         boxShadow: [
           BoxShadow(color: colorPrincipal.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2)),
         ],
@@ -221,6 +240,30 @@ class _RecordatorioCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (esCuidado) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _colorCuidadoFondo,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _colorCuidado.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.people_outline, size: 12, color: _colorCuidado),
+                          const SizedBox(width: 4),
+                          Text(
+                            recordatorio.pacienteNombre!,
+                            style: const TextStyle(
+                              color: _colorCuidado, fontSize: 11, fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Text(recordatorio.textoMostrar,
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF134E4A))),
                   const SizedBox(height: 5),
