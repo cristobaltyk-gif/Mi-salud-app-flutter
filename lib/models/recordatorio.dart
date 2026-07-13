@@ -23,6 +23,14 @@
 /// que reusan este modelo, como generarDesdeEvento), esPropio asume
 /// true y pacienteNombre queda null — comportamiento idéntico al de
 /// antes de este cambio.
+///
+/// v1.3 — Se agrega mediaPath (columna media_path en la tabla), la
+/// ruta del archivo en Supabase Storage para recordatorios tipo
+/// 'ejercicio' (plan domiciliario de kinesiología). Null/vacío para
+/// medicamentos, controles e indicaciones, que no tienen media. Usado
+/// por recordatorios_screen.dart y recordatorios_tab_cuidado.dart para
+/// permitir volver a ver la foto/video de un ejercicio tocando la
+/// tarjeta.
 library;
 class Recordatorio {
   final int id;
@@ -42,6 +50,7 @@ class Recordatorio {
   final DateTime? proximoDisparo;
   final bool esPropio;
   final String? pacienteNombre;
+  final String? mediaPath;
   Recordatorio({
     required this.id,
     required this.rutPaciente,
@@ -60,6 +69,7 @@ class Recordatorio {
     this.proximoDisparo,
     this.esPropio = true,
     this.pacienteNombre,
+    this.mediaPath,
   });
   factory Recordatorio.fromJson(Map<String, dynamic> json) {
     DateTime? parseFecha(dynamic v) {
@@ -84,6 +94,7 @@ class Recordatorio {
       proximoDisparo: parseFecha(json['proximo_disparo']),
       esPropio: json['es_propio'] ?? true,
       pacienteNombre: json['paciente_nombre'],
+      mediaPath: json['media_path'],
     );
   }
   bool get esRecurrente => frecuenciaHoras != null;
@@ -109,5 +120,6 @@ class Recordatorio {
     'proximo_disparo': proximoDisparo?.toIso8601String(),
     'es_propio': esPropio,
     'paciente_nombre': pacienteNombre,
+    'media_path': mediaPath,
   };
 }
