@@ -86,4 +86,9 @@ class AppConfig {
       'Alarmas sonoras para recordatorios de medicamentos y controles';
 
   static const String alarmSoundName = 'alarma';
+
+  // --- Supabase Storage (foto/video de referencia de ejercicios de
+  //     plan domiciliario, bucket público 'kinesiologia') ---
+  static const String supabaseStoragePublicUrl =
+      'https://lixsezfbzetvaikvsazp.supabase.co/storage/v1/object/public/kinesiologia';
 }
