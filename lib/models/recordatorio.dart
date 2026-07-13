@@ -14,8 +14,16 @@
 /// cada horario mostrado varias horas hacia adelante (y a veces al día
 /// siguiente), haciendo que recordatorios cercanos parecieran estar
 /// muy lejos en el tiempo.
+///
+/// v1.2 — /mis-recordatorios ahora fusiona los recordatorios propios
+/// con los de cada paciente que esta cuenta cuide (recordatorios_router.py).
+/// Se agregan esPropio y pacienteNombre para que la UI pueda diferenciar
+/// de quién es cada recordatorio. Ambos son opcionales/con default: si
+/// el backend no los manda (respuestas más antiguas, u otros endpoints
+/// que reusan este modelo, como generarDesdeEvento), esPropio asume
+/// true y pacienteNombre queda null — comportamiento idéntico al de
+/// antes de este cambio.
 library;
-
 class Recordatorio {
   final int id;
   final String rutPaciente;
@@ -32,7 +40,8 @@ class Recordatorio {
   final DateTime createdAt;
   final String creadoPor;
   final DateTime? proximoDisparo;
-
+  final bool esPropio;
+  final String? pacienteNombre;
   Recordatorio({
     required this.id,
     required this.rutPaciente,
@@ -49,14 +58,14 @@ class Recordatorio {
     required this.createdAt,
     required this.creadoPor,
     this.proximoDisparo,
+    this.esPropio = true,
+    this.pacienteNombre,
   });
-
   factory Recordatorio.fromJson(Map<String, dynamic> json) {
     DateTime? parseFecha(dynamic v) {
       if (v == null) return null;
       return DateTime.parse(v as String).toLocal();
     }
-
     return Recordatorio(
       id: json['id'],
       rutPaciente: json['rut_paciente'] ?? '',
@@ -73,14 +82,13 @@ class Recordatorio {
       createdAt: parseFecha(json['created_at'])!,
       creadoPor: json['creado_por'] ?? '',
       proximoDisparo: parseFecha(json['proximo_disparo']),
+      esPropio: json['es_propio'] ?? true,
+      pacienteNombre: json['paciente_nombre'],
     );
   }
-
   bool get esRecurrente => frecuenciaHoras != null;
-
   String get textoMostrar =>
       (detalle != null && detalle!.isNotEmpty) ? detalle! : descripcion;
-
   /// Serializa a JSON para guardar en storage local.
   /// Permite reprogramar alarmas sin token ni conexión.
   Map<String, dynamic> toJson() => {
@@ -99,5 +107,7 @@ class Recordatorio {
     'created_at': createdAt.toIso8601String(),
     'creado_por': creadoPor,
     'proximo_disparo': proximoDisparo?.toIso8601String(),
+    'es_propio': esPropio,
+    'paciente_nombre': pacienteNombre,
   };
 }
