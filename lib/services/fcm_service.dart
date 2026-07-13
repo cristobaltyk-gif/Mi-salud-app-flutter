@@ -25,6 +25,13 @@
 /// registrarTokenSiHaySesion(), método público que login_screen.dart
 /// llama explícitamente justo después de un login exitoso, cuando ya
 /// hay sesión guardada.
+///
+/// v1.5 — recordatorios_scheduler.py ahora manda media_path en el
+/// data del mensaje "recordatorio_ahora" para recordatorios de
+/// ejercicio (plan domiciliario de kinesiología). Se extrae acá y se
+/// pasa a AlarmService.mostrarAhora(), que lo codifica en el payload
+/// de la notificación — al tocarla, la app abre la foto o el video
+/// dentro de MediaEjercicioScreen (ver alarm_service.dart).
 library;
 
 import 'dart:convert';
@@ -47,9 +54,14 @@ Future<void> _procesarMensaje(RemoteMessage message) async {
   if (tipo == 'recordatorio_ahora') {
     final titulo = message.data['titulo'] ?? 'Recordatorio';
     final cuerpo = message.data['cuerpo'] ?? '';
+    final mediaPath = message.data['media_path'] as String?;
     try {
       await AlarmService.inicializar();
-      await AlarmService.mostrarAhora(titulo, cuerpo);
+      await AlarmService.mostrarAhora(
+        titulo,
+        cuerpo,
+        mediaPath: (mediaPath != null && mediaPath.isNotEmpty) ? mediaPath : null,
+      );
     } catch (e) {
       // ignore: avoid_print
       print('Error mostrando recordatorio inmediato: $e');
