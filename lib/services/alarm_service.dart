@@ -1,5 +1,15 @@
 /// lib/services/alarm_service.dart
 ///
+/// v1.2 — Se cubre también el caso de app completamente cerrada al
+/// tocar la notificación: inicializar() consulta
+/// getNotificationAppLaunchDetails() y, si la app se abrió por haber
+/// tocado una notificación con media, navega a MediaEjercicioScreen
+/// apenas la primera pantalla termina de dibujarse
+/// (WidgetsBinding.addPostFrameCallback) — antes de eso el Navigator
+/// todavía no tiene un estado válido para navegar. Reusa
+/// _alTocarNotificacion() para no duplicar la lógica de parseo del
+/// payload.
+///
 /// v1.1 — mostrarAhora() acepta mediaPath opcional (foto/video de
 /// referencia de un ejercicio de plan domiciliario, ver
 /// fcm_service.dart) y lo codifica en el payload de la notificación
@@ -11,12 +21,6 @@
 /// programadas con anticipación (medicamentos/agenda, sin media) usan
 /// el payload viejo 'recordatorio:ID', que no es JSON válido — el
 /// callback lo detecta y no hace nada especial en ese caso.
-///
-/// NOTA: este callback solo cubre el caso en que el proceso de la app
-/// sigue vivo (foreground o background) al tocar la notificación. El
-/// caso de "app completamente cerrada, se abre recién al tocar la
-/// notificación" no está cubierto — quedaría para un cambio aparte si
-/// se necesita.
 library;
 
 import 'dart:convert';
@@ -81,7 +85,26 @@ class AlarmService {
     );
 
     await _crearCanalAndroid();
+    await _manejarLanzamientoDesdeNotificacion();
     _inicializado = true;
+  }
+
+  /// Cubre el caso "app completamente cerrada, se abre porque tocaron
+  /// una notificación". En ese caso onDidReceiveNotificationResponse
+  /// no llega a dispararse solo con initialize() — hay que preguntar
+  /// explícitamente si el lanzamiento vino de una notificación, y
+  /// recién navegar una vez que exista un frame dibujado (el
+  /// navigatorKey no tiene estado válido antes de eso).
+  static Future<void> _manejarLanzamientoDesdeNotificacion() async {
+    final detalles = await _plugin.getNotificationAppLaunchDetails();
+    if (detalles == null || !detalles.didNotificationLaunchApp) return;
+
+    final response = detalles.notificationResponse;
+    if (response == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _alTocarNotificacion(response);
+    });
   }
 
   static Future<void> _crearCanalAndroid() async {
@@ -210,10 +233,10 @@ class AlarmService {
   ///
   /// mediaPath: ruta del archivo (foto/video) en Supabase Storage, para
   /// recordatorios de ejercicio. Se codifica en el payload como JSON;
-  /// al tocar la notificación, _alTocarNotificacion() lo lee y navega
-  /// a MediaEjercicioScreen. Si es null/vacío (medicamentos, agenda,
-  /// indicaciones), la notificación se muestra igual pero tocarla no
-  /// abre nada especial.
+  /// al tocar la notificación (app abierta, en background, o
+  /// completamente cerrada), se navega a MediaEjercicioScreen. Si es
+  /// null/vacío (medicamentos, agenda, indicaciones), la notificación
+  /// se muestra igual pero tocarla no abre nada especial.
   static Future<void> mostrarAhora(String titulo, String cuerpo, {String? mediaPath}) async {
     final androidDetails = AndroidNotificationDetails(
       AppConfig.notifChannelId,
