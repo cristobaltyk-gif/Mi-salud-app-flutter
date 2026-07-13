@@ -1,5 +1,11 @@
 /// lib/main.dart
 ///
+/// v1.7 — Se agrega navigatorKey al MaterialApp (ver
+/// services/navigation_service.dart), para poder navegar a
+/// MediaEjercicioScreen desde AlarmService al tocar una notificación
+/// de ejercicio — ese callback corre sin BuildContext disponible, así
+/// que necesita el Navigator global en vez de uno local a un widget.
+///
 /// v1.6 — FIX: se saca RecordatoriosService.generarDesdeAgenda() de
 /// main(). main() solo corre en el cold start del proceso — en ese
 /// momento, si es la primera vez que se abre la app, todavía no hay
@@ -24,38 +30,31 @@
 /// reprograma las alarmas locales desde storage sin necesitar token ni
 /// conexión, para que funcionen aunque el JWT haya expirado.
 library;
-
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'services/alarm_service.dart';
 import 'services/fcm_service.dart';
 import 'services/storage_service.dart';
+import 'services/navigation_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await AlarmService.inicializar();
-
   // Reprograma alarmas desde storage local — no necesita token ni
   // conexión. Garantiza que las alarmas funcionen aunque el JWT
   // haya expirado o la app se haya reiniciado.
   await AlarmService.reprogramarDesdeStorage();
-
   await FcmService.inicializar();
-
   await initializeDateFormatting('es');
-
   runApp(const MiSaludApp());
 }
-
 class MiSaludApp extends StatelessWidget {
   const MiSaludApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'MiSalud',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -67,10 +66,8 @@ class MiSaludApp extends StatelessWidget {
     );
   }
 }
-
 class _DecidirInicio extends StatelessWidget {
   const _DecidirInicio();
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
