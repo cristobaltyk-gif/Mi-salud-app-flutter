@@ -1,14 +1,60 @@
 /// lib/services/alarm_service.dart
+///
+/// v1.1 — mostrarAhora() acepta mediaPath opcional (foto/video de
+/// referencia de un ejercicio de plan domiciliario, ver
+/// fcm_service.dart) y lo codifica en el payload de la notificación
+/// como JSON. Se agrega el callback onDidReceiveNotificationResponse
+/// en inicializar(): al tocar una notificación cuyo payload trae un
+/// mediaPath no vacío, navega a MediaEjercicioScreen usando el
+/// navigatorKey global (navigation_service.dart) — necesario porque
+/// este callback corre sin BuildContext disponible. Las notificaciones
+/// programadas con anticipación (medicamentos/agenda, sin media) usan
+/// el payload viejo 'recordatorio:ID', que no es JSON válido — el
+/// callback lo detecta y no hace nada especial en ese caso.
+///
+/// NOTA: este callback solo cubre el caso en que el proceso de la app
+/// sigue vivo (foreground o background) al tocar la notificación. El
+/// caso de "app completamente cerrada, se abre recién al tocar la
+/// notificación" no está cubierto — quedaría para un cambio aparte si
+/// se necesita.
 library;
 
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:permission_handler/permission_handler.dart';
 import '../config/app_config.dart';
 import '../models/recordatorio.dart';
+import '../screens/media_ejercicio_screen.dart';
 import 'storage_service.dart';
+import 'navigation_service.dart';
+
+void _alTocarNotificacion(NotificationResponse response) {
+  final payload = response.payload;
+  if (payload == null) return;
+
+  try {
+    final data = jsonDecode(payload) as Map<String, dynamic>;
+    final mediaPath = data['mediaPath'] as String?;
+    if (mediaPath == null || mediaPath.isEmpty) return;
+
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => MediaEjercicioScreen(
+          titulo: data['titulo'] as String? ?? 'Recordatorio',
+          cuerpo: data['cuerpo'] as String? ?? '',
+          mediaPath: mediaPath,
+        ),
+      ),
+    );
+  } catch (_) {
+    // Payload viejo tipo 'recordatorio:ID' (alarmas programadas sin
+    // media) — no es JSON, no hace nada especial al tocarlo.
+  }
+}
 
 class AlarmService {
   static final FlutterLocalNotificationsPlugin _plugin =
@@ -31,6 +77,7 @@ class AlarmService {
 
     await _plugin.initialize(
       const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      onDidReceiveNotificationResponse: _alTocarNotificacion,
     );
 
     await _crearCanalAndroid();
@@ -160,7 +207,14 @@ class AlarmService {
   /// con el contenido real del recordatorio (ver fcm_service.dart), justo
   /// en el momento en que el servidor determinó que corresponde sonar.
   /// Mismo patrón que WhatsApp: el mensaje llega, se muestra ahí mismo.
-  static Future<void> mostrarAhora(String titulo, String cuerpo) async {
+  ///
+  /// mediaPath: ruta del archivo (foto/video) en Supabase Storage, para
+  /// recordatorios de ejercicio. Se codifica en el payload como JSON;
+  /// al tocar la notificación, _alTocarNotificacion() lo lee y navega
+  /// a MediaEjercicioScreen. Si es null/vacío (medicamentos, agenda,
+  /// indicaciones), la notificación se muestra igual pero tocarla no
+  /// abre nada especial.
+  static Future<void> mostrarAhora(String titulo, String cuerpo, {String? mediaPath}) async {
     final androidDetails = AndroidNotificationDetails(
       AppConfig.notifChannelId,
       AppConfig.notifChannelName,
@@ -188,11 +242,18 @@ class AlarmService {
 
     final id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
+    final payload = jsonEncode({
+      'titulo': titulo,
+      'cuerpo': cuerpo,
+      'mediaPath': mediaPath ?? '',
+    });
+
     await _plugin.show(
       id,
       titulo,
       cuerpo,
       NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: payload,
     );
   }
 }
