@@ -28,10 +28,11 @@
 ///     dependía de la urgencia, ignorando de quién era). La urgencia
 ///     se sigue señalando por separado con el ícono/hora en naranja y
 ///     el badge "¡YA!", sin pisar la señal de "de quién es".
-///   - La relación (ej. "hija") queda para un cambio aparte, cuando se
-///     agregue paciente_relacion en el backend — este archivo no la
-///     referencia todavía para no romper la compilación contra el
-///     modelo actual.
+///
+/// v1.4 — El badge de cuidado ahora incluye la relación
+/// (recordatorio.pacienteRelacion, ej. "hija") cuando el backend la
+/// trae: "Aurora · hija" en vez de solo "Aurora". Si no viene (null),
+/// se muestra solo el nombre, igual que antes.
 library;
 
 import 'package:flutter/material.dart';
@@ -249,6 +250,15 @@ class _RecordatorioCard extends StatelessWidget {
         recordatorio.mediaPath != null &&
         recordatorio.mediaPath!.isNotEmpty;
 
+    final tieneRelacion = esCuidado &&
+        recordatorio.pacienteRelacion != null &&
+        recordatorio.pacienteRelacion!.isNotEmpty;
+    final textoBadge = esCuidado
+        ? (tieneRelacion
+            ? '${recordatorio.pacienteNombre} · ${recordatorio.pacienteRelacion}'
+            : recordatorio.pacienteNombre!)
+        : 'Tú';
+
     // La urgencia sigue marcándose en ícono/hora/badge "¡YA!" en
     // naranja, sea propio o de cuidado. El fondo/borde de la tarjeta
     // en cambio prioriza mostrar de quién es: si es de cuidado, el
@@ -299,7 +309,8 @@ class _RecordatorioCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Badge siempre visible: "Tú" (teal) si es propio,
-                      // nombre del paciente (morado) si es de cuidado.
+                      // "Nombre · relación" (morado) si es de cuidado
+                      // (o solo "Nombre" si no hay relación declarada).
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -319,7 +330,7 @@ class _RecordatorioCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              esCuidado ? recordatorio.pacienteNombre! : 'Tú',
+                              textoBadge,
                               style: TextStyle(
                                 color: esCuidado ? _colorCuidado : _colorPropio,
                                 fontSize: 11,
