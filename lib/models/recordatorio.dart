@@ -31,6 +31,11 @@
 /// por recordatorios_screen.dart y recordatorios_tab_cuidado.dart para
 /// permitir volver a ver la foto/video de un ejercicio tocando la
 /// tarjeta.
+///
+/// v1.4 — Se agrega pacienteRelacion (ej. "hija", "madre"), tomado del
+/// campo `relacion` de vinculos_cuidador (recordatorios_router.py).
+/// Null para recordatorios propios, o si el vínculo no tiene relación
+/// declarada.
 library;
 class Recordatorio {
   final int id;
@@ -51,6 +56,7 @@ class Recordatorio {
   final bool esPropio;
   final String? pacienteNombre;
   final String? mediaPath;
+  final String? pacienteRelacion;
   Recordatorio({
     required this.id,
     required this.rutPaciente,
@@ -70,6 +76,7 @@ class Recordatorio {
     this.esPropio = true,
     this.pacienteNombre,
     this.mediaPath,
+    this.pacienteRelacion,
   });
   factory Recordatorio.fromJson(Map<String, dynamic> json) {
     DateTime? parseFecha(dynamic v) {
@@ -95,6 +102,7 @@ class Recordatorio {
       esPropio: json['es_propio'] ?? true,
       pacienteNombre: json['paciente_nombre'],
       mediaPath: json['media_path'],
+      pacienteRelacion: json['paciente_relacion'],
     );
   }
   bool get esRecurrente => frecuenciaHoras != null;
@@ -121,5 +129,6 @@ class Recordatorio {
     'es_propio': esPropio,
     'paciente_nombre': pacienteNombre,
     'media_path': mediaPath,
+    'paciente_relacion': pacienteRelacion,
   };
 }
