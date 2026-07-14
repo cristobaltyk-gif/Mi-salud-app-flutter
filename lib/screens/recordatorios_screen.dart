@@ -16,6 +16,22 @@
 /// (que ya pasó o se descartó). El resto de los tipos (medicamento,
 /// control, indicación) no cambia: no tienen media, no se agrega nada
 /// al tocarlos.
+///
+/// v1.3 — La separación propio/cuidado era muy tenue (solo el grosor
+/// del borde cambiaba). Ahora:
+///   - TODAS las tarjetas llevan badge, no solo las de cuidado: las
+///     propias muestran "Tú" en teal; las de cuidado muestran el
+///     nombre del paciente en morado. Misma posición siempre, cambia
+///     color+texto — más fácil de distinguir de un vistazo.
+///   - Las tarjetas de cuidado llevan tinte de fondo morado SIEMPRE,
+///     independiente de si son urgentes o no (antes el fondo solo
+///     dependía de la urgencia, ignorando de quién era). La urgencia
+///     se sigue señalando por separado con el ícono/hora en naranja y
+///     el badge "¡YA!", sin pisar la señal de "de quién es".
+///   - La relación (ej. "hija") queda para un cambio aparte, cuando se
+///     agregue paciente_relacion en el backend — este archivo no la
+///     referencia todavía para no romper la compilación contra el
+///     modelo actual.
 library;
 
 import 'package:flutter/material.dart';
@@ -194,6 +210,10 @@ class _RecordatorioCard extends StatelessWidget {
 
   static const _colorCuidado = Color(0xFF6D28D9);
   static const _colorCuidadoFondo = Color(0xFFF5F3FF);
+  static const _colorCuidadoBorde = Color(0xFFDDD6FE);
+
+  static const _colorPropio = Color(0xFF0F766E);
+  static const _colorPropioFondoBadge = Color(0xFFE0F2F1);
 
   String _formatearProximoDisparo() {
     final disparo = recordatorio.proximoDisparo;
@@ -229,17 +249,25 @@ class _RecordatorioCard extends StatelessWidget {
         recordatorio.mediaPath != null &&
         recordatorio.mediaPath!.isNotEmpty;
 
+    // La urgencia sigue marcándose en ícono/hora/badge "¡YA!" en
+    // naranja, sea propio o de cuidado. El fondo/borde de la tarjeta
+    // en cambio prioriza mostrar de quién es: si es de cuidado, el
+    // tinte morado se mantiene fijo, no compite con el naranja de
+    // urgencia — son dos señales distintas, no una sola.
     final colorPrincipal = urgente ? const Color(0xFFEA580C) : const Color(0xFF0F766E);
-    final colorFondo = urgente ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF9);
-    final colorBorde = urgente ? const Color(0xFFFED7AA) : const Color(0xFF99F6E4);
+    final colorFondo = esCuidado
+        ? _colorCuidadoFondo
+        : (urgente ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF9));
+    final colorBorde = esCuidado
+        ? _colorCuidadoBorde
+        : (urgente ? const Color(0xFFFED7AA) : const Color(0xFF99F6E4));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: colorFondo,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: esCuidado ? _colorCuidado.withOpacity(0.4) : colorBorde,
-            width: esCuidado ? 1.4 : 1),
+        border: Border.all(color: colorBorde, width: esCuidado ? 1.6 : 1),
         boxShadow: [
           BoxShadow(color: colorPrincipal.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2)),
         ],
@@ -270,30 +298,38 @@ class _RecordatorioCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (esCuidado) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _colorCuidadoFondo,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _colorCuidado.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.people_outline, size: 12, color: _colorCuidado),
-                              const SizedBox(width: 4),
-                              Text(
-                                recordatorio.pacienteNombre!,
-                                style: const TextStyle(
-                                  color: _colorCuidado, fontSize: 11, fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
+                      // Badge siempre visible: "Tú" (teal) si es propio,
+                      // nombre del paciente (morado) si es de cuidado.
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: esCuidado ? _colorCuidadoFondo : _colorPropioFondoBadge,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: (esCuidado ? _colorCuidado : _colorPropio).withOpacity(0.35),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              esCuidado ? Icons.people_outline : Icons.person_outline,
+                              size: 12,
+                              color: esCuidado ? _colorCuidado : _colorPropio,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              esCuidado ? recordatorio.pacienteNombre! : 'Tú',
+                              style: TextStyle(
+                                color: esCuidado ? _colorCuidado : _colorPropio,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Text(recordatorio.textoMostrar,
                           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF134E4A))),
                       const SizedBox(height: 5),
