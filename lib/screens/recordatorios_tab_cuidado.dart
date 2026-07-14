@@ -12,6 +12,12 @@
 /// puede volver a ver el ejercicio indicado al paciente cuidado
 /// cuando quiera. El resto de los tipos (medicamento, control,
 /// indicación) no cambia.
+///
+/// v1.2 — Se muestra la relación (recordatorio.pacienteRelacion, ej.
+/// "hija") en un badge chico junto al título, cuando el backend la
+/// trae. Si no viene (null), no se muestra nada extra — esta pestaña
+/// ya es de un solo paciente cuidado, así que el badge es solo un
+/// recordatorio del vínculo, no una distinción entre varios pacientes.
 library;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -39,6 +45,9 @@ class _TarjetaRecordatorio extends StatelessWidget {
   final Recordatorio r;
   const _TarjetaRecordatorio({required this.r});
 
+  static const _colorCuidado = Color(0xFF6D28D9);
+  static const _colorCuidadoFondo = Color(0xFFF5F3FF);
+
   void _abrirMedia(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -50,13 +59,13 @@ class _TarjetaRecordatorio extends StatelessWidget {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final proxima = r.proximoDisparo != null
         ? DateFormat('EEE HH:mm', 'es').format(r.proximoDisparo!)
         : null;
     final tieneMedia = r.tipo == 'ejercicio' && r.mediaPath != null && r.mediaPath!.isNotEmpty;
+    final tieneRelacion = r.pacienteRelacion != null && r.pacienteRelacion!.isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -72,6 +81,23 @@ class _TarjetaRecordatorio extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (tieneRelacion) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _colorCuidadoFondo,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: _colorCuidado.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          r.pacienteRelacion!,
+                          style: const TextStyle(
+                            color: _colorCuidado, fontSize: 11, fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
                     Text(r.textoMostrar, style: const TextStyle(fontWeight: FontWeight.w600)),
                     if (proxima != null) ...[
                       const SizedBox(height: 4),
