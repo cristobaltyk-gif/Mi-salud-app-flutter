@@ -13,6 +13,18 @@
 /// v1.1: cada tarjeta de "A quién cuido" ahora navega a FichaCuidadoScreen
 /// al tocarla — antes no tenía ningún onTap, era el mismo gap que existía
 /// en MisCuidados.jsx del lado web (ya corregido ahí).
+///
+/// v1.2: _EscanearQRScreen ahora acepta tanto un token crudo como una URL
+/// completa (ej. "https://misalud.icarticular.cl/cuidador/escanear/{token}").
+/// El QR generado desde la web codifica la URL completa (para que también
+/// funcione al escanearlo con la cámara nativa del teléfono, ej. cuando lo
+/// usa un médico sin la app instalada), mientras que el QR generado desde
+/// Flutter codifica solo el token crudo. Antes, si el QR venía de la web,
+/// el scanner mandaba la URL completa tal cual como si fuera el token, lo
+/// que nunca coincidía con el token_hash guardado en la base — causando
+/// el error "Invitación no válida" (404) aunque la invitación fuera
+/// perfectamente válida. Ahora se extrae el token del último segmento del
+/// path si el valor leído es una URL.
 library;
 
 import 'package:flutter/material.dart';
@@ -499,6 +511,25 @@ class _EscanearQRScreen extends StatefulWidget {
 class _EscanearQRScreenState extends State<_EscanearQRScreen> {
   bool _yaDetectado = false;
 
+  /// Extrae el token de cuidador desde el valor crudo leído del QR.
+  ///
+  /// El QR puede venir en dos formatos válidos, según dónde se generó:
+  ///   - Token crudo (generado desde Flutter): "AbCdEf123..."
+  ///   - URL completa (generado desde la web, para que también funcione
+  ///     al escanearlo con la cámara nativa del teléfono, ej. un médico
+  ///     sin la app instalada): "https://misalud.icarticular.cl/cuidador/escanear/AbCdEf123..."
+  ///
+  /// Si el valor parsea como una URI con esquema (http/https), se toma el
+  /// último segmento del path como token. Si no, se asume que el valor ya
+  /// es el token crudo y se usa tal cual.
+  String _extraerToken(String valorCrudo) {
+    final uri = Uri.tryParse(valorCrudo);
+    if (uri != null && uri.hasScheme && uri.pathSegments.isNotEmpty) {
+      return uri.pathSegments.last;
+    }
+    return valorCrudo;
+  }
+
   void _onDetect(BarcodeCapture capture) {
     if (_yaDetectado) return;
     final codigos = capture.barcodes;
@@ -506,7 +537,7 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
     final valor = codigos.first.rawValue;
     if (valor == null || valor.isEmpty) return;
     _yaDetectado = true;
-    Navigator.of(context).pop(valor);
+    Navigator.of(context).pop(_extraerToken(valor));
   }
 
   @override
