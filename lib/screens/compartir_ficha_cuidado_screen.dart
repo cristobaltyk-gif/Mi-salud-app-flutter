@@ -5,6 +5,11 @@
 /// (rutPaciente llega como argumento). El backend valida el vínculo
 /// confirmado con nivel_acceso="completo" antes de aceptar cualquier
 /// operación — esta pantalla nunca asume el permiso, solo lo solicita.
+///
+/// v1.1: agrega obtenerPerfilMedico() por cada link con medico_rut
+/// (en_uso o historial), para mostrar nombre/título/especialidad del
+/// médico — antes solo se veía el RUT crudo en el Chip. Dato público
+/// RNPI, no bloqueante si falla (se muestra el RUT como respaldo).
 library;
 
 import 'package:flutter/material.dart';
@@ -26,6 +31,7 @@ class CompartirFichaCuidadoScreen extends StatefulWidget {
 class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScreen> {
   String? _nombrePaciente;
   List<AccesoMedico> _links = [];
+  final Map<String, Map<String, dynamic>?> _perfiles = {};
   bool _loading = true;
   bool _generando = false;
   bool _enviando = false;
@@ -62,10 +68,30 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
     try {
       final links = await AccesoMedicoService.misLinks(rutPaciente: widget.rutPaciente);
       setState(() => _links = links);
+      await _cargarPerfilesFaltantes(links);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _cargarPerfilesFaltantes(List<AccesoMedico> links) async {
+    final ruts = links
+        .where((l) =>
+            l.medicoRut != null &&
+            l.medicoRut!.isNotEmpty &&
+            (l.estado == EstadoAccesoMedico.enUso ||
+                l.estado == EstadoAccesoMedico.cerrado ||
+                l.estado == EstadoAccesoMedico.expirado))
+        .map((l) => l.medicoRut!)
+        .toSet();
+
+    for (final rut in ruts) {
+      if (_perfiles.containsKey(rut)) continue;
+      final perfil = await AccesoMedicoService.obtenerPerfilMedico(rut);
+      if (!mounted) return;
+      setState(() => _perfiles[rut] = perfil);
     }
   }
 
@@ -326,14 +352,21 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                     const SizedBox(height: 20),
                     const Text('Accesos activos', style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    ...pendientes.map((l) => _TarjetaAcceso(link: l, onRevocar: () => _revocar(l.id))),
+                    ...pendientes.map((l) => _TarjetaAcceso(
+                          link: l,
+                          perfil: l.medicoRut != null ? _perfiles[l.medicoRut!] : null,
+                          onRevocar: () => _revocar(l.id),
+                        )),
                   ],
 
                   if (!_loading && historial.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     const Text('Historial', style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    ...historial.map((l) => _TarjetaHistorial(link: l)),
+                    ...historial.map((l) => _TarjetaHistorial(
+                          link: l,
+                          perfil: l.medicoRut != null ? _perfiles[l.medicoRut!] : null,
+                        )),
                   ],
                 ],
               ),
@@ -365,10 +398,49 @@ class _BotonModo extends StatelessWidget {
   }
 }
 
+/// Arma el bloque de identidad del médico (nombre, título, especialidad,
+/// universidad, RUT) a partir del perfil público RNPI. Si no hay perfil
+/// (médico ICA normal, no RNPI, o falló la consulta), muestra solo el RUT.
+class _IdentidadMedico extends StatelessWidget {
+  final String? rut;
+  final Map<String, dynamic>? perfil;
+  const _IdentidadMedico({required this.rut, required this.perfil});
+
+  @override
+  Widget build(BuildContext context) {
+    if (rut == null) return const SizedBox.shrink();
+
+    if (perfil == null) {
+      return Text('👤 RUT $rut', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600));
+    }
+
+    final especialidadesRaw = perfil!['especialidades'] as List<dynamic>? ?? [];
+    final especialidades = especialidadesRaw
+        .map((e) => e is Map ? (e['nombre'] as String? ?? '') : e.toString())
+        .where((s) => s.isNotEmpty)
+        .join(', ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('👤 ${perfil!['nombre'] ?? rut}',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        if (perfil!['titulo'] != null)
+          Text(perfil!['titulo'], style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        if (especialidades.isNotEmpty)
+          Text(especialidades, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0F766E))),
+        if (perfil!['universidad'] != null)
+          Text(perfil!['universidad'], style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+      ],
+    );
+  }
+}
+
 class _TarjetaAcceso extends StatelessWidget {
   final AccesoMedico link;
+  final Map<String, dynamic>? perfil;
   final VoidCallback onRevocar;
-  const _TarjetaAcceso({required this.link, required this.onRevocar});
+  const _TarjetaAcceso({required this.link, required this.perfil, required this.onRevocar});
 
   @override
   Widget build(BuildContext context) {
@@ -389,6 +461,10 @@ class _TarjetaAcceso extends StatelessWidget {
                 ),
               ],
             ),
+            if (link.estado == EstadoAccesoMedico.enUso) ...[
+              const SizedBox(height: 8),
+              _IdentidadMedico(rut: link.medicoRut, perfil: perfil),
+            ],
             if (link.estado == EstadoAccesoMedico.enUso && link.expiraSesion != null) ...[
               const SizedBox(height: 6),
               Text(
@@ -411,7 +487,8 @@ class _TarjetaAcceso extends StatelessWidget {
 
 class _TarjetaHistorial extends StatelessWidget {
   final AccesoMedico link;
-  const _TarjetaHistorial({required this.link});
+  final Map<String, dynamic>? perfil;
+  const _TarjetaHistorial({required this.link, required this.perfil});
 
   @override
   Widget build(BuildContext context) {
@@ -419,14 +496,23 @@ class _TarjetaHistorial extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Chip(label: Text(link.etiqueta, style: const TextStyle(fontSize: 11))),
-          Text(
-            '${link.creadoAt.day}/${link.creadoAt.month}/${link.creadoAt.year}',
-            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Chip(label: Text(link.etiqueta, style: const TextStyle(fontSize: 11))),
+              Text(
+                '${link.creadoAt.day}/${link.creadoAt.month}/${link.creadoAt.year}',
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
           ),
+          if (link.medicoRut != null) ...[
+            const SizedBox(height: 6),
+            _IdentidadMedico(rut: link.medicoRut, perfil: perfil),
+          ],
         ],
       ),
     );
