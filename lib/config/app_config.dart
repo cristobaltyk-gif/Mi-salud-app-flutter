@@ -73,6 +73,13 @@ class AppConfig {
       '$compartirBase/$linkId';
   static const String compartirEnviarEndpoint = '$compartirBase/enviar';
 
+  // --- Endpoint de perfil público RNPI (rnpi.py, prefix /api/rnpi) ---
+  // Dato público, sin auth — muestra al paciente quién es el médico
+  // que ingresó a su ficha compartida (nombre, título, especialidad).
+  static const String rnpiBase = '$backendBaseUrl/api/rnpi';
+  static String rnpiPerfilPublicoEndpoint(String rut) =>
+      '$rnpiBase/perfil-publico/$rut';
+
   // --- Almacenamiento local (shared_preferences keys) ---
   static const String prefsJwtKey = 'misalud_jwt_token';
   static const String prefsRutKey = 'misalud_rut_paciente';
