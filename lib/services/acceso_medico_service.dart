@@ -99,4 +99,17 @@ class AccesoMedicoService {
       throw AccesoMedicoException(_detailDe(res));
     }
   }
+
+  /// GET /api/rnpi/perfil-publico/{rut} — sin auth, dato público RNPI.
+  /// Devuelve null si el médico no está en medicos_misalud (ej. médico
+  /// ICA normal, no RNPI) — no bloquea la pantalla si falla.
+  static Future<Map<String, dynamic>?> obtenerPerfilMedico(String rut) async {
+    try {
+      final res = await http.get(Uri.parse(AppConfig.rnpiPerfilPublicoEndpoint(rut)));
+      if (res.statusCode != 200) return null;
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
 }
