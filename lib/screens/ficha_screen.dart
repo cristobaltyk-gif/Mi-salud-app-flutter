@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
 import 'evento_detalle_screen.dart';
-import 'cuidador_screen.dart';
 
 class FichaScreen extends StatefulWidget {
   const FichaScreen({super.key});
@@ -68,24 +67,6 @@ class _FichaScreenState extends State<FichaScreen> {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => ConsultasScreen(resumen: resumen, onExplicar: _abrirExplicacionGeneral),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // v2 (04-08-2026): reemplaza al boton "Autorizar acceso a
-              // medico" -- ese flujo subio a tab en dashboard_screen.dart.
-              // Este boton baja del tab bar (antes era el 3er tab
-              // "Cuidadores"), mismo destino (CuidadorScreen), solo
-              // cambia de donde se accede.
-              _BotonAcceso(
-                icono: '🧑‍🤝‍🧑',
-                titulo: 'Cuidadores',
-                subtitulo: 'Administra quién te cuida y a quiénes cuidas tú',
-                color: const Color(0xFF4C1D95),
-                colorBorde: const Color(0xFFDDD6FE),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CuidadorScreen(),
                   ),
                 ),
               ),
