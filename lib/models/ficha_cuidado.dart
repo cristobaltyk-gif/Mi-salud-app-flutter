@@ -11,9 +11,18 @@
 /// fotosDermatologia), tomados de `contenido` en la respuesta real del
 /// backend (_contenido_limpio en ficha_router.py) — necesarios para
 /// mostrar detalle expandible, PDF y galería de fotos en Flutter.
+///
+/// v1.1 (04-08-2026): se agrega medicamentosEstructurados a
+/// EventoCuidadoCompleto -- el backend ya lo incluye desde que se
+/// corrigió _contenido_limpio() en ficha_router.py (antes lo
+/// descartaba, mismo bug que tuvo /resumen para la ficha propia). Sin
+/// este campo, el cotizador no puede leer las recetas de un paciente
+/// cuidado. Reutiliza la clase MedicamentoEstructurado de
+/// evento_clinico.dart en vez de duplicarla.
 library;
 
 import 'recordatorio.dart';
+import 'evento_clinico.dart' show MedicamentoEstructurado;
 
 class PacienteCuidadoInfo {
   final String nombre;
@@ -97,6 +106,7 @@ class EventoCuidadoCompleto {
   final String ordenKinesiologia;
   final String indicacionQuirurgica;
   final List<FotoEvento> fotosDermatologia;
+  final List<MedicamentoEstructurado> medicamentosEstructurados;
 
   EventoCuidadoCompleto({
     required this.id,
@@ -110,11 +120,15 @@ class EventoCuidadoCompleto {
     this.ordenKinesiologia = '',
     this.indicacionQuirurgica = '',
     this.fotosDermatologia = const [],
+    this.medicamentosEstructurados = const [],
   });
 
   factory EventoCuidadoCompleto.fromJson(Map<String, dynamic> json) {
     final contenido = json['contenido'] as Map<String, dynamic>? ?? {};
     final fotosRaw = contenido['fotos_dermatologia'] as List<dynamic>? ?? [];
+    final medicamentosRaw = (contenido['medicamentos_estructurados'] ??
+            contenido['medicamentosEstructurados']) as List<dynamic>? ??
+        [];
 
     return EventoCuidadoCompleto(
       id: json['id'] ?? 0,
@@ -129,6 +143,9 @@ class EventoCuidadoCompleto {
       indicacionQuirurgica: contenido['indicacion_quirurgica'] ?? '',
       fotosDermatologia: fotosRaw
           .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
+          .toList(),
+      medicamentosEstructurados: medicamentosRaw
+          .map((m) => MedicamentoEstructurado.fromJson(m as Map<String, dynamic>))
           .toList(),
     );
   }
