@@ -4,10 +4,12 @@
 /// cotizador_service.py -> cotizar_receta() en el backend, expuesto via
 /// POST /api/cotizador/cotizar (cotizador_router.py).
 ///
-/// Sin fallback entre niveles (v2 del backend, 03-08-2026): un
-/// ProductoCotizado puede ser null en un nivel especifico si no hay
-/// candidato con ese nivel de confianza de laboratorio para ese item --
-/// eso es intencional, no un error a manejar como excepcion.
+/// v3 (04-08-2026): se elimino el sistema de 3 niveles
+/// (economico/intermedio/premium, antes en NivelPaquete). El backend
+/// ahora devuelve un solo total + items por farmacia (el mas barato
+/// disponible por item, sin distincion de nivel de confianza de
+/// laboratorio) -- ver docstring de cotizador_service.py para el
+/// motivo del cambio. NivelPaquete y el campo "niveles" ya no existen.
 library;
 
 /// Un item de la receta que se envia a cotizar (request).
@@ -23,8 +25,7 @@ class ItemReceta {
       };
 }
 
-/// Un producto especifico encontrado en una farmacia (puede ser null si
-/// no hay candidato para ese nivel de confianza).
+/// Un producto especifico encontrado en una farmacia.
 class ProductoCotizado {
   final String? sku;
   final String nombreComercial;
@@ -75,8 +76,8 @@ class ProductoCotizado {
   }
 }
 
-/// Un item dentro de un nivel de paquete -- el producto puede ser null
-/// (no encontrado en la farmacia, o sin candidato en este nivel exacto).
+/// Un item cotizado -- el producto puede ser null si no se encontro
+/// ningun candidato disponible en esta farmacia.
 class ItemCotizado {
   final String principioActivo;
   final String? presentacionSolicitada;
@@ -101,78 +102,36 @@ class ItemCotizado {
     );
   }
 
-  /// true si este item no tiene producto para mostrar, sin importar el
-  /// motivo exacto (no encontrado en la farmacia, o sin candidato en
-  /// este nivel de confianza especifico).
   bool get sinProducto => producto == null;
 }
 
-/// Un nivel de paquete (economico | intermedio | premium) para una
-/// farmacia: sus items y el total (solo de los items que si tuvieron
-/// producto en este nivel).
-class NivelPaquete {
-  final List<ItemCotizado> items;
-  final int total;
-  final List<String> itemsFaltantesNivel;
-
-  NivelPaquete({
-    required this.items,
-    required this.total,
-    required this.itemsFaltantesNivel,
-  });
-
-  factory NivelPaquete.fromJson(Map<String, dynamic> json) {
-    return NivelPaquete(
-      items: (json['items'] as List? ?? [])
-          .map((i) => ItemCotizado.fromJson(i))
-          .toList(),
-      total: json['total'] ?? 0,
-      itemsFaltantesNivel:
-          List<String>.from(json['items_faltantes_nivel'] ?? []),
-    );
-  }
-}
-
-/// Una farmacia cotizada, con sus 3 niveles.
+/// Una farmacia cotizada: sus items (cada uno con el producto mas
+/// barato disponible) y el total sumado.
 class FarmaciaCotizada {
   final String farmacia;
   final bool completo;
   final List<String> itemsNoEncontrados;
-  final NivelPaquete economico;
-  final NivelPaquete intermedio;
-  final NivelPaquete premium;
+  final List<ItemCotizado> items;
+  final int total;
 
   FarmaciaCotizada({
     required this.farmacia,
     required this.completo,
     required this.itemsNoEncontrados,
-    required this.economico,
-    required this.intermedio,
-    required this.premium,
+    required this.items,
+    required this.total,
   });
 
   factory FarmaciaCotizada.fromJson(Map<String, dynamic> json) {
-    final niveles = json['niveles'] as Map<String, dynamic>;
     return FarmaciaCotizada(
       farmacia: json['farmacia'] ?? '',
       completo: json['completo'] ?? false,
       itemsNoEncontrados: List<String>.from(json['items_no_encontrados'] ?? []),
-      economico: NivelPaquete.fromJson(niveles['economico']),
-      intermedio: NivelPaquete.fromJson(niveles['intermedio']),
-      premium: NivelPaquete.fromJson(niveles['premium']),
+      items: (json['items'] as List? ?? [])
+          .map((i) => ItemCotizado.fromJson(i))
+          .toList(),
+      total: json['total'] ?? 0,
     );
-  }
-
-  NivelPaquete porNombre(String nivel) {
-    switch (nivel) {
-      case 'intermedio':
-        return intermedio;
-      case 'premium':
-        return premium;
-      case 'economico':
-      default:
-        return economico;
-    }
   }
 }
 
@@ -197,12 +156,11 @@ class CotizacionResultado {
     );
   }
 
-  /// Nombre de la farmacia con el total mas bajo en nivel economico,
-  /// para destacarla en la UI ("Mas economica").
+  /// Nombre de la farmacia con el total mas bajo, para destacarla en
+  /// la UI ("Mas economica").
   String? get farmaciaMasBarata {
     if (farmacias.isEmpty) return null;
-    final ordenadas = [...farmacias]
-      ..sort((a, b) => a.economico.total.compareTo(b.economico.total));
+    final ordenadas = [...farmacias]..sort((a, b) => a.total.compareTo(b.total));
     return ordenadas.first.farmacia;
   }
 }
