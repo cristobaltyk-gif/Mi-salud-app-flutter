@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../models/cotizacion.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
 import 'cotizacion_detalle_screen.dart';
@@ -130,11 +131,24 @@ class _RecetaCard extends StatelessWidget {
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right, color: Color(0xFF0F766E)),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CotizacionDetalleScreen(evento: evento),
-          ),
-        ),
+        onTap: () {
+          // v2: CotizacionDetalleScreen ya no recibe el EventoClinico
+          // completo -- solo la lista de items + un titulo, para poder
+          // reusarse tambien desde TabCotizadorCuidado (que arma sus
+          // items desde un EventoCuidadoCompleto distinto).
+          final items = evento.contenido.medicamentosEstructurados
+              .map((m) => ItemReceta(principioActivo: m.medicamento, presentacion: m.dosis))
+              .toList();
+
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => CotizacionDetalleScreen(
+                items: items,
+                titulo: evento.diagnostico.isNotEmpty ? evento.diagnostico : 'Cotización',
+              ),
+            ),
+          );
+        },
       ),
     );
   }
