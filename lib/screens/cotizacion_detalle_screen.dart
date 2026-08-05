@@ -1,13 +1,14 @@
 /// lib/screens/cotizacion_detalle_screen.dart
 ///
-/// v2 (04-08-2026): antes recibia un EventoClinico (modelo de la ficha
-/// PROPIA) y le extraia los medicamentos adentro. Eso impedia reusar
-/// esta pantalla para cotizar la receta de un paciente CUIDADO (que usa
-/// un modelo distinto, EventoCuidadoCompleto en ficha_cuidado.dart).
-/// Ahora recibe directo la lista de ItemReceta ya armada + un titulo
-/// para el AppBar -- quien llama (CotizadorScreen o
-/// TabCotizadorCuidado) arma esa lista desde su propio modelo de
-/// evento, y esta pantalla ya no necesita saber de donde vino.
+/// v2 (04-08-2026): recibe items+titulo directo en vez de un
+/// EventoClinico completo, para poder reusarse desde CotizadorScreen
+/// (ficha propia) y TabCotizadorCuidado (ficha cuidado) por igual.
+///
+/// v3 (04-08-2026): se elimino el selector de 3 niveles
+/// (economico/intermedio/premium, SegmentedButton). Cada farmacia
+/// ahora muestra un solo total + lista de items (el mas barato
+/// disponible por item) -- ver docstring de cotizador_service.py para
+/// el motivo del cambio.
 library;
 
 import 'package:flutter/material.dart';
@@ -130,29 +131,14 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
   }
 }
 
-class _FarmaciaCard extends StatefulWidget {
+class _FarmaciaCard extends StatelessWidget {
   final FarmaciaCotizada farmacia;
   final bool esMasBarata;
 
   const _FarmaciaCard({required this.farmacia, required this.esMasBarata});
 
   @override
-  State<_FarmaciaCard> createState() => _FarmaciaCardState();
-}
-
-class _FarmaciaCardState extends State<_FarmaciaCard> {
-  String _nivel = 'economico';
-
-  static const _labels = {
-    'economico': 'Económico',
-    'intermedio': 'Intermedio',
-    'premium': 'Premium',
-  };
-
-  @override
   Widget build(BuildContext context) {
-    final paquete = widget.farmacia.porNombre(_nivel);
-
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -169,7 +155,7 @@ class _FarmaciaCardState extends State<_FarmaciaCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.farmacia.farmacia,
+                        farmacia.farmacia,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -180,13 +166,13 @@ class _FarmaciaCardState extends State<_FarmaciaCard> {
                       Wrap(
                         spacing: 6,
                         children: [
-                          if (widget.esMasBarata)
+                          if (esMasBarata)
                             _Badge(
                               texto: 'Más económica',
                               color: const Color(0xFF0F766E),
                               fondo: const Color(0xFFF0FDF9),
                             ),
-                          if (!widget.farmacia.completo)
+                          if (!farmacia.completo)
                             _Badge(
                               texto: 'Receta incompleta',
                               color: Colors.red[700]!,
@@ -202,28 +188,15 @@ class _FarmaciaCardState extends State<_FarmaciaCard> {
                   children: [
                     Text('Total', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
                     Text(
-                      _formatearCLP(paquete.total),
+                      _formatearCLP(farmacia.total),
                       style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            SegmentedButton<String>(
-              segments: _labels.entries
-                  .map((e) => ButtonSegment(value: e.key, label: Text(e.value, style: const TextStyle(fontSize: 12.5))))
-                  .toList(),
-              selected: {_nivel},
-              onSelectionChanged: (nuevo) => setState(() => _nivel = nuevo.first),
-              style: SegmentedButton.styleFrom(
-                selectedBackgroundColor: const Color(0xFF0F766E),
-                selectedForegroundColor: Colors.white,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
             const SizedBox(height: 8),
-            ...paquete.items.map((item) => _ItemRow(item: item)),
+            ...farmacia.items.map((item) => _ItemRow(item: item)),
           ],
         ),
       ),
@@ -241,7 +214,7 @@ class _ItemRow extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Text(
-          '${item.principioActivo} — no disponible en este nivel',
+          '${item.principioActivo} — no disponible en esta farmacia',
           style: TextStyle(color: Colors.red[700], fontSize: 12.5),
         ),
       );
