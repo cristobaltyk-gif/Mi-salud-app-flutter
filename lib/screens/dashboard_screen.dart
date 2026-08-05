@@ -7,6 +7,7 @@ import '../services/recordatorios_service.dart';
 import '../services/alarm_service.dart';
 import '../services/fcm_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/barra_inferior_tabs.dart';
 import 'ficha_screen.dart';
 import 'recordatorios_screen.dart';
 import 'cotizador_screen.dart';
@@ -83,17 +84,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<void> _abrirAutorizarMedico() async {
+    final rut = await StorageService.obtenerRut();
+    if (!mounted || rut == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rut),
+      ),
+    );
+  }
+
   // v2 (04-08-2026): "Cuidadores" sale del tab bar (sube como boton
   // dentro de FichaScreen) y entran "Cotizador" y "Autorizar medico" en
-  // su lugar. Con esto el tab bar queda IGUAL en modo propio y en modo
-  // cuidador (antes el 3er tab decia "Cuidadores" en un modo y
-  // "Autorizar" en el otro -- inconsistente).
+  // su lugar. "Autorizar" es un ATAJO (Navigator.push a
+  // CompartirFichaCuidadoScreen, que trae su propio Scaffold/AppBar
+  // completo -- confirmado revisando el archivo), no un tab embebido
+  // como los otros 3 -- si se embebiera directo quedaria un Scaffold
+  // anidado dentro de este. Al tocarlo no cambia _tabActual, solo abre
+  // la pantalla encima (misma UX que tenia el boton original en
+  // ficha_screen.dart, ahora accesible tambien desde el tab bar).
+  //
+  // v3 (04-08-2026): tab bar reemplazado por el widget compartido
+  // BarraInferiorTabs (lib/widgets/barra_inferior_tabs.dart), usado
+  // tambien en ficha_cuidado_screen.dart -- antes este mismo bloque de
+  // Container+Row+GestureDetector estaba duplicado en ambos archivos.
   static const _tabs = [
-    (icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
-    (icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
-    (icono: Icons.medication_outlined, iconoActivo: Icons.medication, label: 'Cotizador'),
-    (icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
+    TabInfo(icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
+    TabInfo(icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
+    TabInfo(icono: Icons.medication_outlined, iconoActivo: Icons.medication, label: 'Cotizador'),
+    TabInfo(icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
   ];
+
+  // Solo estas 3 paginas se muestran embebidas -- el indice 3
+  // ("Autorizar") nunca llega a mostrarse como pagina, ver onTap abajo.
+  static const _cantidadPaginasEmbebidas = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +125,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const FichaScreen(),
       RecordatoriosScreen(onRecordatoriosCambiaron: _sincronizarAlarmas),
       const CotizadorScreen(),
-      const _AutorizarMedicoTab(),
     ];
 
     return Scaffold(
@@ -161,96 +184,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-          Expanded(child: paginas[_tabActual]),
+          Expanded(
+            child: paginas[_tabActual < _cantidadPaginasEmbebidas ? _tabActual : 0],
+          ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -2)),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_tabs.length, (i) {
-                final tab = _tabs[i];
-                final activo = _tabActual == i;
-                return GestureDetector(
-                  onTap: () => setState(() => _tabActual = i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      // Mas contraste que antes (0.1 -> 0.16) para que el
-                      // tab activo se distinga mejor sin cambiar el estilo.
-                      color: activo ? const Color(0xFF1A3B8C).withOpacity(0.16) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          activo ? tab.iconoActivo : tab.icono,
-                          // Inactivo mas oscuro que antes (grey[500] ->
-                          // grey[700]) para que se lea mejor sobre fondo
-                          // blanco, manteniendo la misma paleta.
-                          color: activo ? const Color(0xFF1A3B8C) : Colors.grey[700],
-                          size: 24,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(tab.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: activo ? FontWeight.w700 : FontWeight.w600,
-                              color: activo ? const Color(0xFF1A3B8C) : Colors.grey[700],
-                            )),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
+      bottomNavigationBar: BarraInferiorTabs(
+        tabs: _tabs,
+        tabActual: _tabActual,
+        color: const Color(0xFF1A3B8C),
+        onTap: (i) {
+          if (i == 3) {
+            _abrirAutorizarMedico();
+          } else {
+            setState(() => _tabActual = i);
+          }
+        },
       ),
-    );
-  }
-}
-
-/// Wrapper para el tab "Autorizar" -- CompartirFichaCuidadoScreen
-/// necesita el rut del paciente (antes se resolvia async justo antes de
-/// navegar con Navigator.push, ver el boton original en FichaScreen).
-/// Como ahora es un tab embebido (no una ruta separada), se resuelve
-/// aca con FutureBuilder antes de construirla.
-///
-/// OJO: si CompartirFichaCuidadoScreen trae su propio Scaffold/AppBar
-/// (probable, dado que antes se abria con Navigator.push como pantalla
-/// completa), esto va a mostrar un AppBar duplicado dentro del Scaffold
-/// del Dashboard. Si eso pasa, avisar para ajustar (lo mas probable:
-/// extraer el body de esa pantalla a un widget aparte sin Scaffold
-/// propio, reutilizable tanto en este tab como en cualquier otro lugar
-/// donde se siga usando como ruta independiente).
-class _AutorizarMedicoTab extends StatelessWidget {
-  const _AutorizarMedicoTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<String?>(
-      future: StorageService.obtenerRut(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final rut = snapshot.data;
-        if (rut == null) {
-          return const Center(child: Text('No se pudo determinar tu RUT.'));
-        }
-        return CompartirFichaCuidadoScreen(rutPaciente: rut);
-      },
     );
   }
 }
