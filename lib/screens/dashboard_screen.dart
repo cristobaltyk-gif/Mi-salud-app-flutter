@@ -6,9 +6,11 @@ import '../services/auth_service.dart';
 import '../services/recordatorios_service.dart';
 import '../services/alarm_service.dart';
 import '../services/fcm_service.dart';
+import '../services/storage_service.dart';
 import 'ficha_screen.dart';
 import 'recordatorios_screen.dart';
-import 'cuidador_screen.dart';
+import 'cotizador_screen.dart';
+import 'compartir_ficha_cuidado_screen.dart';
 import 'login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -81,10 +83,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // v2 (04-08-2026): "Cuidadores" sale del tab bar (sube como boton
+  // dentro de FichaScreen) y entran "Cotizador" y "Autorizar medico" en
+  // su lugar. Con esto el tab bar queda IGUAL en modo propio y en modo
+  // cuidador (antes el 3er tab decia "Cuidadores" en un modo y
+  // "Autorizar" en el otro -- inconsistente).
   static const _tabs = [
     (icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
     (icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
-    (icono: Icons.people_outline, iconoActivo: Icons.people, label: 'Cuidadores'),
+    (icono: Icons.medication_outlined, iconoActivo: Icons.medication, label: 'Cotizador'),
+    (icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
   ];
 
   @override
@@ -92,7 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final paginas = [
       const FichaScreen(),
       RecordatoriosScreen(onRecordatoriosCambiaron: _sincronizarAlarmas),
-      const CuidadorScreen(),
+      const CotizadorScreen(),
+      const _AutorizarMedicoTab(),
     ];
 
     return Scaffold(
@@ -174,9 +183,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onTap: () => setState(() => _tabActual = i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: activo ? const Color(0xFF1A3B8C).withOpacity(0.1) : Colors.transparent,
+                      // Mas contraste que antes (0.1 -> 0.16) para que el
+                      // tab activo se distinga mejor sin cambiar el estilo.
+                      color: activo ? const Color(0xFF1A3B8C).withOpacity(0.16) : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
@@ -184,15 +195,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Icon(
                           activo ? tab.iconoActivo : tab.icono,
-                          color: activo ? const Color(0xFF1A3B8C) : Colors.grey[500],
+                          // Inactivo mas oscuro que antes (grey[500] ->
+                          // grey[700]) para que se lea mejor sobre fondo
+                          // blanco, manteniendo la misma paleta.
+                          color: activo ? const Color(0xFF1A3B8C) : Colors.grey[700],
                           size: 24,
                         ),
                         const SizedBox(height: 4),
                         Text(tab.label,
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
-                              color: activo ? const Color(0xFF1A3B8C) : Colors.grey[500],
+                              fontWeight: activo ? FontWeight.w700 : FontWeight.w600,
+                              color: activo ? const Color(0xFF1A3B8C) : Colors.grey[700],
                             )),
                       ],
                     ),
@@ -203,6 +217,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Wrapper para el tab "Autorizar" -- CompartirFichaCuidadoScreen
+/// necesita el rut del paciente (antes se resolvia async justo antes de
+/// navegar con Navigator.push, ver el boton original en FichaScreen).
+/// Como ahora es un tab embebido (no una ruta separada), se resuelve
+/// aca con FutureBuilder antes de construirla.
+///
+/// OJO: si CompartirFichaCuidadoScreen trae su propio Scaffold/AppBar
+/// (probable, dado que antes se abria con Navigator.push como pantalla
+/// completa), esto va a mostrar un AppBar duplicado dentro del Scaffold
+/// del Dashboard. Si eso pasa, avisar para ajustar (lo mas probable:
+/// extraer el body de esa pantalla a un widget aparte sin Scaffold
+/// propio, reutilizable tanto en este tab como en cualquier otro lugar
+/// donde se siga usando como ruta independiente).
+class _AutorizarMedicoTab extends StatelessWidget {
+  const _AutorizarMedicoTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: StorageService.obtenerRut(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final rut = snapshot.data;
+        if (rut == null) {
+          return const Center(child: Text('No se pudo determinar tu RUT.'));
+        }
+        return CompartirFichaCuidadoScreen(rutPaciente: rut);
+      },
     );
   }
 }
