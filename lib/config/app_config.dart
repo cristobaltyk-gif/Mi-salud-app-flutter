@@ -80,6 +80,10 @@ class AppConfig {
   static String rnpiPerfilPublicoEndpoint(String rut) =>
       '$rnpiBase/perfil-publico/$rut';
 
+  // --- Endpoints del cotizador (cotizador_router.py, prefix /api/cotizador) ---
+  static const String cotizadorBase = '$backendBaseUrl/api/cotizador';
+  static const String cotizadorCotizarEndpoint = '$cotizadorBase/cotizar';
+
   // --- Almacenamiento local (shared_preferences keys) ---
   static const String prefsJwtKey = 'misalud_jwt_token';
   static const String prefsRutKey = 'misalud_rut_paciente';
