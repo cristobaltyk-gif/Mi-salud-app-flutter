@@ -30,13 +30,30 @@
 /// Este archivo queda como el "shell": banner, AppBar, barra de
 /// pestañas abajo, y la carga de la ficha — sin contenido propio de
 /// ninguna pestaña.
+///
+/// v1.5 (04-08-2026):
+///   - Se agrega pestaña "Cotizador" (TabCotizadorCuidado), solo si
+///     ficha.esCompleto -- mismo requisito que "Autorizar", porque
+///     medicamentos_estructurados solo viene poblado en ese nivel de
+///     acceso. Orden: Ficha, Recordatorios, Cotizador, Autorizar.
+///   - La barra de pestañas duplicada (_BarraInferior) se reemplaza por
+///     el widget compartido BarraInferiorTabs
+///     (lib/widgets/barra_inferior_tabs.dart), el mismo que ahora usa
+///     dashboard_screen.dart -- antes este bloque estaba repetido casi
+///     idéntico en ambos archivos.
+///   - Tabs y páginas ahora se arman juntos en una sola lista de pares,
+///     en vez de un switch por índice fijo -- con la lista de tabs
+///     siendo condicional (esCompleto), un índice fijo por 'case' podía
+///     desalinearse; armar ambas listas a la vez lo evita por diseño.
 library;
 
 import 'package:flutter/material.dart';
 import '../models/ficha_cuidado.dart';
 import '../services/ficha_service.dart';
+import '../widgets/barra_inferior_tabs.dart';
 import 'ficha_tab_cuidado.dart';
 import 'recordatorios_tab_cuidado.dart';
+import 'tab_cotizador_cuidado.dart';
 import 'autorizar_tab_cuidado.dart';
 
 class FichaCuidadoScreen extends StatefulWidget {
@@ -46,13 +63,6 @@ class FichaCuidadoScreen extends StatefulWidget {
 
   @override
   State<FichaCuidadoScreen> createState() => _FichaCuidadoScreenState();
-}
-
-class _TabInfo {
-  final IconData icono;
-  final IconData iconoActivo;
-  final String label;
-  const _TabInfo({required this.icono, required this.iconoActivo, required this.label});
 }
 
 class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
@@ -72,13 +82,28 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
     });
   }
 
-  List<_TabInfo> _tabsPara(FichaCuidado ficha) {
-    return [
-      const _TabInfo(icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
-      const _TabInfo(icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
-      if (ficha.esCompleto)
-        const _TabInfo(icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
+  /// Arma tabs y sus paginas correspondientes JUNTOS (mismo indice en
+  /// ambas listas), para que la lista condicional (esCompleto) nunca
+  /// desalinee un tab con la pagina equivocada.
+  ({List<TabInfo> tabs, List<Widget> paginas}) _tabsYPaginas(FichaCuidado ficha) {
+    final tabs = <TabInfo>[
+      const TabInfo(icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
+      const TabInfo(icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
     ];
+    final paginas = <Widget>[
+      TabFichaCuidado(ficha: ficha, rutPaciente: widget.rutPaciente),
+      TabRecordatoriosCuidado(ficha: ficha),
+    ];
+
+    if (ficha.esCompleto) {
+      tabs.add(const TabInfo(icono: Icons.medication_outlined, iconoActivo: Icons.medication, label: 'Cotizador'));
+      paginas.add(TabCotizadorCuidado(ficha: ficha));
+
+      tabs.add(const TabInfo(icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'));
+      paginas.add(TabAutorizarCuidado(rutPaciente: widget.rutPaciente));
+    }
+
+    return (tabs: tabs, paginas: paginas);
   }
 
   @override
@@ -125,7 +150,7 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
         }
 
         final ficha = snapshot.data!;
-        final tabs = _tabsPara(ficha);
+        final (:tabs, :paginas) = _tabsYPaginas(ficha);
         final tabActual = _tabActual < tabs.length ? _tabActual : 0;
 
         return Scaffold(
@@ -139,91 +164,19 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
                   foregroundColor: Colors.white,
                 ),
                 Expanded(
-                  child: _buildTab(tabActual, ficha),
+                  child: paginas[tabActual],
                 ),
               ],
             ),
           ),
-          bottomNavigationBar: _BarraInferior(
+          bottomNavigationBar: BarraInferiorTabs(
             tabs: tabs,
             tabActual: tabActual,
+            color: const Color(0xFF0F766E),
             onTap: (i) => setState(() => _tabActual = i),
           ),
         );
       },
-    );
-  }
-
-  Widget _buildTab(int index, FichaCuidado ficha) {
-    switch (index) {
-      case 0:
-        return TabFichaCuidado(ficha: ficha, rutPaciente: widget.rutPaciente);
-      case 1:
-        return TabRecordatoriosCuidado(ficha: ficha);
-      case 2:
-        return TabAutorizarCuidado(rutPaciente: widget.rutPaciente);
-      default:
-        return TabFichaCuidado(ficha: ficha, rutPaciente: widget.rutPaciente);
-    }
-  }
-}
-
-class _BarraInferior extends StatelessWidget {
-  final List<_TabInfo> tabs;
-  final int tabActual;
-  final ValueChanged<int> onTap;
-
-  const _BarraInferior({required this.tabs, required this.tabActual, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -2)),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(tabs.length, (i) {
-              final tab = tabs[i];
-              final activo = tabActual == i;
-              return GestureDetector(
-                onTap: () => onTap(i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: activo ? const Color(0xFF0F766E).withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        activo ? tab.iconoActivo : tab.icono,
-                        color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(tab.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: activo ? FontWeight.w700 : FontWeight.normal,
-                            color: activo ? const Color(0xFF0F766E) : Colors.grey[500],
-                          )),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
     );
   }
 }
