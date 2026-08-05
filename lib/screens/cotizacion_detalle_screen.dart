@@ -1,9 +1,17 @@
 /// lib/screens/cotizacion_detalle_screen.dart
+///
+/// v2 (04-08-2026): antes recibia un EventoClinico (modelo de la ficha
+/// PROPIA) y le extraia los medicamentos adentro. Eso impedia reusar
+/// esta pantalla para cotizar la receta de un paciente CUIDADO (que usa
+/// un modelo distinto, EventoCuidadoCompleto en ficha_cuidado.dart).
+/// Ahora recibe directo la lista de ItemReceta ya armada + un titulo
+/// para el AppBar -- quien llama (CotizadorScreen o
+/// TabCotizadorCuidado) arma esa lista desde su propio modelo de
+/// evento, y esta pantalla ya no necesita saber de donde vino.
 library;
 
 import 'package:flutter/material.dart';
 import '../models/cotizacion.dart';
-import '../models/evento_clinico.dart';
 import '../services/cotizador_service.dart';
 
 String _formatearCLP(int valor) {
@@ -17,8 +25,14 @@ String _formatearCLP(int valor) {
 }
 
 class CotizacionDetalleScreen extends StatefulWidget {
-  final EventoClinico evento;
-  const CotizacionDetalleScreen({super.key, required this.evento});
+  final List<ItemReceta> items;
+  final String titulo;
+
+  const CotizacionDetalleScreen({
+    super.key,
+    required this.items,
+    required this.titulo,
+  });
 
   @override
   State<CotizacionDetalleScreen> createState() => _CotizacionDetalleScreenState();
@@ -34,12 +48,8 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
   }
 
   void _cotizar() {
-    final items = widget.evento.contenido.medicamentosEstructurados
-        .map((m) => ItemReceta(principioActivo: m.medicamento, presentacion: m.dosis))
-        .toList();
-
     setState(() {
-      _futureResultado = CotizadorService.cotizarReceta(items);
+      _futureResultado = CotizadorService.cotizarReceta(widget.items);
     });
   }
 
@@ -48,9 +58,7 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.evento.diagnostico.isNotEmpty
-              ? widget.evento.diagnostico
-              : 'Cotización',
+          widget.titulo,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
