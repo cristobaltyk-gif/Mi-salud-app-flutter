@@ -17,6 +17,32 @@ class FotoEvento {
   }
 }
 
+/// Un medicamento individual dentro de medicamentos_estructurados (no
+/// confundir con "receta", que es el texto libre -- ver ContenidoEvento).
+/// Mismos campos que lee recordatorios_router.py en el backend.
+class MedicamentoEstructurado {
+  final String medicamento;
+  final String? dosis;
+  final int? frecuenciaHoras;
+  final int? duracionDias;
+
+  MedicamentoEstructurado({
+    required this.medicamento,
+    this.dosis,
+    this.frecuenciaHoras,
+    this.duracionDias,
+  });
+
+  factory MedicamentoEstructurado.fromJson(Map<String, dynamic> json) {
+    return MedicamentoEstructurado(
+      medicamento: json['medicamento'] ?? '',
+      dosis: json['dosis'],
+      frecuenciaHoras: json['frecuencia_horas'],
+      duracionDias: json['duracion_dias'],
+    );
+  }
+}
+
 class ContenidoEvento {
   final String atencion;
   final String diagnostico;
@@ -27,6 +53,7 @@ class ContenidoEvento {
   final String examenes;
   final int? fotosCount;
   final List<FotoEvento> fotosDermatologia;
+  final List<MedicamentoEstructurado> medicamentosEstructurados;
 
   ContenidoEvento({
     this.atencion = '',
@@ -38,6 +65,7 @@ class ContenidoEvento {
     this.examenes = '',
     this.fotosCount,
     this.fotosDermatologia = const [],
+    this.medicamentosEstructurados = const [],
   });
 
   factory ContenidoEvento.fromJson(Map<String, dynamic> json) {
@@ -53,6 +81,16 @@ class ContenidoEvento {
       fotosDermatologia: (json['fotos_dermatologia'] as List<dynamic>? ?? [])
           .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
           .toList(),
+      // Acepta ambas variantes de nombre, mismo fallback que ya usa
+      // recordatorios_router.py en el backend (snake_case / camelCase
+      // segun si el evento paso por la conversion FHIR o no).
+      medicamentosEstructurados: (
+        (json['medicamentos_estructurados'] ?? json['medicamentosEstructurados'])
+                as List<dynamic>? ??
+            []
+      )
+          .map((m) => MedicamentoEstructurado.fromJson(m as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -65,6 +103,8 @@ class ContenidoEvento {
       indicacionQuirurgica.isNotEmpty ||
       examenes.isNotEmpty ||
       fotosDermatologia.isNotEmpty;
+
+  bool get tieneMedicamentosParaCotizar => medicamentosEstructurados.isNotEmpty;
 }
 
 class EventoClinico {
