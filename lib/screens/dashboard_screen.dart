@@ -1,17 +1,39 @@
 /// lib/screens/dashboard_screen.dart
+///
+/// v4 (04-08-2026): rediseño grande -- selector de "carpetas" arriba
+/// (Tú + una por cada persona cuidada, ver selector_carpetas.dart).
+/// Los 4 tabs de abajo (Ficha, Recordatorios, Cotizador, Autorizar) se
+/// quedan IGUALES en estructura, pero ahora leen datos segun la
+/// carpeta activa en vez de ser siempre "los tuyos": ver
+/// ficha_tab_unificada.dart, recordatorios_tab_unificada.dart,
+/// cotizador_tab_unificada.dart, autorizar_tab_unificada.dart.
+///
+/// CuidadorScreen (invitar/gestionar cuidadores, escanear QR) ya no se
+/// alcanza desde el tab bar -- es una pantalla de ADMINISTRACION, no
+/// contenido de una persona en particular, asi que se movio a un
+/// icono en el AppBar (junto al de cerrar sesion).
+///
+/// Ya no hace falta el "atajo" que evitaba el Scaffold anidado en
+/// Autorizar (ver version anterior) -- AutorizarTabUnificada por
+/// dentro solo muestra un boton que hace Navigator.push cuando se
+/// TOCA, no cuando el tab se MUESTRA, asi que no hay conflicto de
+/// Scaffold al dejarlo como tab embebido normal.
 library;
 
 import 'package:flutter/material.dart';
+import '../models/carpeta_activa.dart';
 import '../services/auth_service.dart';
 import '../services/recordatorios_service.dart';
 import '../services/alarm_service.dart';
 import '../services/fcm_service.dart';
-import '../services/storage_service.dart';
+import '../services/cuidador_service.dart';
 import '../widgets/barra_inferior_tabs.dart';
-import 'ficha_screen.dart';
-import 'recordatorios_screen.dart';
-import 'cotizador_screen.dart';
-import 'compartir_ficha_cuidado_screen.dart';
+import '../widgets/selector_carpetas.dart';
+import 'ficha_tab_unificada.dart';
+import 'recordatorios_tab_unificada.dart';
+import 'cotizador_tab_unificada.dart';
+import 'autorizar_tab_unificada.dart';
+import 'cuidador_screen.dart';
 import 'login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -23,13 +45,40 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _tabActual = 0;
+  int _carpetaActual = 0;
   bool _sincronizando = true;
   String? _errorSincronizacion;
+
+  List<CarpetaActiva> _carpetas = const [
+    CarpetaActiva.propia(nombreMostrar: 'Tú'),
+  ];
 
   @override
   void initState() {
     super.initState();
     _sincronizarAlarmas();
+    _cargarCuidados();
+  }
+
+  Future<void> _cargarCuidados() async {
+    try {
+      final cuidados = await CuidadorService.misCuidados();
+      if (!mounted) return;
+      setState(() {
+        _carpetas = [
+          const CarpetaActiva.propia(nombreMostrar: 'Tú'),
+          ...cuidados.map((c) => CarpetaActiva.cuidado(
+                rutPaciente: c.rutPaciente,
+                nombreMostrar: c.nombreCompleto.split(' ').first,
+                nivelAcceso: c.nivelAcceso,
+              )),
+        ];
+      });
+    } catch (e) {
+      // No bloqueante: si falla, el selector se queda solo con "Tú"
+      // (mismo comportamiento que si el paciente no cuida a nadie).
+      debugPrint('Error cargando cuidados: $e');
+    }
   }
 
   Future<void> _sincronizarAlarmas() async {
@@ -84,30 +133,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _abrirAutorizarMedico() async {
-    final rut = await StorageService.obtenerRut();
-    if (!mounted || rut == null) return;
+  void _abrirCuidadores() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rut),
-      ),
-    );
+      MaterialPageRoute(builder: (_) => const CuidadorScreen()),
+    ).then((_) {
+      // Al volver de administrar cuidadores, refresca el selector por
+      // si invito/escaneo a alguien nuevo mientras estaba alla.
+      _cargarCuidados();
+    });
   }
 
-  // v2 (04-08-2026): "Cuidadores" sale del tab bar (sube como boton
-  // dentro de FichaScreen) y entran "Cotizador" y "Autorizar medico" en
-  // su lugar. "Autorizar" es un ATAJO (Navigator.push a
-  // CompartirFichaCuidadoScreen, que trae su propio Scaffold/AppBar
-  // completo -- confirmado revisando el archivo), no un tab embebido
-  // como los otros 3 -- si se embebiera directo quedaria un Scaffold
-  // anidado dentro de este. Al tocarlo no cambia _tabActual, solo abre
-  // la pantalla encima (misma UX que tenia el boton original en
-  // ficha_screen.dart, ahora accesible tambien desde el tab bar).
-  //
-  // v3 (04-08-2026): tab bar reemplazado por el widget compartido
-  // BarraInferiorTabs (lib/widgets/barra_inferior_tabs.dart), usado
-  // tambien en ficha_cuidado_screen.dart -- antes este mismo bloque de
-  // Container+Row+GestureDetector estaba duplicado en ambos archivos.
   static const _tabs = [
     TabInfo(icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
     TabInfo(icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
@@ -115,16 +150,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     TabInfo(icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
   ];
 
-  // Solo estas 3 paginas se muestran embebidas -- el indice 3
-  // ("Autorizar") nunca llega a mostrarse como pagina, ver onTap abajo.
-  static const _cantidadPaginasEmbebidas = 3;
-
   @override
   Widget build(BuildContext context) {
+    final carpeta = _carpetas[_carpetaActual < _carpetas.length ? _carpetaActual : 0];
+
+    // Key por carpeta (no solo por tab) -- sin esto, Flutter reutiliza
+    // el mismo State al cambiar de carpeta (misma posicion en el
+    // arbol, mismo runtimeType) y el fetch en initState no se vuelve a
+    // disparar. Con la key, cambiar de carpeta fuerza un widget nuevo.
+    final idCarpeta = carpeta.rutPaciente ?? 'propia';
+
     final paginas = [
-      const FichaScreen(),
-      RecordatoriosScreen(onRecordatoriosCambiaron: _sincronizarAlarmas),
-      const CotizadorScreen(),
+      FichaTabUnificada(key: ValueKey('ficha-$idCarpeta'), carpeta: carpeta),
+      RecordatoriosTabUnificada(key: ValueKey('record-$idCarpeta'), carpeta: carpeta),
+      CotizadorTabUnificada(key: ValueKey('cotiz-$idCarpeta'), carpeta: carpeta),
+      AutorizarTabUnificada(key: ValueKey('autoriz-$idCarpeta'), carpeta: carpeta),
     ];
 
     return Scaffold(
@@ -155,6 +195,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           IconButton(
+            icon: const Icon(Icons.people_alt_outlined, color: Colors.white),
+            tooltip: 'Cuidadores',
+            onPressed: _abrirCuidadores,
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Cerrar sesión',
             onPressed: _cerrarSesion,
@@ -184,22 +229,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-          Expanded(
-            child: paginas[_tabActual < _cantidadPaginasEmbebidas ? _tabActual : 0],
+          SelectorCarpetas(
+            carpetas: _carpetas,
+            indiceActivo: _carpetaActual,
+            onSeleccionar: (i) => setState(() => _carpetaActual = i),
           ),
+          Expanded(child: paginas[_tabActual]),
         ],
       ),
       bottomNavigationBar: BarraInferiorTabs(
         tabs: _tabs,
         tabActual: _tabActual,
         color: const Color(0xFF1A3B8C),
-        onTap: (i) {
-          if (i == 3) {
-            _abrirAutorizarMedico();
-          } else {
-            setState(() => _tabActual = i);
-          }
-        },
+        onTap: (i) => setState(() => _tabActual = i),
       ),
     );
   }
