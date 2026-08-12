@@ -8,6 +8,21 @@ class AppConfig {
 
   static const String backendBaseUrl = 'https://misalud-backend.onrender.com';
 
+  /// URL del frontend web de MiSalud (distinta del backend/API de arriba).
+  /// Se usa para armar links que un humano debe abrir en un navegador —
+  /// hoy solo el de "acceso médico" (QR/Email), que apunta a la pantalla
+  /// MedicoAcceso.jsx del frontend web, la cual valida identidad/RNPI y
+  /// luego redirige a clinica.icarticular.cl/acceso-externo.
+  ///
+  /// FIX: antes compartir_ficha_cuidado_screen.dart armaba este link con
+  /// backendBaseUrl por error — el médico terminaba escaneando un QR que
+  /// apuntaba a la API (JSON, sin ninguna página que renderizar), lo que
+  /// producía una pantalla en blanco al abrir el link. El link por Email
+  /// nunca tuvo este problema porque el backend (ficha_compartida_router.py
+  /// -> email_service.py) ya arma el link con la URL correcta del lado
+  /// del servidor.
+  static const String misaludWebUrl = 'https://misalud.icarticular.cl';
+
   /// Backend de ICA (distinto del backend de MiSalud) — usado solo para
   /// descargar PDFs clínicos (Documentospdf/pdfPacienteRouter.py).
   static const String icaBaseUrl = 'https://services.icarticular.cl';
