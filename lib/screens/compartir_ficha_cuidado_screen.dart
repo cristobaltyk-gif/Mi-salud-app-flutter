@@ -10,6 +10,13 @@
 /// (en_uso o historial), para mostrar nombre/título/especialidad del
 /// médico — antes solo se veía el RUT crudo en el Chip. Dato público
 /// RNPI, no bloqueante si falla (se muestra el RUT como respaldo).
+///
+/// v1.2 — FIX pantalla en blanco al escanear el QR: linkUrl se armaba
+/// con AppConfig.backendBaseUrl (el dominio de la API, que solo sirve
+/// JSON — no hay ninguna página ahí que renderizar). Ahora usa
+/// AppConfig.misaludWebUrl, el dominio del frontend web donde vive
+/// MedicoAcceso.jsx, la misma URL que ya usa correctamente el link
+/// enviado por Email (armado del lado del backend en email_service.py).
 library;
 
 import 'package:flutter/material.dart';
@@ -163,7 +170,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
     final pendientes = _links.where((l) => l.estaActivo).toList();
     final historial = _links.where((l) => !l.estaActivo).toList();
     final linkUrl = _linkActivo != null
-        ? '${AppConfig.backendBaseUrl}/medico/acceso/${_linkActivo!.token}'
+        ? '${AppConfig.misaludWebUrl}/medico/acceso/${_linkActivo!.token}'
         : null;
 
     return Scaffold(
@@ -509,7 +516,7 @@ class _TarjetaHistorial extends StatelessWidget {
               ),
             ],
           ),
-          if (link.medicoRut != null) ...[
+          if (link.estado != EstadoAccesoMedico.desconocido && link.medicoRut != null) ...[
             const SizedBox(height: 6),
             _IdentidadMedico(rut: link.medicoRut, perfil: perfil),
           ],
