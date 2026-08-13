@@ -17,6 +17,14 @@
 /// AppConfig.misaludWebUrl, el dominio del frontend web donde vive
 /// MedicoAcceso.jsx, la misma URL que ya usa correctamente el link
 /// enviado por Email (armado del lado del backend en email_service.py).
+///
+/// v1.3 — FIX header "Modo cuidador" mostrándose siempre, incluso al
+/// compartir tu propia ficha (esta pantalla se usa para ambos casos).
+/// Para no requerir cambios en los widgets que navegan hasta acá, la
+/// propia pantalla detecta si widget.rutPaciente coincide con el RUT
+/// del usuario logueado (StorageService.obtenerRut()) y con eso decide
+/// si mostrar el header morado y la mención al nombre del paciente
+/// cuidado, o quedar neutra.
 library;
 
 import 'package:flutter/material.dart';
@@ -25,6 +33,7 @@ import '../config/app_config.dart';
 import '../models/acceso_medico.dart';
 import '../services/acceso_medico_service.dart';
 import '../services/ficha_service.dart';
+import '../services/storage_service.dart';
 
 class CompartirFichaCuidadoScreen extends StatefulWidget {
   final String rutPaciente;
@@ -36,6 +45,7 @@ class CompartirFichaCuidadoScreen extends StatefulWidget {
 }
 
 class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScreen> {
+  bool _esPropia = false;
   String? _nombrePaciente;
   List<AccesoMedico> _links = [];
   final Map<String, Map<String, dynamic>?> _perfiles = {};
@@ -51,7 +61,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
   @override
   void initState() {
     super.initState();
-    _cargarNombrePaciente();
+    _resolverSiEsPropia();
     _cargarLinks();
   }
 
@@ -61,9 +71,23 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
     super.dispose();
   }
 
+  Future<void> _resolverSiEsPropia() async {
+    final rutPropio = await StorageService.obtenerRut();
+    final esPropia = rutPropio != null && rutPropio == widget.rutPaciente;
+    if (!mounted) return;
+    setState(() => _esPropia = esPropia);
+    // Solo se consulta el nombre vía endpoint de cuidado cuando de verdad
+    // es una persona cuidada — para el propio RUT ese endpoint no aplica
+    // (no existe vínculo de cuidador contigo mismo) y daría 403.
+    if (!esPropia) {
+      _cargarNombrePaciente();
+    }
+  }
+
   Future<void> _cargarNombrePaciente() async {
     try {
       final ficha = await FichaService.obtenerFichaCuidado(widget.rutPaciente);
+      if (!mounted) return;
       setState(() => _nombrePaciente = ficha.paciente.nombreCompleto);
     } catch (_) {
       // no bloqueante — si falla, simplemente no mostramos el nombre
@@ -177,27 +201,28 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              color: const Color(0xFF4C1D95),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  const Text('🧑‍🤝‍🧑', style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(children: [
-                        const TextSpan(text: 'Modo cuidador', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                        if (_nombrePaciente != null)
-                          TextSpan(text: ' · Autorizando en nombre de $_nombrePaciente', style: const TextStyle(color: Colors.white)),
-                      ]),
-                      style: const TextStyle(fontSize: 13),
+            if (!_esPropia)
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF4C1D95),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    const Text('🧑‍🤝‍🧑', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(children: [
+                          const TextSpan(text: 'Modo cuidador', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                          if (_nombrePaciente != null)
+                            TextSpan(text: ' · Autorizando en nombre de $_nombrePaciente', style: const TextStyle(color: Colors.white)),
+                        ]),
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             AppBar(
               title: const Text('Autorizar acceso a médico'),
               backgroundColor: const Color(0xFF0F766E),
@@ -218,9 +243,12 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                               style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4C1D95))),
                           const SizedBox(height: 6),
                           Text(
-                            'Genera un acceso temporal para que un médico revise la ficha'
-                            '${_nombrePaciente != null ? ' de $_nombrePaciente' : ' del paciente'}. '
-                            'Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.',
+                            _esPropia
+                                ? 'Genera un acceso temporal para que un médico revise tu ficha. '
+                                  'Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.'
+                                : 'Genera un acceso temporal para que un médico revise la ficha'
+                                  '${_nombrePaciente != null ? ' de $_nombrePaciente' : ' del paciente'}. '
+                                  'Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.',
                             style: const TextStyle(height: 1.4),
                           ),
                         ],
@@ -451,54 +479,6 @@ class _TarjetaAcceso extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Chip(label: Text(link.etiqueta, style: const TextStyle(fontSize: 11))),
-                Text(
-                  '${link.expiraInvitacion.day}/${link.expiraInvitacion.month}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                ),
-              ],
-            ),
-            if (link.estado == EstadoAccesoMedico.enUso) ...[
-              const SizedBox(height: 8),
-              _IdentidadMedico(rut: link.medicoRut, perfil: perfil),
-            ],
-            if (link.estado == EstadoAccesoMedico.enUso && link.expiraSesion != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                '⏱ Sesión activa hasta: ${link.expiraSesion!.hour}:${link.expiraSesion!.minute.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF065F46)),
-              ),
-            ],
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: onRevocar,
-              style: TextButton.styleFrom(foregroundColor: Colors.red, padding: EdgeInsets.zero),
-              child: const Text('Revocar acceso', style: TextStyle(fontSize: 12)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TarjetaHistorial extends StatelessWidget {
-  final AccesoMedico link;
-  final Map<String, dynamic>? perfil;
-  const _TarjetaHistorial({required this.link, required this.perfil});
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -516,7 +496,7 @@ class _TarjetaHistorial extends StatelessWidget {
               ),
             ],
           ),
-          if (link.estado != EstadoAccesoMedico.desconocido && link.medicoRut != null) ...[
+          if (link.medicoRut != null) ...[
             const SizedBox(height: 6),
             _IdentidadMedico(rut: link.medicoRut, perfil: perfil),
           ],
