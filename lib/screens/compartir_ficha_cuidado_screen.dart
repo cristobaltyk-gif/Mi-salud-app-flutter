@@ -479,6 +479,54 @@ class _TarjetaAcceso extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Chip(label: Text(link.etiqueta, style: const TextStyle(fontSize: 11))),
+                Text(
+                  '${link.expiraInvitacion.day}/${link.expiraInvitacion.month}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                ),
+              ],
+            ),
+            if (link.estado == EstadoAccesoMedico.enUso) ...[
+              const SizedBox(height: 8),
+              _IdentidadMedico(rut: link.medicoRut, perfil: perfil),
+            ],
+            if (link.estado == EstadoAccesoMedico.enUso && link.expiraSesion != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                '⏱ Sesión activa hasta: ${link.expiraSesion!.hour}:${link.expiraSesion!.minute.toString().padLeft(2, '0')}',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF065F46)),
+              ),
+            ],
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRevocar,
+              style: TextButton.styleFrom(foregroundColor: Colors.red, padding: EdgeInsets.zero),
+              child: const Text('Revocar acceso', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TarjetaHistorial extends StatelessWidget {
+  final AccesoMedico link;
+  final Map<String, dynamic>? perfil;
+  const _TarjetaHistorial({required this.link, required this.perfil});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
