@@ -1,4 +1,15 @@
-/// lib/screens/evento_detalle_screen.dart
+/// lib/screens/evento_detalle_screen.dart — v1.1
+///
+/// v1.1 (auditoría): _descargarYAbrir() ahora borra el PDF temporal
+/// después de que el visor externo lo abre (ver ficha_service.dart
+/// eliminarPdfTemporal) — antes se acumulaban para siempre en el
+/// directorio temporal. Se espera un momento antes de borrar, para
+/// dar tiempo a que la app externa (visor de PDF) termine de leer
+/// el archivo antes de eliminarlo.
+///
+/// También: _GaleriaFotosState._decode() ya no usa `!` a ciegas sobre
+/// el resultado del data URI — una foto con base64 corrupto ya no
+/// crashea toda la pantalla, solo se omite esa foto.
 library;
 
 import 'dart:typed_data';
@@ -113,14 +124,23 @@ class _SeccionDetalleState extends State<_SeccionDetalle> {
 
   Future<void> _descargarYAbrir() async {
     setState(() => _descargando = true);
+    String? ruta;
     try {
-      final ruta = await FichaService.descargarPdf(widget.eventoId, widget.tipoPdf!);
+      ruta = await FichaService.descargarPdf(widget.eventoId, widget.tipoPdf!);
       await OpenFile.open(ruta);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('No se pudo abrir el PDF: $e')));
     } finally {
       if (mounted) setState(() => _descargando = false);
+      if (ruta != null) {
+        // Se espera un momento antes de borrar, para dar tiempo a que
+        // el visor externo termine de leer el archivo.
+        final rutaFinal = ruta;
+        Future.delayed(const Duration(seconds: 5), () {
+          FichaService.eliminarPdfTemporal(rutaFinal);
+        });
+      }
     }
   }
 
@@ -169,8 +189,13 @@ class _GaleriaFotos extends StatefulWidget {
 class _GaleriaFotosState extends State<_GaleriaFotos> {
   FotoEvento? _ampliada;
 
-  Uint8List _decode(String data) =>
-      Uri.parse('data:image/jpeg;base64,$data').data!.contentAsBytes();
+  Uint8List? _decode(String data) {
+    try {
+      return Uri.parse('data:image/jpeg;base64,$data').data?.contentAsBytes();
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -193,24 +218,27 @@ class _GaleriaFotosState extends State<_GaleriaFotos> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: widget.fotos.map((f) => GestureDetector(
-                onTap: () => setState(() => _ampliada = f),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.memory(_decode(f.data), width: 72, height: 72, fit: BoxFit.cover),
-                ),
-              )).toList(),
+              children: widget.fotos
+                  .where((f) => _decode(f.data) != null)
+                  .map((f) => GestureDetector(
+                    onTap: () => setState(() => _ampliada = f),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.memory(_decode(f.data)!, width: 72, height: 72, fit: BoxFit.cover),
+                    ),
+                  )).toList(),
             ),
             if (_ampliada != null) ...[
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () => setState(() => _ampliada = null),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.memory(_decode(_ampliada!.data),
-                      width: double.infinity, fit: BoxFit.contain),
+              if (_decode(_ampliada!.data) != null)
+                GestureDetector(
+                  onTap: () => setState(() => _ampliada = null),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(_decode(_ampliada!.data)!,
+                        width: double.infinity, fit: BoxFit.contain),
+                  ),
                 ),
-              ),
               if (_ampliada!.comentario.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(_ampliada!.comentario,
