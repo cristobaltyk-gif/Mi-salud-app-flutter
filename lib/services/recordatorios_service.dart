@@ -1,4 +1,4 @@
-/// lib/services/recordatorios_service.dart
+/// lib/services/recordatorios_service.dart — v1.1
 ///
 /// Cliente HTTP para recordatorios_router.py y agenda_recordatorios.py.
 /// No se incluye POST /push/suscribir — ese endpoint es para el flujo
@@ -6,6 +6,11 @@
 /// no se suscribe a push del servidor; programa notificaciones LOCALES
 /// en el propio dispositivo a partir de los horarios que retorna este
 /// servicio (ver alarm_service.dart).
+///
+/// v1.1 (mejora): generarDesdeEvento() ahora usa el mismo resguardo
+/// que ya tenía generarDesdeAgenda() (`as List<dynamic>? ?? []`) al
+/// leer "creados" — antes exigía la clave presente y no nula sin
+/// fallback, quedando inconsistente con la función hermana.
 library;
 
 import 'dart:convert';
@@ -65,7 +70,7 @@ class RecordatoriosService {
     }
 
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    final creados = body['creados'] as List<dynamic>;
+    final creados = body['creados'] as List<dynamic>? ?? [];
     return creados.map((e) => Recordatorio.fromJson(e as Map<String, dynamic>)).toList();
   }
 
