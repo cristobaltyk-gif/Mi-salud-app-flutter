@@ -1,4 +1,4 @@
-/// lib/screens/historial_consultas_cuidado_screen.dart
+/// lib/screens/historial_consultas_cuidado_screen.dart — v1.1
 ///
 /// Historial completo de consultas de un paciente cuidado. Antes vivía
 /// apilado dentro de la pestaña "Ficha" de ficha_cuidado_screen.dart —
@@ -10,9 +10,15 @@
 /// _EventoCard, _MiniFoto, _decodeBase64 y _ExplicacionEventoCuidadoSheet
 /// se mudaron acá tal cual desde ficha_cuidado_screen.dart — sin cambios
 /// de comportamiento, solo de ubicación.
+///
+/// v1.1 (auditoría):
+/// - _descargarYAbrir() ahora borra el PDF temporal después de que el
+///   visor externo lo abre (ver ficha_service.dart eliminarPdfTemporal)
+///   — mismo fix aplicado en evento_detalle_screen.dart.
+/// - _decodeBase64() ya no usa `!` a ciegas — una foto con base64
+///   corrupto ya no crashea toda la pantalla, solo se omite esa foto.
 library;
 
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -97,8 +103,9 @@ class _EventoCardState extends State<_EventoCard> {
 
   Future<void> _descargarYAbrir(String tipoPdf) async {
     setState(() => _descargando = tipoPdf);
+    String? ruta;
     try {
-      final ruta = await FichaService.descargarPdf(
+      ruta = await FichaService.descargarPdf(
         widget.ev.id,
         tipoPdf,
         rutPaciente: widget.rutPaciente,
@@ -112,6 +119,12 @@ class _EventoCardState extends State<_EventoCard> {
       }
     } finally {
       if (mounted) setState(() => _descargando = null);
+      if (ruta != null) {
+        final rutaFinal = ruta;
+        Future.delayed(const Duration(seconds: 5), () {
+          FichaService.eliminarPdfTemporal(rutaFinal);
+        });
+      }
     }
   }
 
@@ -228,7 +241,9 @@ class _EventoCardState extends State<_EventoCard> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: widget.ev.fotosDermatologia.map((f) => _MiniFoto(foto: f)).toList(),
+                  children: widget.ev.fotosDermatologia
+                      .where((f) => _decodeBase64(f.data) != null)
+                      .map((f) => _MiniFoto(foto: f)).toList(),
                 ),
               ],
             ],
@@ -245,6 +260,9 @@ class _MiniFoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bytes = _decodeBase64(foto.data);
+    if (bytes == null) return const SizedBox.shrink();
+
     return GestureDetector(
       onTap: () {
         showDialog(
@@ -255,7 +273,7 @@ class _MiniFoto extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 InteractiveViewer(
-                  child: Image.memory(_decodeBase64(foto.data)),
+                  child: Image.memory(bytes),
                 ),
                 if (foto.comentario.isNotEmpty)
                   Padding(
@@ -270,7 +288,7 @@ class _MiniFoto extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Image.memory(
-          _decodeBase64(foto.data),
+          bytes,
           width: 72,
           height: 72,
           fit: BoxFit.cover,
@@ -280,9 +298,12 @@ class _MiniFoto extends StatelessWidget {
   }
 }
 
-// ignore: unused_element
-Uint8List _decodeBase64(String data) {
-  return Uri.parse('data:image/jpeg;base64,$data').data!.contentAsBytes();
+Uint8List? _decodeBase64(String data) {
+  try {
+    return Uri.parse('data:image/jpeg;base64,$data').data?.contentAsBytes();
+  } catch (_) {
+    return null;
+  }
 }
 
 /// Mismo patrón que _ExplicacionEventoSheet en evento_detalle_screen.dart
