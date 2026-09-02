@@ -1,4 +1,4 @@
-/// lib/services/ficha_service.dart
+/// lib/services/ficha_service.dart — v1.3
 ///
 /// Cliente HTTP para ficha_router.py. El resumen es JSON normal, pero
 /// /explicar y /evento/{id} son streams SSE (text/event-stream) — Flutter
@@ -17,6 +17,16 @@
 /// v1.2: agregado descargarPdf() — descarga el PDF (backend de ICA) y
 /// lo guarda en un archivo temporal, devolviendo la ruta local. El
 /// caller (pantalla) abre el archivo con un visor de PDF.
+///
+/// v1.3 (auditoría — PDFs clínicos nunca se borraban del disco): un PDF
+/// descargado quedaba para siempre en el directorio temporal de la app
+/// (recetas, informes, órdenes — datos de salud), acumulándose con cada
+/// descarga distinta. Se agrega eliminarPdfTemporal(), que el caller
+/// debe invocar después de abrir/compartir el archivo (ej. en el
+/// callback de OpenFile.open() o después de Share.shareXFiles()). No
+/// se borra automáticamente dentro de descargarPdf() porque el archivo
+/// recién descargado todavía tiene que existir para que el visor de
+/// PDF/diálogo de compartir lo lea.
 library;
 
 import 'dart:async';
@@ -107,6 +117,23 @@ class FichaService {
     await file.writeAsBytes(res.bodyBytes);
 
     return file.path;
+  }
+
+  /// Borra un PDF temporal descargado con descargarPdf(). El caller debe
+  /// invocarlo después de que el usuario terminó de verlo/compartirlo —
+  /// ej. en el callback de OpenFile.open(path), o justo después de
+  /// Share.shareXFiles([XFile(path)]) si se usa para compartir.
+  static Future<void> eliminarPdfTemporal(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // No bloqueante — si falla el borrado, el PDF queda huérfano en
+      // el directorio temporal, que el sistema operativo igual puede
+      // limpiar por su cuenta con el tiempo.
+    }
   }
 
   static String _detailDe(http.Response r) {
