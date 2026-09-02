@@ -31,10 +31,17 @@ class AppConfig {
   static const String authBase = '$backendBaseUrl/api/auth';
   static const String loginEndpoint = '$authBase/login';
   static const String buscarRutEndpoint = '$authBase/buscar';
-  static const String activarCuentaEndpoint = '$authBase/activar';
   static const String registroEndpoint = '$authBase/registro';
   static const String meEndpoint = '$authBase/me';
   static const String cambiarPasswordEndpoint = '$authBase/cambiar-password';
+
+  /// v2.0 — reemplazan a activarCuentaEndpoint (POST /api/auth/activar,
+  /// ya no existe: exponía datos personales sin auth vía /buscar,
+  /// CRÍTICO-2 de la auditoría). El flujo ahora es por link de correo,
+  /// de un solo uso — ver auth_service.dart.
+  static String activarValidarEndpoint(String token) =>
+      '$authBase/activar/validar/$token';
+  static const String activarCompletarEndpoint = '$authBase/activar/completar';
 
   // --- Endpoints de ficha clínica (ficha_router.py, prefix /api/ficha) ---
   static const String fichaBase = '$backendBaseUrl/api/ficha';
