@@ -1,4 +1,4 @@
-/// lib/services/fcm_service.dart
+/// lib/services/fcm_service.dart — v1.6
 ///
 /// Inicializa Firebase Cloud Messaging. Cuando llega un data message
 /// (disparado por HypokratIA cada vez que ICA notifica un evento nuevo
@@ -32,9 +32,18 @@
 /// pasa a AlarmService.mostrarAhora(), que lo codifica en el payload
 /// de la notificación — al tocarla, la app abre la foto o el video
 /// dentro de MediaEjercicioScreen (ver alarm_service.dart).
+///
+/// v1.6 (mejora): registrarTokenEnBackend() ahora detecta la
+/// plataforma real (Platform.isIOS ? 'ios' : 'android') en vez de
+/// mandar siempre 'android' — útil si algún día se publica en iOS,
+/// para que el backend sepa con qué formato de push notificar a ese
+/// dispositivo. También revisa el statusCode de la respuesta y deja
+/// un registro si el backend rechazó el token, en vez de asumir éxito
+/// silenciosamente.
 library;
 
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -140,14 +149,21 @@ class FcmService {
       final tokenSesion = await StorageService.obtenerToken();
       if (tokenSesion == null) return;
 
-      await http.post(
+      final plataforma = Platform.isIOS ? 'ios' : 'android';
+
+      final res = await http.post(
         Uri.parse(AppConfig.dispositivosRegistrarEndpoint),
         headers: {
           'Authorization': 'Bearer $tokenSesion',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'fcm_token': token, 'plataforma': 'android'}),
+        body: jsonEncode({'fcm_token': token, 'plataforma': plataforma}),
       );
+
+      if (res.statusCode != 200) {
+        // ignore: avoid_print
+        print('Backend rechazó el registro del token FCM (${res.statusCode}): ${res.body}');
+      }
     } catch (e) {
       // ignore: avoid_print
       print('Error registrando token FCM: $e');
