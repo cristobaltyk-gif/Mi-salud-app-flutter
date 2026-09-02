@@ -1,14 +1,19 @@
-/// lib/screens/activar_cuenta_screen.dart
+/// lib/screens/activar_cuenta_screen.dart — v2.0
 ///
-/// Activación de cuenta para pacientes que ya existen en la base (su
-/// médico los registró) pero nunca crearon una contraseña. Usa
-/// POST /api/auth/activar, que valida que el email coincida con el
-/// registrado antes de permitir crear la clave (auth_router.py).
+/// v2.0 (alineado con misalud-backend ya corregido — auditoría CRÍTICO-2):
+/// antes pedía RUT + email + contraseña en un solo paso y llamaba a
+/// POST /api/auth/activar, endpoint que ya no existe. Ahora solo pide
+/// el RUT: si corresponde a una ficha registrada, el backend envía un
+/// link de activación de un solo uso al correo asociado. El paciente
+/// completa la activación (confirmar datos + crear clave) en ese link,
+/// en el navegador del teléfono — la app no maneja el token del link
+/// (deep linking evaluado a futuro, requiere signing de producción y
+/// publicación en tiendas, que aún no existen). Después de activar en
+/// el navegador, el paciente vuelve a la app y hace login normal.
 library;
 
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
 
 class ActivarCuentaScreen extends StatefulWidget {
   final String? rutInicial;
@@ -21,13 +26,11 @@ class ActivarCuentaScreen extends StatefulWidget {
 
 class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
   late final TextEditingController _rutController;
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmarPasswordController = TextEditingController();
 
   bool _cargando = false;
+  bool _enviado = false;
   String? _error;
-  bool _ocultarPassword = true;
+  String? _mensaje;
 
   @override
   void initState() {
@@ -38,28 +41,14 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
   @override
   void dispose() {
     _rutController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmarPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _activar() async {
+  Future<void> _solicitarActivacion() async {
     final rut = _rutController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    final confirmar = _confirmarPasswordController.text;
 
-    if (rut.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Completa todos los campos');
-      return;
-    }
-    if (password.length < 8) {
-      setState(() => _error = 'La contraseña debe tener al menos 8 caracteres');
-      return;
-    }
-    if (password != confirmar) {
-      setState(() => _error = 'Las contraseñas no coinciden');
+    if (rut.isEmpty) {
+      setState(() => _error = 'Ingresa tu RUT');
       return;
     }
 
@@ -69,16 +58,12 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
     });
 
     try {
-      await AuthService.activarCuenta(
-        rut: rut,
-        email: email,
-        nuevaPassword: password,
-      );
+      final mensaje = await AuthService.buscarRut(rut);
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        (route) => false,
-      );
+      setState(() {
+        _enviado = true;
+        _mensaje = mensaje;
+      });
     } on AuthException catch (e) {
       setState(() => _error = e.mensaje);
     } catch (_) {
@@ -98,89 +83,76 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Tu médico ya creó tu ficha en MiSalud. Activa tu cuenta '
-                'ingresando tu RUT, tu email registrado, y una contraseña nueva.',
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _rutController,
-                decoration: const InputDecoration(
-                  labelText: 'RUT',
-                  hintText: '12345678-9',
-                  prefixIcon: Icon(Icons.badge_outlined),
-                  border: OutlineInputBorder(),
+              if (!_enviado) ...[
+                Text(
+                  'Si tu médico ya creó tu ficha en MiSalud, ingresa tu RUT '
+                  'y te enviaremos un link de activación a tu correo registrado.',
+                  style: TextStyle(color: Colors.grey[700]),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email registrado',
-                  prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _ocultarPassword,
-                decoration: InputDecoration(
-                  labelText: 'Nueva contraseña',
-                  helperText: 'Mínimo 8 caracteres',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(_ocultarPassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _rutController,
+                  onSubmitted: (_) => _solicitarActivacion(),
+                  decoration: const InputDecoration(
+                    labelText: 'RUT',
+                    hintText: '12345678-9',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirmarPasswordController,
-                obscureText: _ocultarPassword,
-                onSubmitted: (_) => _activar(),
-                decoration: const InputDecoration(
-                  labelText: 'Confirma tu contraseña',
-                  prefixIcon: Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(),
+                if (_error != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(_error!, style: TextStyle(color: Colors.red[700])),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _cargando ? null : _solicitarActivacion,
+                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  child: _cargando
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Enviar link de activación'),
                 ),
-              ),
-              if (_error != null) ...[
+              ] else ...[
+                Icon(Icons.mark_email_read_outlined, size: 56, color: Colors.teal[700]),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(_error!, style: TextStyle(color: Colors.red[700])),
-                      ),
-                    ],
-                  ),
+                Text(
+                  _mensaje ?? 'Revisa tu correo para continuar.',
+                  style: TextStyle(color: Colors.grey[800]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Abre el link desde tu teléfono para confirmar tus datos y crear '
+                  'tu contraseña. Luego vuelve aquí e inicia sesión.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Volver a iniciar sesión'),
                 ),
               ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _cargando ? null : _activar,
-                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: _cargando
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Activar cuenta'),
-              ),
             ],
           ),
         ),
