@@ -1,7 +1,12 @@
-/// lib/models/acceso_medico.dart
+/// lib/models/acceso_medico.dart — v1.1
 ///
 /// Representa un acceso temporal generado vía POST /api/compartir/generar
 /// y listado vía GET /api/compartir/mis-links (ficha_compartida_router.py).
+///
+/// v1.1 (mejora): fromJson() ya no usa `!` a ciegas sobre creado_at y
+/// expira_invitacion (campos requeridos) — si vienen ausentes o mal
+/// formados, ahora lanza FormatException con el nombre del campo, en
+/// vez de un "Null check operator used on a null value" sin contexto.
 library;
 
 enum EstadoAccesoMedico {
@@ -57,13 +62,21 @@ class AccesoMedico {
   factory AccesoMedico.fromJson(Map<String, dynamic> json) {
     DateTime? parseFecha(dynamic v) => v == null ? null : DateTime.parse(v as String);
 
+    DateTime parseFechaRequerida(dynamic v, String campo) {
+      final parsed = parseFecha(v);
+      if (parsed == null) {
+        throw FormatException('AccesoMedico: falta el campo requerido "$campo" (id=${json['id']})');
+      }
+      return parsed;
+    }
+
     return AccesoMedico(
       id: json['id'],
       medicoRut: json['medico_rut'],
       token: json['token'] ?? '',
       estado: _parsearEstado(json['estado'] ?? ''),
-      creadoAt: parseFecha(json['creado_at'])!,
-      expiraInvitacion: parseFecha(json['expira_invitacion'])!,
+      creadoAt: parseFechaRequerida(json['creado_at'], 'creado_at'),
+      expiraInvitacion: parseFechaRequerida(json['expira_invitacion'], 'expira_invitacion'),
       usadoAt: parseFecha(json['usado_at']),
       expiraSesion: parseFecha(json['expira_sesion']),
     );
