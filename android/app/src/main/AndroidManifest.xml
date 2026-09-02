@@ -21,7 +21,17 @@
     <application
         android:label="HypokratIA"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
+        <!-- allowBackup="false" (auditoría — almacenamiento sensible):
+             sin esto, Android Auto Backup podía copiar los datos de la
+             app (incluido lo que quedara en shared_preferences) a la
+             cuenta de Google del usuario, fuera del cifrado propio de
+             la app y del control de HypokratIA. Con flutter_secure_
+             storage ya migrado (Keystore/Keychain), esto es una capa
+             adicional: ni siquiera lo no sensible que queda en
+             shared_preferences (nombre del paciente) sale del
+             dispositivo por esta vía. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
