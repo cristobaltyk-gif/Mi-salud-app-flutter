@@ -1,4 +1,11 @@
-/// lib/screens/login_screen.dart
+/// lib/screens/login_screen.dart — v1.1
+///
+/// v1.1 (mejora): se agrega isValidRut() y su chequeo antes de intentar
+/// el login — antes solo se formateaba el RUT (guion + dígito
+/// verificador visual) pero nunca se validaba que el dígito fuera
+/// matemáticamente correcto, a diferencia del resto del sistema
+/// (RegistroForm.jsx, GenerarQRCuidador.jsx en la web). Un RUT mal
+/// tipeado ahora se detecta antes de gastar una llamada de red.
 library;
 
 import 'package:flutter/material.dart';
@@ -13,6 +20,24 @@ String _normalizarRut(String raw) {
   final cuerpo = limpio.substring(0, limpio.length - 1);
   final dv = limpio[limpio.length - 1];
   return '$cuerpo-$dv';
+}
+
+bool _isValidRut(String rut) {
+  final limpio = rut.replaceAll('.', '').replaceAll('-', '').trim().toUpperCase();
+  if (limpio.length < 2) return false;
+  final cuerpo = limpio.substring(0, limpio.length - 1);
+  final dv = limpio.substring(limpio.length - 1);
+  if (!RegExp(r'^\d+$').hasMatch(cuerpo)) return false;
+
+  int suma = 0;
+  int multiplo = 2;
+  for (int i = cuerpo.length - 1; i >= 0; i--) {
+    suma += int.parse(cuerpo[i]) * multiplo;
+    multiplo = multiplo == 7 ? 2 : multiplo + 1;
+  }
+  final resto = 11 - (suma % 11);
+  final dvEsperado = resto == 11 ? '0' : (resto == 10 ? 'K' : resto.toString());
+  return dv == dvEsperado;
 }
 
 class LoginScreen extends StatefulWidget {
@@ -50,6 +75,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
     if (rut.isEmpty || password.isEmpty) {
       setState(() => _error = 'Ingresa tu RUT y tu contraseña');
+      return;
+    }
+    if (!_isValidRut(rut)) {
+      setState(() => _error = 'El RUT ingresado no es válido');
       return;
     }
     setState(() { _cargando = true; _error = null; });
