@@ -1,4 +1,4 @@
-/// lib/screens/compartir_ficha_cuidado_screen.dart
+/// lib/screens/compartir_ficha_cuidado_screen.dart — v1.4
 ///
 /// Mismo flujo que la pantalla de "Autorizar acceso a médico" del propio
 /// paciente, pero generando el acceso EN NOMBRE del paciente cuidado
@@ -25,6 +25,16 @@
 /// del usuario logueado (StorageService.obtenerRut()) y con eso decide
 /// si mostrar el header morado y la mención al nombre del paciente
 /// cuidado, o quedar neutra.
+///
+/// v1.4 (auditoría — crash y bug de revocación): el botón "Revocar" del
+/// QR activo hacía `_links.firstWhere(..., orElse: () => _links.first)`.
+/// Si _links estaba vacía, `.first` lanzaba StateError (crash). Si no
+/// encontraba coincidencia pero la lista no estaba vacía, `orElse`
+/// devolvía el PRIMER link de la lista sin importar cuál fuera —
+/// pudiendo revocar un acceso distinto al que se estaba mostrando.
+/// Ahora se guarda el id del link recién creado (_linkActivoId) apenas
+/// se recarga la lista tras generarlo — mismo fix aplicado en
+/// CompartirFicha.jsx/CompartirFichaCuidado.jsx del lado web.
 library;
 
 import 'package:flutter/material.dart';
@@ -56,6 +66,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
   String? _exito;
   String _modo = 'qr'; // 'qr' | 'email'
   LinkGenerado? _linkActivo;
+  int? _linkActivoId;
   final _emailController = TextEditingController();
 
   @override
@@ -136,6 +147,9 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
       final link = await AccesoMedicoService.generarLink(rutPaciente: widget.rutPaciente);
       setState(() => _linkActivo = link);
       await _cargarLinks();
+      if (!mounted) return;
+      // misLinks ordena por creado_at DESC — el recién creado queda primero.
+      setState(() => _linkActivoId = _links.isNotEmpty ? _links.first.id : null);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -171,7 +185,12 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
   Future<void> _revocar(int id) async {
     try {
       await AccesoMedicoService.revocarLink(id, rutPaciente: widget.rutPaciente);
-      if (_linkActivo != null) setState(() => _linkActivo = null);
+      if (id == _linkActivoId) {
+        setState(() {
+          _linkActivo = null;
+          _linkActivoId = null;
+        });
+      }
       setState(() {
         _links = _links
             .map((l) => l.id == id
@@ -311,13 +330,9 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                                   ),
                                   const SizedBox(width: 8),
                                   TextButton(
-                                    onPressed: () {
-                                      final link = _links.firstWhere(
-                                        (l) => l.token == _linkActivo!.token,
-                                        orElse: () => _links.first,
-                                      );
-                                      _revocar(link.id);
-                                    },
+                                    onPressed: _linkActivoId == null
+                                        ? null
+                                        : () => _revocar(_linkActivoId!),
                                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                                     child: const Text('Revocar'),
                                   ),
