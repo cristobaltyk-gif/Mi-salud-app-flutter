@@ -1,9 +1,21 @@
-/// lib/services/auth_service.dart
+/// lib/services/auth_service.dart — v2.0
 ///
-/// Cliente HTTP para auth_router.py. Replica exactamente los códigos de
-/// error que usa el backend para que la UI pueda mostrar el mensaje
-/// correcto en cada caso (RUT no registrado vs cuenta no activada vs
-/// contraseña incorrecta — login.py v1.5 los distingue a propósito).
+/// Cliente HTTP para auth_router.py.
+///
+/// v2.0 (alineado con misalud-backend ya corregido — auditoría CRÍTICO-2):
+/// /api/auth/buscar y /api/auth/activar cambiaron de contrato. Antes
+/// /buscar devolvía {existe, ya_activado, nombre, email} — exponía datos
+/// personales de cualquier paciente sin autenticación, dado solo su RUT.
+/// Ahora /buscar solo dispara (si corresponde) el envío de un link de
+/// activación de un solo uso al correo ya registrado, y responde siempre
+/// el mismo mensaje genérico, exista o no el RUT.
+///
+/// /api/auth/activar ya no existe — se reemplaza por dos pasos, ambos
+/// completados en el NAVEGADOR (la app no maneja deep linking del
+/// token — no hay signing de producción ni publicación en tiendas aún,
+/// se evalúa a futuro): el paciente pide el link desde la app
+/// (buscarRut), y completa la activación en el link del correo, en el
+/// navegador del teléfono. Después vuelve a la app y hace login normal.
 library;
 
 import 'dart:convert';
@@ -22,29 +34,6 @@ class AuthException implements Exception {
   String toString() => mensaje;
 }
 
-class ResultadoBuscarRut {
-  final bool existe;
-  final bool yaActivado;
-  final String? nombre;
-  final String? email;
-
-  ResultadoBuscarRut({
-    required this.existe,
-    this.yaActivado = false,
-    this.nombre,
-    this.email,
-  });
-
-  factory ResultadoBuscarRut.fromJson(Map<String, dynamic> json) {
-    return ResultadoBuscarRut(
-      existe: json['existe'] ?? false,
-      yaActivado: json['ya_activado'] ?? false,
-      nombre: json['nombre'],
-      email: json['email'],
-    );
-  }
-}
-
 class AuthService {
   static Map<String, String> get _headersJson => {
         'Content-Type': 'application/json',
@@ -59,8 +48,11 @@ class AuthService {
     }
   }
 
-  /// POST /api/auth/buscar — consulta si el RUT existe y si ya activó cuenta.
-  static Future<ResultadoBuscarRut> buscarRut(String rut) async {
+  /// POST /api/auth/buscar — dispara (si corresponde) el correo de
+  /// activación. Respuesta siempre genérica, sin importar si el RUT
+  /// existe o no — no se puede usar para enumerar pacientes.
+  /// Devuelve el mensaje del backend para mostrarlo tal cual en la UI.
+  static Future<String> buscarRut(String rut) async {
     final res = await http.post(
       Uri.parse(AppConfig.buscarRutEndpoint),
       headers: _headersJson,
@@ -69,7 +61,9 @@ class AuthService {
     if (res.statusCode != 200) {
       throw AuthException(res.statusCode, _detailDe(res));
     }
-    return ResultadoBuscarRut.fromJson(jsonDecode(res.body));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return body['mensaje'] ??
+        'Si el RUT corresponde a una ficha registrada, se enviarán instrucciones al correo asociado.';
   }
 
   /// POST /api/auth/login
@@ -81,35 +75,6 @@ class AuthService {
       Uri.parse(AppConfig.loginEndpoint),
       headers: _headersJson,
       body: jsonEncode({'rut': rut, 'password': password}),
-    );
-
-    if (res.statusCode != 200) {
-      throw AuthException(res.statusCode, _detailDe(res));
-    }
-
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    await StorageService.guardarSesion(
-      token: body['token'],
-      rut: body['rut'],
-      nombre: body['nombre'] ?? '',
-    );
-    return Paciente.fromLogin(body);
-  }
-
-  /// POST /api/auth/activar — primera vez que el paciente crea su clave.
-  static Future<Paciente> activarCuenta({
-    required String rut,
-    required String email,
-    required String nuevaPassword,
-  }) async {
-    final res = await http.post(
-      Uri.parse(AppConfig.activarCuentaEndpoint),
-      headers: _headersJson,
-      body: jsonEncode({
-        'rut': rut,
-        'email': email,
-        'nueva_password': nuevaPassword,
-      }),
     );
 
     if (res.statusCode != 200) {
