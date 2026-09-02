@@ -25,6 +25,15 @@
 /// el error "Invitación no válida" (404) aunque la invitación fuera
 /// perfectamente válida. Ahora se extrae el token del último segmento del
 /// path si el valor leído es una URL.
+///
+/// v1.3 (mejora): _NuevaInvitacionSheetState ahora libera sus 4
+/// TextEditingController en dispose() — antes no tenía ningún
+/// dispose(), filtrando esos controllers cada vez que se cerraba la
+/// hoja de "Invitar cuidador". También se agregan chequeos de
+/// `mounted` antes de cada setState() posterior a un await en
+/// _cargarNiveles() y _generar(), para no actualizar un widget ya
+/// desmontado si el usuario cierra la hoja mientras la petición
+/// sigue en curso.
 library;
 
 import 'package:flutter/material.dart';
@@ -248,15 +257,26 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
     _cargarNiveles();
   }
 
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _apellidosController.dispose();
+    _rutController.dispose();
+    _relacionController.dispose();
+    super.dispose();
+  }
+
   Future<void> _cargarNiveles() async {
     try {
       final niveles = await CuidadorService.nivelesAcceso();
+      if (!mounted) return;
       setState(() {
         _niveles = niveles;
         _nivelSeleccionado = niveles.isNotEmpty ? niveles.first.valor : null;
         _cargandoNiveles = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'No se pudieron cargar los niveles de acceso: $e';
         _cargandoNiveles = false;
@@ -281,8 +301,10 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
         nivelAcceso: _nivelSeleccionado!,
         relacion: _relacionController.text.trim().isEmpty ? null : _relacionController.text.trim(),
       );
+      if (!mounted) return;
       setState(() => _invitacionCreada = invitacion);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _enviando = false);
