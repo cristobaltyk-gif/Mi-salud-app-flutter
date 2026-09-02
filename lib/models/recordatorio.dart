@@ -1,4 +1,4 @@
-/// lib/models/recordatorio.dart
+/// lib/models/recordatorio.dart — v1.5
 ///
 /// Representa una fila de la tabla `recordatorios`, tal como la retorna
 /// GET /api/recordatorios/mis-recordatorios (recordatorios_store.py:
@@ -36,6 +36,17 @@
 /// campo `relacion` de vinculos_cuidador (recordatorios_router.py).
 /// Null para recordatorios propios, o si el vínculo no tiene relación
 /// declarada.
+///
+/// v1.5 (mejora): fromJson() ya no usa `!` a ciegas sobre fechas
+/// requeridas (fecha_inicio, created_at) — si vienen ausentes o mal
+/// formadas, ahora lanza FormatException con el nombre del campo, en
+/// vez de un "Null check operator used on a null value" sin contexto.
+/// Sigue fallando ese registro puntual (por diseño: son campos
+/// obligatorios del dominio, no hay una fecha "vacía" razonable que
+/// inventar) — para que un registro malformado no tumbe toda la lista,
+/// el código que recorre la lista (recordatorios_service.dart) debe
+/// capturar el error por ítem y omitir solo ese, si se decide que ese
+/// comportamiento es necesario.
 library;
 class Recordatorio {
   final int id;
@@ -83,6 +94,15 @@ class Recordatorio {
       if (v == null) return null;
       return DateTime.parse(v as String).toLocal();
     }
+
+    DateTime parseFechaRequerida(dynamic v, String campo) {
+      final parsed = parseFecha(v);
+      if (parsed == null) {
+        throw FormatException('Recordatorio: falta el campo requerido "$campo" (id=${json['id']})');
+      }
+      return parsed;
+    }
+
     return Recordatorio(
       id: json['id'],
       rutPaciente: json['rut_paciente'] ?? '',
@@ -90,13 +110,13 @@ class Recordatorio {
       tipo: json['tipo'] ?? '',
       descripcion: json['descripcion'] ?? '',
       detalle: json['detalle'],
-      fechaInicio: parseFecha(json['fecha_inicio'])!,
+      fechaInicio: parseFechaRequerida(json['fecha_inicio'], 'fecha_inicio'),
       frecuenciaHoras: json['frecuencia_horas'],
       duracionDias: json['duracion_dias'],
       fechaFin: parseFecha(json['fecha_fin']),
       activo: json['activo'] ?? true,
       editadoPorUsuario: json['editado_por_usuario'] ?? false,
-      createdAt: parseFecha(json['created_at'])!,
+      createdAt: parseFechaRequerida(json['created_at'], 'created_at'),
       creadoPor: json['creado_por'] ?? '',
       proximoDisparo: parseFecha(json['proximo_disparo']),
       esPropio: json['es_propio'] ?? true,
