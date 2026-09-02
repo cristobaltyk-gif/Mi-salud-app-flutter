@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firma de release Android (auditoría) — nunca deben quedar en el repo:
+# key.properties tiene las contraseñas de la keystore en texto plano,
+# y los .jks/.keystore/.p12 son la keystore misma.
+/android/key.properties
+*.jks
+*.keystore
+*.p12
