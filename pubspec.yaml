@@ -10,7 +10,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   # --- Networking ---
   http: ^1.2.2
-  shared_preferences: ^2.3.2          # guardar JWT token localmente
+  shared_preferences: ^2.3.2          # datos locales no sensibles (nombre del paciente)
+  flutter_secure_storage: ^9.2.2      # JWT, RUT y recordatorios (Keystore/Keychain cifrado)
   # --- Notificaciones locales / Alarmas ---
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4                    # requerido por flutter_local_notifications para programar horarios exactos
