@@ -17,6 +17,9 @@
 ///   — mismo fix aplicado en evento_detalle_screen.dart.
 /// - _decodeBase64() ya no usa `!` a ciegas — una foto con base64
 ///   corrupto ya no crashea toda la pantalla, solo se omite esa foto.
+///
+/// v1.2: todas las atenciones ("Ver más atenciones" carga de a 20),
+/// especialidad de cada una y campos de odontología en el detalle.
 library;
 
 import 'dart:typed_data';
@@ -24,18 +27,61 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import '../models/ficha_cuidado.dart';
 import '../services/ficha_service.dart';
+import '../widgets/etiqueta_especialidad.dart';
 
-class HistorialConsultasCuidadoScreen extends StatelessWidget {
+class HistorialConsultasCuidadoScreen extends StatefulWidget {
   final String rutPaciente;
   final String nombrePaciente;
   final List<EventoCuidadoCompleto> eventos;
+  final bool hayMas;
 
   const HistorialConsultasCuidadoScreen({
     super.key,
     required this.rutPaciente,
     required this.nombrePaciente,
     required this.eventos,
+    this.hayMas = false,
   });
+
+  @override
+  State<HistorialConsultasCuidadoScreen> createState() => _HistorialConsultasCuidadoScreenState();
+}
+
+class _HistorialConsultasCuidadoScreenState extends State<HistorialConsultasCuidadoScreen> {
+  late List<EventoCuidadoCompleto> eventos;
+  late bool _hayMas;
+  bool _cargandoMas = false;
+
+  String get rutPaciente => widget.rutPaciente;
+  String get nombrePaciente => widget.nombrePaciente;
+
+  @override
+  void initState() {
+    super.initState();
+    eventos = List.of(widget.eventos);
+    _hayMas = widget.hayMas;
+  }
+
+  Future<void> _cargarMas() async {
+    if (_cargandoMas) return;
+    setState(() => _cargandoMas = true);
+    try {
+      final siguiente = await FichaService.obtenerFichaCuidado(rutPaciente, offset: eventos.length);
+      if (!mounted) return;
+      setState(() {
+        eventos = [...eventos, ...siguiente.eventos];
+        _hayMas = siguiente.hayMas;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudieron cargar más atenciones: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cargandoMas = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +105,14 @@ class HistorialConsultasCuidadoScreen extends StatelessWidget {
             )
           : ListView(
               padding: const EdgeInsets.all(16),
-              children: eventos.map((ev) => _EventoCard(ev: ev, rutPaciente: rutPaciente)).toList(),
+              children: [
+                ...eventos.map((ev) => _EventoCard(ev: ev, rutPaciente: rutPaciente)),
+                if (_hayMas)
+                  OutlinedButton(
+                    onPressed: _cargandoMas ? null : _cargarMas,
+                    child: Text(_cargandoMas ? 'Cargando…' : 'Ver más atenciones'),
+                  ),
+              ],
             ),
     );
   }
@@ -82,6 +135,9 @@ class _EventoCardState extends State<_EventoCard> {
 
   static const _camposDetalle = [
     ('diagnostico', 'Diagnóstico', null),
+    ('examenClinicoBucal', 'Examen bucal', null),
+    ('piezasTratadas', 'Piezas tratadas', null),
+    ('planTratamiento', 'Plan de tratamiento', null),
     ('indicaciones', 'Indicaciones', 'informe'),
     ('receta', 'Receta', 'receta'),
     ('examenes', 'Exámenes', 'examenes'),
@@ -92,6 +148,9 @@ class _EventoCardState extends State<_EventoCard> {
   String _valorCampo(String key) {
     switch (key) {
       case 'diagnostico': return widget.ev.diagnostico;
+      case 'examenClinicoBucal': return widget.ev.examenClinicoBucal;
+      case 'piezasTratadas': return widget.ev.piezasTratadas;
+      case 'planTratamiento': return widget.ev.planTratamiento;
       case 'indicaciones': return widget.ev.indicaciones;
       case 'receta': return widget.ev.receta;
       case 'examenes': return widget.ev.examenes;
@@ -163,6 +222,10 @@ class _EventoCardState extends State<_EventoCard> {
                 ),
               ],
             ),
+            if (widget.ev.especialidad.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              EtiquetaEspecialidad(especialidad: widget.ev.especialidad),
+            ],
             if (widget.ev.medico.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text('👨‍⚕️ ${widget.ev.medico}',

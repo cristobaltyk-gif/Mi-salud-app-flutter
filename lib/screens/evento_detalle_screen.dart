@@ -50,8 +50,12 @@ class EventoDetalleScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text('Tipo de consulta: ${evento.tipo}',
-                      style: TextStyle(color: Colors.grey[600])),
+                  Text(
+                    evento.especialidad.isNotEmpty
+                        ? '${evento.especialidad} · ${evento.tipo}'
+                        : 'Tipo de consulta: ${evento.tipo}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
                 ],
               ),
             ),
@@ -66,6 +70,15 @@ class EventoDetalleScreen extends StatelessWidget {
           if (contenido.diagnostico.isNotEmpty)
             _SeccionDetalle(titulo: 'Diagnóstico', texto: contenido.diagnostico,
                 icono: Icons.assignment_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.examenClinicoBucal.isNotEmpty)
+            _SeccionDetalle(titulo: 'Examen bucal', texto: contenido.examenClinicoBucal,
+                icono: Icons.search_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.piezasTratadas.isNotEmpty)
+            _SeccionDetalle(titulo: 'Piezas tratadas', texto: contenido.piezasTratadas,
+                icono: Icons.grid_view_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.planTratamiento.isNotEmpty)
+            _SeccionDetalle(titulo: 'Plan de tratamiento', texto: contenido.planTratamiento,
+                icono: Icons.event_note_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.receta.isNotEmpty)
             _SeccionDetalle(titulo: 'Receta', texto: contenido.receta,
                 icono: Icons.medication_outlined, eventoId: evento.id, tipoPdf: 'receta'),

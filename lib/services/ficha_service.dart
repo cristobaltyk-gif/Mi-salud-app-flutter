@@ -27,6 +27,9 @@
 /// se borra automáticamente dentro de descargarPdf() porque el archivo
 /// recién descargado todavía tiene que existir para que el visor de
 /// PDF/diálogo de compartir lo lea.
+///
+/// v1.4: obtenerResumen() y obtenerFichaCuidado() aceptan `offset` — el
+/// backend entrega las atenciones de a 20 ("Ver más" pide la siguiente).
 library;
 
 import 'dart:async';
@@ -69,10 +72,10 @@ class FichaService {
     return {'Authorization': 'Bearer $token'};
   }
 
-  static Future<FichaResumen> obtenerResumen() async {
+  static Future<FichaResumen> obtenerResumen({int offset = 0}) async {
     final headers = await _authHeaders();
     final res = await http.get(
-      Uri.parse(AppConfig.fichaResumenEndpoint),
+      Uri.parse('${AppConfig.fichaResumenEndpoint}?offset=$offset'),
       headers: headers,
     );
 
@@ -83,10 +86,10 @@ class FichaService {
     return FichaResumen.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
   }
 
-  static Future<FichaCuidado> obtenerFichaCuidado(String rutPaciente) async {
+  static Future<FichaCuidado> obtenerFichaCuidado(String rutPaciente, {int offset = 0}) async {
     final headers = await _authHeaders();
     final res = await http.get(
-      Uri.parse(AppConfig.fichaCuidadoEndpoint(rutPaciente)),
+      Uri.parse('${AppConfig.fichaCuidadoEndpoint(rutPaciente)}?offset=$offset'),
       headers: headers,
     );
 

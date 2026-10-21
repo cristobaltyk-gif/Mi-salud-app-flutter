@@ -60,6 +60,11 @@ class AppConfig {
     return rutPaciente != null ? '$base?rut_paciente=$rutPaciente' : base;
   }
 
+  // --- Agendar hora (backend de ICA, público): centros por modalidad
+  //     ("domicilio" | "presencial") con sus profesionales ---
+  static String serviciosCentrosEndpoint(String modalidad) =>
+      '$icaBaseUrl/api/servicios/centros?modalidad=$modalidad';
+
   // --- Endpoints de recordatorios (recordatorios_router.py, prefix /api/recordatorios) ---
   static const String recordatoriosBase = '$backendBaseUrl/api/recordatorios';
   static String recordatoriosGenerarEndpoint(int eventoId) =>

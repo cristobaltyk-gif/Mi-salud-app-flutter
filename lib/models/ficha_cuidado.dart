@@ -22,7 +22,7 @@
 library;
 
 import 'recordatorio.dart';
-import 'evento_clinico.dart' show MedicamentoEstructurado;
+import 'evento_clinico.dart' show MedicamentoEstructurado, textoDeCampo;
 
 class PacienteCuidadoInfo {
   final String nombre;
@@ -105,6 +105,10 @@ class EventoCuidadoCompleto {
   final String examenes;
   final String ordenKinesiologia;
   final String indicacionQuirurgica;
+  final String especialidad;
+  final String examenClinicoBucal;
+  final String piezasTratadas;
+  final String planTratamiento;
   final List<FotoEvento> fotosDermatologia;
   final List<MedicamentoEstructurado> medicamentosEstructurados;
 
@@ -119,6 +123,10 @@ class EventoCuidadoCompleto {
     this.examenes = '',
     this.ordenKinesiologia = '',
     this.indicacionQuirurgica = '',
+    this.especialidad = '',
+    this.examenClinicoBucal = '',
+    this.piezasTratadas = '',
+    this.planTratamiento = '',
     this.fotosDermatologia = const [],
     this.medicamentosEstructurados = const [],
   });
@@ -141,6 +149,10 @@ class EventoCuidadoCompleto {
       examenes: contenido['examenes'] ?? '',
       ordenKinesiologia: contenido['orden_kinesiologia'] ?? '',
       indicacionQuirurgica: contenido['indicacion_quirurgica'] ?? '',
+      especialidad: json['especialidad'] ?? '',
+      examenClinicoBucal: textoDeCampo(contenido['examen_clinico_bucal']),
+      piezasTratadas: textoDeCampo(contenido['piezas_tratadas']),
+      planTratamiento: textoDeCampo(contenido['plan_tratamiento']),
       fotosDermatologia: fotosRaw
           .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
           .toList(),
@@ -158,6 +170,9 @@ class EventoCuidadoCompleto {
       examenes.trim().isNotEmpty ||
       ordenKinesiologia.trim().isNotEmpty ||
       indicacionQuirurgica.trim().isNotEmpty ||
+      examenClinicoBucal.trim().isNotEmpty ||
+      piezasTratadas.trim().isNotEmpty ||
+      planTratamiento.trim().isNotEmpty ||
       fotosDermatologia.isNotEmpty;
 }
 
@@ -173,6 +188,7 @@ class FichaCuidado {
   final int? totalConsultas;
   final Map<String, dynamic>? antecedentes;
   final List<EventoCuidadoCompleto> eventos;
+  final bool hayMas;
 
   FichaCuidado({
     required this.nivelAcceso,
@@ -182,6 +198,7 @@ class FichaCuidado {
     this.totalConsultas,
     this.antecedentes,
     this.eventos = const [],
+    this.hayMas = false,
   });
 
   factory FichaCuidado.fromJson(Map<String, dynamic> json) {
@@ -199,6 +216,7 @@ class FichaCuidado {
       eventos: (json['eventos'] as List<dynamic>? ?? [])
           .map((e) => EventoCuidadoCompleto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      hayMas: json['hay_mas'] == true,
     );
   }
 

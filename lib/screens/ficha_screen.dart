@@ -1,9 +1,15 @@
 /// lib/screens/ficha_screen.dart
+///
+/// v1.1: todas las atenciones ("Ver más atenciones" carga de a 20), con su
+/// especialidad y cantidad de fotos; botón "Agendar hora" (a domicilio o
+/// presencial).
 library;
 
 import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
+import '../widgets/etiqueta_especialidad.dart';
+import 'agendar_screen.dart';
 import 'evento_detalle_screen.dart';
 
 class FichaScreen extends StatefulWidget {
@@ -68,6 +74,17 @@ class _FichaScreenState extends State<FichaScreen> {
                   MaterialPageRoute(
                     builder: (_) => ConsultasScreen(resumen: resumen, onExplicar: _abrirExplicacionGeneral),
                   ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _BotonAcceso(
+                icono: '📅',
+                titulo: 'Agendar hora',
+                subtitulo: 'A domicilio o presencial, con el profesional que elijas',
+                color: const Color(0xFF1A3B8C),
+                colorBorde: const Color(0xFFBFDBFE),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AgendarScreen()),
                 ),
               ),
             ],
@@ -268,7 +285,27 @@ class _EventoCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text('${evento.fecha} · ${evento.medico}'),
+        isThreeLine: evento.especialidad.isNotEmpty || evento.fotosCount > 0,
+        subtitle: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${evento.fecha} · ${evento.medico}'),
+            if (evento.especialidad.isNotEmpty || evento.fotosCount > 0) ...[
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  EtiquetaEspecialidad(especialidad: evento.especialidad),
+                  if (evento.fotosCount > 0)
+                    Text('📸 ${evento.fotosCount} ${evento.fotosCount == 1 ? 'foto' : 'fotos'}',
+                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ],
+          ],
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => EventoDetalleScreen(evento: evento)),
@@ -444,7 +481,7 @@ class _BotonAcceso extends StatelessWidget {
   }
 }
 
-class ConsultasScreen extends StatelessWidget {
+class ConsultasScreen extends StatefulWidget {
   final FichaResumen resumen;
   final void Function(BuildContext) onExplicar;
 
@@ -453,6 +490,38 @@ class ConsultasScreen extends StatelessWidget {
     required this.resumen,
     required this.onExplicar,
   });
+
+  @override
+  State<ConsultasScreen> createState() => _ConsultasScreenState();
+}
+
+class _ConsultasScreenState extends State<ConsultasScreen> {
+  late FichaResumen resumen;
+  bool _cargandoMas = false;
+
+  @override
+  void initState() {
+    super.initState();
+    resumen = widget.resumen;
+  }
+
+  Future<void> _cargarMas() async {
+    if (_cargandoMas) return;
+    setState(() => _cargandoMas = true);
+    try {
+      final siguiente = await FichaService.obtenerResumen(offset: resumen.eventos.length);
+      if (!mounted) return;
+      setState(() => resumen = resumen.conMasEventos(siguiente));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudieron cargar más atenciones: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cargandoMas = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -482,7 +551,7 @@ class ConsultasScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: () => onExplicar(context),
+                    onPressed: () => widget.onExplicar(context),
                     icon: const Icon(Icons.auto_awesome),
                     label: const Text('Explícame mi historial en simple'),
                   ),
@@ -504,6 +573,14 @@ class ConsultasScreen extends StatelessWidget {
             )
           else
             ...resumen.eventos.map((ev) => _EventoCard(evento: ev)),
+          if (resumen.hayMas)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: OutlinedButton(
+                onPressed: _cargandoMas ? null : _cargarMas,
+                child: Text(_cargandoMas ? 'Cargando…' : 'Ver más atenciones'),
+              ),
+            ),
         ],
       ),
     );

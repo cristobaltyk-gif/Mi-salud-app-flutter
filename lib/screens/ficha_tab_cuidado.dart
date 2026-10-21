@@ -143,7 +143,7 @@ class _TarjetaHistorialLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final n = ficha.eventos.length;
+    final n = ficha.totalConsultas ?? ficha.eventos.length;
     final subtitulo = n == 0
         ? 'Sin consultas registradas'
         : '$n consulta${n == 1 ? '' : 's'} registrada${n == 1 ? '' : 's'}';
@@ -157,6 +157,7 @@ class _TarjetaHistorialLink extends StatelessWidget {
                 rutPaciente: rutPaciente,
                 nombrePaciente: ficha.paciente.nombreCompleto,
                 eventos: ficha.eventos,
+                hayMas: ficha.hayMas,
               ),
             ),
           );

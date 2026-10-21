@@ -1,4 +1,9 @@
 /// lib/models/evento_clinico.dart
+///
+/// v1.1: especialidad y cantidad de fotos por atención, campos de
+/// odontología (examen bucal, piezas tratadas, plan de tratamiento) y
+/// paginación del resumen (hayMas + conMasEventos) — el backend entrega
+/// las atenciones de a 20.
 library;
 
 import 'paciente.dart';
@@ -43,6 +48,20 @@ class MedicamentoEstructurado {
   }
 }
 
+/// Texto de un campo que puede venir como texto o como mapa (ej. el
+/// odontograma {"1.6": "caries"}, que el backend ya convierte a texto).
+String textoDeCampo(dynamic valor) {
+  if (valor == null) return '';
+  if (valor is String) return valor;
+  if (valor is Map) {
+    return valor.entries
+        .where((e) => (e.value?.toString() ?? '').trim().isNotEmpty)
+        .map((e) => 'Pieza ${e.key}: ${e.value}')
+        .join('\n');
+  }
+  return valor.toString();
+}
+
 class ContenidoEvento {
   final String atencion;
   final String diagnostico;
@@ -51,6 +70,9 @@ class ContenidoEvento {
   final String ordenKinesiologia;
   final String indicacionQuirurgica;
   final String examenes;
+  final String examenClinicoBucal;
+  final String piezasTratadas;
+  final String planTratamiento;
   final int? fotosCount;
   final List<FotoEvento> fotosDermatologia;
   final List<MedicamentoEstructurado> medicamentosEstructurados;
@@ -63,6 +85,9 @@ class ContenidoEvento {
     this.ordenKinesiologia = '',
     this.indicacionQuirurgica = '',
     this.examenes = '',
+    this.examenClinicoBucal = '',
+    this.piezasTratadas = '',
+    this.planTratamiento = '',
     this.fotosCount,
     this.fotosDermatologia = const [],
     this.medicamentosEstructurados = const [],
@@ -77,6 +102,9 @@ class ContenidoEvento {
       ordenKinesiologia: json['orden_kinesiologia'] ?? '',
       indicacionQuirurgica: json['indicacion_quirurgica'] ?? '',
       examenes: json['examenes'] ?? '',
+      examenClinicoBucal: textoDeCampo(json['examen_clinico_bucal']),
+      piezasTratadas: textoDeCampo(json['piezas_tratadas']),
+      planTratamiento: textoDeCampo(json['plan_tratamiento']),
       fotosCount: json['fotos_count'],
       fotosDermatologia: (json['fotos_dermatologia'] as List<dynamic>? ?? [])
           .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
@@ -102,6 +130,9 @@ class ContenidoEvento {
       ordenKinesiologia.isNotEmpty ||
       indicacionQuirurgica.isNotEmpty ||
       examenes.isNotEmpty ||
+      examenClinicoBucal.isNotEmpty ||
+      piezasTratadas.isNotEmpty ||
+      planTratamiento.isNotEmpty ||
       fotosDermatologia.isNotEmpty;
 
   bool get tieneMedicamentosParaCotizar => medicamentosEstructurados.isNotEmpty;
@@ -113,6 +144,8 @@ class EventoClinico {
   final String tipo;
   final String medico;
   final String diagnostico;
+  final String especialidad;
+  final int fotosCount;
   final ContenidoEvento contenido;
 
   EventoClinico({
@@ -121,6 +154,8 @@ class EventoClinico {
     required this.tipo,
     required this.medico,
     required this.diagnostico,
+    this.especialidad = '',
+    this.fotosCount = 0,
     required this.contenido,
   });
 
@@ -131,6 +166,8 @@ class EventoClinico {
       tipo: json['tipo'] ?? 'consulta',
       medico: json['medico'] ?? '',
       diagnostico: json['diagnostico'] ?? '',
+      especialidad: json['especialidad'] ?? '',
+      fotosCount: json['fotos_count'] ?? 0,
       contenido: ContenidoEvento.fromJson(
         json['contenido'] as Map<String, dynamic>? ?? {},
       ),
@@ -144,6 +181,7 @@ class FichaResumen {
   final String? ultimaConsulta;
   final Map<String, dynamic> antecedentes;
   final List<EventoClinico> eventos;
+  final bool hayMas;
 
   FichaResumen({
     required this.paciente,
@@ -151,7 +189,20 @@ class FichaResumen {
     this.ultimaConsulta,
     required this.antecedentes,
     required this.eventos,
+    this.hayMas = false,
   });
+
+  /// Este resumen con las atenciones de la página siguiente agregadas al final.
+  FichaResumen conMasEventos(FichaResumen siguiente) {
+    return FichaResumen(
+      paciente: paciente,
+      totalConsultas: totalConsultas,
+      ultimaConsulta: ultimaConsulta,
+      antecedentes: antecedentes,
+      eventos: [...eventos, ...siguiente.eventos],
+      hayMas: siguiente.hayMas,
+    );
+  }
 
   factory FichaResumen.fromJson(Map<String, dynamic> json) {
     return FichaResumen(
@@ -162,6 +213,7 @@ class FichaResumen {
       eventos: (json['eventos'] as List<dynamic>? ?? [])
           .map((e) => EventoClinico.fromJson(e as Map<String, dynamic>))
           .toList(),
+      hayMas: json['hay_mas'] == true,
     );
   }
 }
