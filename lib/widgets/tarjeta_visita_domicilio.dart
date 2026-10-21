@@ -1,8 +1,10 @@
 /// lib/widgets/tarjeta_visita_domicilio.dart
 ///
-/// Tarjeta de una visita a domicilio (pestaña Recordatorios): estado,
-/// código para el profesional, tiempo de llegada y botón al mapa de
-/// seguimiento. Es una cita, no ficha clínica.
+/// Tarjetas de citas agendadas (pestañas Recordatorios y Agenda):
+/// - TarjetaCita: cualquier hora (presencial, domicilio, telemedicina).
+/// - TarjetaVisitaDomicilio: visita a domicilio con seguimiento — estado,
+///   código para el profesional, tiempo de llegada y botón al mapa.
+/// Son citas, no ficha clínica.
 library;
 
 import 'package:flutter/material.dart';
@@ -92,3 +94,77 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
   }
 }
 
+
+
+/// Hora agendada. Si es a domicilio y ya tiene seguimiento, muestra la
+/// tarjeta de la visita (código, mapa, tiempo de llegada).
+class TarjetaCita extends StatelessWidget {
+  final Cita cita;
+  final Future<void> Function() onActualizar;
+  /// Botones de abajo (Cambiar hora / Cancelar) — solo en la pestaña Agenda.
+  final Widget? acciones;
+  const TarjetaCita({super.key, required this.cita, required this.onActualizar, this.acciones});
+
+  @override
+  Widget build(BuildContext context) {
+    final visita = cita.visita;
+    if (visita != null && acciones == null) {
+      return TarjetaVisitaDomicilio(visita: visita, onActualizar: onActualizar);
+    }
+    final confirmada = cita.estado == 'confirmada';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: Color(0xFFBFDBFE)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('${cita.fechaCorta} · ${cita.hora}',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1A3B8C))),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: cita.pagoPendiente
+                        ? const Color(0xFFFFFBEB)
+                        : confirmada ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    cita.pagoPendiente ? 'Pendiente de pago' : confirmada ? 'Confirmada' : 'Reservada',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: cita.pagoPendiente
+                          ? const Color(0xFFB45309)
+                          : confirmada ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(cita.profesional, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              [cita.tipoTexto, if (cita.centro.isNotEmpty) cita.centro].join(' · '),
+              style: TextStyle(color: Colors.grey[700], fontSize: 13),
+            ),
+            if (cita.direccion.isNotEmpty)
+              Text('📍 ${cita.direccion}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            if (acciones != null) ...[
+              const SizedBox(height: 12),
+              acciones!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

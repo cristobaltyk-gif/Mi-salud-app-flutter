@@ -1,6 +1,7 @@
 /// lib/services/agenda_service.dart
 ///
-/// "Agendar hora": centros que ofrecen atención a domicilio o presencial,
+/// Citas del paciente (ver, cambiar de hora, cancelar) y "Agendar hora":
+/// centros que ofrecen atención a domicilio o presencial,
 /// con sus profesionales (backend de ICA, público:
 /// GET /api/servicios/centros?modalidad=domicilio|presencial).
 /// La reserva en sí se hace en la página de reservas del centro (mismo
@@ -57,6 +58,87 @@ class VisitaDomicilio {
     final restante = etaSeg! - (pasado < 0 ? 0 : pasado);
     final min = (restante / 60).round();
     return min < 1 ? 1 : min;
+  }
+}
+
+/// Hora agendada del paciente (o de la persona que cuida): presencial,
+/// a domicilio o telemedicina. Backend de ICA: GET /api/paciente/citas.
+class Cita {
+  final String fecha; // YYYY-MM-DD
+  final String hora;  // HH:MM
+  final String professional; // id
+  final String profesional;  // nombre para mostrar
+  final String especialidad;
+  final String centro;
+  final String tipo; // presencial | domicilio | telemedicina
+  final String estado; // reservada | confirmada
+  final String direccion;
+  final bool puedeCambiar;
+  final bool puedeCancelar;
+  final String motivo; // por qué no se puede cambiar/cancelar
+  final bool pagoPendiente;
+  final Map<String, dynamic>? seguimiento;
+
+  Cita({
+    required this.fecha,
+    required this.hora,
+    required this.professional,
+    required this.profesional,
+    required this.especialidad,
+    required this.centro,
+    required this.tipo,
+    required this.estado,
+    required this.direccion,
+    required this.puedeCambiar,
+    required this.puedeCancelar,
+    required this.motivo,
+    required this.pagoPendiente,
+    this.seguimiento,
+  });
+
+  factory Cita.fromJson(Map<String, dynamic> j) => Cita(
+        fecha: j['fecha']?.toString() ?? '',
+        hora: j['hora']?.toString() ?? '',
+        professional: j['professional']?.toString() ?? '',
+        profesional: j['profesional']?.toString() ?? '',
+        especialidad: j['especialidad']?.toString() ?? '',
+        centro: j['centro']?.toString() ?? '',
+        tipo: j['tipo']?.toString() ?? 'presencial',
+        estado: j['estado']?.toString() ?? 'reservada',
+        direccion: j['direccion']?.toString() ?? '',
+        puedeCambiar: j['puede_cambiar'] == true,
+        puedeCancelar: j['puede_cancelar'] == true,
+        motivo: j['motivo']?.toString() ?? '',
+        pagoPendiente: j['pago_pendiente'] == true,
+        seguimiento: j['seguimiento'] is Map<String, dynamic> ? j['seguimiento'] as Map<String, dynamic> : null,
+      );
+
+  /// Fecha legible: "sáb 24 oct".
+  String get fechaCorta {
+    final d = DateTime.tryParse(fecha);
+    if (d == null) return fecha;
+    const dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    return '${dias[d.weekday - 1]} ${d.day} ${meses[d.month - 1]}';
+  }
+
+  String get tipoTexto => tipo == 'domicilio'
+      ? '🏠 A domicilio'
+      : tipo == 'telemedicina'
+          ? '💻 Telemedicina'
+          : '🏥 Presencial';
+
+  /// Domicilio con seguimiento (código, mapa, tiempo de llegada).
+  VisitaDomicilio? get visita {
+    final s = seguimiento;
+    if (tipo != 'domicilio' || s == null) return null;
+    return VisitaDomicilio.fromJson({
+      ...s,
+      'fecha': fechaCorta,
+      'hora': hora,
+      'profesional': profesional,
+      'direccion': direccion,
+    });
   }
 }
 
@@ -135,6 +217,69 @@ class CentroAgenda {
 }
 
 class AgendaService {
+  static Future<Map<String, String>> _headers() async {
+    final token = await StorageService.obtenerToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  static String _error(http.Response res, String porDefecto) {
+    try {
+      final d = jsonDecode(utf8.decode(res.bodyBytes));
+      if (d is Map && d['detail'] is String) return d['detail'] as String;
+    } catch (_) {}
+    return porDefecto;
+  }
+
+  /// Próximas horas del paciente con sesión, o de la persona cuidada.
+  static Future<List<Cita>> misCitas({String? rutPaciente}) async {
+    final res = await http.get(Uri.parse(AppConfig.citasEndpoint(rutPaciente: rutPaciente)),
+        headers: await _headers());
+    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudieron cargar tus horas'));
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return (body['citas'] as List<dynamic>? ?? [])
+        .map((c) => Cita.fromJson(c as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Horas libres del mismo profesional y tipo para un día (YYYY-MM-DD).
+  static Future<List<String>> horasDisponibles(Cita cita, String fecha) async {
+    final res = await http.get(
+        Uri.parse(AppConfig.citasDisponiblesEndpoint(cita.professional, fecha, cita.tipo)),
+        headers: await _headers());
+    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudieron cargar las horas'));
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return (body['horas'] as List<dynamic>? ?? []).map((h) => h.toString()).toList();
+  }
+
+  static Future<void> cancelar(Cita cita, {String? rutPaciente}) async {
+    final res = await http.post(Uri.parse(AppConfig.citasCancelarEndpoint),
+        headers: await _headers(),
+        body: jsonEncode({
+          'fecha': cita.fecha,
+          'hora': cita.hora,
+          'professional': cita.professional,
+          if (rutPaciente != null) 'rut_paciente': rutPaciente,
+        }));
+    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudo cancelar la hora'));
+  }
+
+  static Future<void> reprogramar(Cita cita, String nuevaFecha, String nuevaHora, {String? rutPaciente}) async {
+    final res = await http.post(Uri.parse(AppConfig.citasReprogramarEndpoint),
+        headers: await _headers(),
+        body: jsonEncode({
+          'fecha': cita.fecha,
+          'hora': cita.hora,
+          'professional': cita.professional,
+          'nueva_fecha': nuevaFecha,
+          'nueva_hora': nuevaHora,
+          if (rutPaciente != null) 'rut_paciente': rutPaciente,
+        }));
+    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudo cambiar la hora'));
+  }
+
   /// Visitas a domicilio del paciente con sesión (MiSalud backend).
   static Future<List<VisitaDomicilio>> misVisitasDomicilio() async {
     final token = await StorageService.obtenerToken();

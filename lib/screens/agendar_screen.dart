@@ -18,7 +18,10 @@ const _verde = Color(0xFF0F766E);
 
 class AgendarScreen extends StatefulWidget {
   final String modalidadInicial; // 'domicilio' | 'presencial'
-  const AgendarScreen({super.key, this.modalidadInicial = 'domicilio'});
+  /// Cuidador agendando para la persona que cuida: se le recuerda usar
+  /// el RUT de esa persona en la página de reservas.
+  final String? paraNombre;
+  const AgendarScreen({super.key, this.modalidadInicial = 'domicilio', this.paraNombre});
 
   @override
   State<AgendarScreen> createState() => _AgendarScreenState();
@@ -52,7 +55,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
-        title: const Text('Agendar hora'),
+        title: Text(widget.paraNombre == null ? 'Agendar hora' : 'Agendar para ${widget.paraNombre}'),
         backgroundColor: _azul,
         foregroundColor: Colors.white,
       ),
@@ -85,6 +88,21 @@ class _AgendarScreenState extends State<AgendarScreen> {
               style: TextStyle(color: Colors.grey[700], fontSize: 13),
             ),
           ),
+          if (widget.paraNombre != null)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Text(
+                'Estás agendando para ${widget.paraNombre}. En la reserva, ingresa su RUT (no el tuyo).',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF92400E)),
+              ),
+            ),
           const SizedBox(height: 8),
           Expanded(
             child: FutureBuilder<List<CentroAgenda>>(

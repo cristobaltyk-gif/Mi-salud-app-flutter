@@ -1,5 +1,9 @@
 /// lib/screens/dashboard_screen.dart
 ///
+/// v4.1: 5° botón "Agenda" (agendar horas nuevas, cambiar o cancelar las
+/// existentes; para ti o para la persona cuidada). Las citas ya agendadas,
+/// con su mapa y código, se ven en Recordatorios.
+///
 /// v4 (04-08-2026): rediseño grande -- selector de "carpetas" arriba
 /// (Tú + una por cada persona cuidada, ver selector_carpetas.dart).
 /// Los 4 tabs de abajo (Ficha, Recordatorios, Cotizador, Autorizar) se
@@ -31,6 +35,7 @@ import '../widgets/barra_inferior_tabs.dart';
 import '../widgets/selector_carpetas.dart';
 import 'ficha_tab_unificada.dart';
 import 'recordatorios_tab_unificada.dart';
+import 'agenda_tab_unificada.dart';
 import 'cotizador_tab_unificada.dart';
 import 'autorizar_tab_unificada.dart';
 import 'cuidador_screen.dart';
@@ -146,6 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const _tabs = [
     TabInfo(icono: Icons.folder_shared_outlined, iconoActivo: Icons.folder_shared, label: 'Ficha'),
     TabInfo(icono: Icons.alarm_outlined, iconoActivo: Icons.alarm, label: 'Recordatorios'),
+    TabInfo(icono: Icons.event_outlined, iconoActivo: Icons.event, label: 'Agenda'),
     TabInfo(icono: Icons.medication_outlined, iconoActivo: Icons.medication, label: 'Cotizador'),
     TabInfo(icono: Icons.lock_outline, iconoActivo: Icons.lock, label: 'Autorizar'),
   ];
@@ -163,6 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final paginas = [
       FichaTabUnificada(key: ValueKey('ficha-$idCarpeta'), carpeta: carpeta),
       RecordatoriosTabUnificada(key: ValueKey('record-$idCarpeta'), carpeta: carpeta),
+      AgendaTabUnificada(key: ValueKey('agenda-$idCarpeta'), carpeta: carpeta),
       CotizadorTabUnificada(key: ValueKey('cotiz-$idCarpeta'), carpeta: carpeta),
       AutorizarTabUnificada(key: ValueKey('autoriz-$idCarpeta'), carpeta: carpeta),
     ];

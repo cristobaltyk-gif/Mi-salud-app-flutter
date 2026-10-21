@@ -68,6 +68,16 @@ class AppConfig {
   static String serviciosCentrosEndpoint(String modalidad) =>
       '$icaBaseUrl/api/servicios/centros?modalidad=$modalidad';
 
+  // --- Citas del paciente (backend de ICA, agenda/paciente_router.py):
+  //     ver, cambiar de hora y cancelar. ?rut_paciente= para un cuidado ---
+  static const String citasBase = '$icaBaseUrl/api/paciente/citas';
+  static String citasEndpoint({String? rutPaciente}) =>
+      rutPaciente != null ? '$citasBase?rut_paciente=${Uri.encodeQueryComponent(rutPaciente)}' : citasBase;
+  static String citasDisponiblesEndpoint(String professional, String fecha, String tipo) =>
+      '$citasBase/disponibles?professional=${Uri.encodeQueryComponent(professional)}&fecha=$fecha&tipo=$tipo';
+  static const String citasCancelarEndpoint = '$citasBase/cancelar';
+  static const String citasReprogramarEndpoint = '$citasBase/reprogramar';
+
   // --- Endpoints de recordatorios (recordatorios_router.py, prefix /api/recordatorios) ---
   static const String recordatoriosBase = '$backendBaseUrl/api/recordatorios';
   static String recordatoriosGenerarEndpoint(int eventoId) =>

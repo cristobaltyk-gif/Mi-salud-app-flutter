@@ -16,10 +16,10 @@
 ///     persona especifica desde el backend, sin necesidad de filtrar
 ///     en el cliente).
 ///
-/// Carpeta propia: arriba, el botón "Agendar hora" (a domicilio o
-/// presencial) y las visitas a domicilio confirmadas / en camino, con su
-/// código y el mapa de seguimiento. Son citas, por eso viven aquí y no en
-/// la ficha clínica.
+/// Arriba, las citas ya agendadas (propias o de la persona cuidada):
+/// presenciales y a domicilio, estas con su código, tiempo de llegada y
+/// mapa de seguimiento. Son citas, por eso viven aquí y no en la ficha
+/// clínica. Agendar, cambiar o cancelar: pestaña Agenda.
 library;
 
 import 'package:flutter/material.dart';
@@ -31,7 +31,6 @@ import '../services/ficha_service.dart';
 import '../services/recordatorios_service.dart';
 import '../services/agenda_service.dart';
 import '../widgets/tarjeta_visita_domicilio.dart';
-import 'agendar_screen.dart';
 import '../widgets/estado_vacio.dart';
 import 'media_ejercicio_screen.dart';
 
@@ -45,7 +44,7 @@ class RecordatoriosTabUnificada extends StatefulWidget {
 
 class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
   Future<List<Recordatorio>>? _future;
-  List<VisitaDomicilio> _visitas = const [];
+  List<Cita> _horas = const [];
 
   @override
   void initState() {
@@ -57,40 +56,28 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
     setState(() {
       _future = widget.carpeta.esPropia ? _cargarPropios() : _cargarCuidado();
     });
-    if (widget.carpeta.esPropia) _cargarVisitas();
+    _cargarCitas();
   }
 
-  Future<void> _cargarVisitas() async {
+  Future<void> _cargarCitas() async {
     try {
-      final v = await AgendaService.misVisitasDomicilio();
-      if (mounted) setState(() => _visitas = v);
+      final c = await AgendaService.misCitas(
+          rutPaciente: widget.carpeta.esPropia ? null : widget.carpeta.rutPaciente);
+      if (mounted) setState(() => _horas = c);
     } catch (_) {
-      // No bloqueante: si falla, simplemente no se muestran las visitas
+      // No bloqueante: si falla, simplemente no se muestran las citas
     }
   }
 
-  /// Agendar hora + visitas a domicilio (solo en la carpeta propia)
+  /// Citas ya agendadas (presenciales y a domicilio, con su mapa y código).
+  /// Agendar, cambiar o cancelar se hace en la pestaña Agenda.
   List<Widget> _citas(BuildContext context) {
-    if (!widget.carpeta.esPropia) return const [];
+    if (_horas.isEmpty) return const [];
     return [
-      Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFFBFDBFE)),
-        ),
-        child: ListTile(
-          leading: const Text('📅', style: TextStyle(fontSize: 24)),
-          title: const Text('Agendar hora',
-              style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1A3B8C))),
-          subtitle: const Text('A domicilio o presencial, con el profesional que elijas'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AgendarScreen()),
-          ),
-        ),
-      ),
+      const _SeccionHeader(icono: '🗓️', titulo: 'Citas agendadas', color: Color(0xFF1A3B8C)),
+      const SizedBox(height: 8),
+      ..._horas.map((c) => TarjetaCita(cita: c, onActualizar: _cargarCitas)),
       const SizedBox(height: 12),
-      ..._visitas.map((v) => TarjetaVisitaDomicilio(visita: v, onActualizar: _cargarVisitas)),
     ];
   }
 

@@ -50,11 +50,16 @@ class BarraInferiorTabs extends StatelessWidget {
             children: List.generate(tabs.length, (i) {
               final tab = tabs[i];
               final activo = tabActual == i;
-              return GestureDetector(
+              // Expanded + FittedBox: con 5 botones ("Recordatorios" es largo)
+              // no se desborda en pantallas angostas.
+              return Expanded(
+                child: GestureDetector(
                 onTap: () => onTap(i),
+                behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                   decoration: BoxDecoration(
                     // Mismo ajuste de contraste que se hizo en dashboard_screen.dart.
                     color: activo ? color.withOpacity(0.16) : Colors.transparent,
@@ -69,14 +74,19 @@ class BarraInferiorTabs extends StatelessWidget {
                         size: 24,
                       ),
                       const SizedBox(height: 4),
-                      Text(tab.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: activo ? FontWeight.w700 : FontWeight.w600,
-                            color: activo ? color : Colors.grey[700],
-                          )),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(tab.label,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: activo ? FontWeight.w700 : FontWeight.w600,
+                              color: activo ? color : Colors.grey[700],
+                            )),
+                      ),
                     ],
                   ),
+                ),
                 ),
               );
             }),
