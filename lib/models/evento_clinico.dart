@@ -73,6 +73,10 @@ class ContenidoEvento {
   final String examenClinicoBucal;
   final String piezasTratadas;
   final String planTratamiento;
+  final String examenFisico;
+  final String signosVitales;
+  final String procedimientoEnfermeria;
+  final String evolucion;
   final int? fotosCount;
   final List<FotoEvento> fotosDermatologia;
   final List<MedicamentoEstructurado> medicamentosEstructurados;
@@ -88,6 +92,10 @@ class ContenidoEvento {
     this.examenClinicoBucal = '',
     this.piezasTratadas = '',
     this.planTratamiento = '',
+    this.examenFisico = '',
+    this.signosVitales = '',
+    this.procedimientoEnfermeria = '',
+    this.evolucion = '',
     this.fotosCount,
     this.fotosDermatologia = const [],
     this.medicamentosEstructurados = const [],
@@ -105,6 +113,10 @@ class ContenidoEvento {
       examenClinicoBucal: textoDeCampo(json['examen_clinico_bucal']),
       piezasTratadas: textoDeCampo(json['piezas_tratadas']),
       planTratamiento: textoDeCampo(json['plan_tratamiento']),
+      examenFisico: textoDeCampo(json['examen_fisico']),
+      signosVitales: textoDeCampo(json['signos_vitales']),
+      procedimientoEnfermeria: textoDeCampo(json['procedimiento_enfermeria']),
+      evolucion: textoDeCampo(json['evolucion']),
       fotosCount: json['fotos_count'],
       fotosDermatologia: (json['fotos_dermatologia'] as List<dynamic>? ?? [])
           .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
@@ -133,6 +145,10 @@ class ContenidoEvento {
       examenClinicoBucal.isNotEmpty ||
       piezasTratadas.isNotEmpty ||
       planTratamiento.isNotEmpty ||
+      examenFisico.isNotEmpty ||
+      signosVitales.isNotEmpty ||
+      procedimientoEnfermeria.isNotEmpty ||
+      evolucion.isNotEmpty ||
       fotosDermatologia.isNotEmpty;
 
   bool get tieneMedicamentosParaCotizar => medicamentosEstructurados.isNotEmpty;

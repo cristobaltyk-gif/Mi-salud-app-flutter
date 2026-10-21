@@ -109,6 +109,10 @@ class EventoCuidadoCompleto {
   final String examenClinicoBucal;
   final String piezasTratadas;
   final String planTratamiento;
+  final String examenFisico;
+  final String signosVitales;
+  final String procedimientoEnfermeria;
+  final String evolucion;
   final List<FotoEvento> fotosDermatologia;
   final List<MedicamentoEstructurado> medicamentosEstructurados;
 
@@ -127,6 +131,10 @@ class EventoCuidadoCompleto {
     this.examenClinicoBucal = '',
     this.piezasTratadas = '',
     this.planTratamiento = '',
+    this.examenFisico = '',
+    this.signosVitales = '',
+    this.procedimientoEnfermeria = '',
+    this.evolucion = '',
     this.fotosDermatologia = const [],
     this.medicamentosEstructurados = const [],
   });
@@ -153,6 +161,10 @@ class EventoCuidadoCompleto {
       examenClinicoBucal: textoDeCampo(contenido['examen_clinico_bucal']),
       piezasTratadas: textoDeCampo(contenido['piezas_tratadas']),
       planTratamiento: textoDeCampo(contenido['plan_tratamiento']),
+      examenFisico: textoDeCampo(contenido['examen_fisico']),
+      signosVitales: textoDeCampo(contenido['signos_vitales']),
+      procedimientoEnfermeria: textoDeCampo(contenido['procedimiento_enfermeria']),
+      evolucion: textoDeCampo(contenido['evolucion']),
       fotosDermatologia: fotosRaw
           .map((f) => FotoEvento.fromJson(f as Map<String, dynamic>))
           .toList(),
@@ -173,6 +185,10 @@ class EventoCuidadoCompleto {
       examenClinicoBucal.trim().isNotEmpty ||
       piezasTratadas.trim().isNotEmpty ||
       planTratamiento.trim().isNotEmpty ||
+      examenFisico.trim().isNotEmpty ||
+      signosVitales.trim().isNotEmpty ||
+      procedimientoEnfermeria.trim().isNotEmpty ||
+      evolucion.trim().isNotEmpty ||
       fotosDermatologia.isNotEmpty;
 }
 

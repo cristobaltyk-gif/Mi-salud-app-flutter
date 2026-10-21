@@ -17,6 +17,7 @@ class EtiquetaEspecialidad extends StatelessWidget {
     'Odontología': ('🦷', Color(0xFF0E7490), Color(0xFFECFEFF)),
     'Kinesiología': ('🏃', Color(0xFF15803D), Color(0xFFF0FDF4)),
     'Psicología': ('🧠', Color(0xFF7C3AED), Color(0xFFF5F3FF)),
+    'Enfermería': ('💉', Color(0xFF0369A1), Color(0xFFF0F9FF)),
   };
 
   @override

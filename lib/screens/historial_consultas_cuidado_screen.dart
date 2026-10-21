@@ -138,6 +138,10 @@ class _EventoCardState extends State<_EventoCard> {
     ('examenClinicoBucal', 'Examen bucal', null),
     ('piezasTratadas', 'Piezas tratadas', null),
     ('planTratamiento', 'Plan de tratamiento', null),
+    ('examenFisico', 'Examen físico', null),
+    ('signosVitales', 'Signos vitales', null),
+    ('procedimientoEnfermeria', 'Procedimientos de enfermería', null),
+    ('evolucion', 'Evolución', null),
     ('indicaciones', 'Indicaciones', 'informe'),
     ('receta', 'Receta', 'receta'),
     ('examenes', 'Exámenes', 'examenes'),
@@ -151,6 +155,10 @@ class _EventoCardState extends State<_EventoCard> {
       case 'examenClinicoBucal': return widget.ev.examenClinicoBucal;
       case 'piezasTratadas': return widget.ev.piezasTratadas;
       case 'planTratamiento': return widget.ev.planTratamiento;
+      case 'examenFisico': return widget.ev.examenFisico;
+      case 'signosVitales': return widget.ev.signosVitales;
+      case 'procedimientoEnfermeria': return widget.ev.procedimientoEnfermeria;
+      case 'evolucion': return widget.ev.evolucion;
       case 'indicaciones': return widget.ev.indicaciones;
       case 'receta': return widget.ev.receta;
       case 'examenes': return widget.ev.examenes;

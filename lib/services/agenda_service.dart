@@ -39,11 +39,13 @@ class ProfesionalAgenda {
     if (r == 'odontologo') return 'Odontología';
     if (r == 'kine') return 'Kinesiología';
     if (r == 'psicologo') return 'Psicología';
+    if (r == 'enfermera') return 'Enfermería';
     final e = especialidad.toLowerCase();
     if (e.contains('dermat')) return 'Dermatología';
     if (e.contains('odont') || e.contains('implant') || e.contains('dental')) return 'Odontología';
     if (e.contains('kine')) return 'Kinesiología';
     if (e.contains('psico')) return 'Psicología';
+    if (e.contains('enferm')) return 'Enfermería';
     const trauma = ['traumat', 'cadera', 'rodilla', 'hombro', 'columna', 'tobillo', 'mano', 'codo'];
     if (trauma.any((t) => e.contains(t))) return 'Traumatología';
     return especialidad;

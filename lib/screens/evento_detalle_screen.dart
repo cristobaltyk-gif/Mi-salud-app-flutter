@@ -79,6 +79,18 @@ class EventoDetalleScreen extends StatelessWidget {
           if (contenido.planTratamiento.isNotEmpty)
             _SeccionDetalle(titulo: 'Plan de tratamiento', texto: contenido.planTratamiento,
                 icono: Icons.event_note_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.examenFisico.isNotEmpty)
+            _SeccionDetalle(titulo: 'Examen físico', texto: contenido.examenFisico,
+                icono: Icons.accessibility_new_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.signosVitales.isNotEmpty)
+            _SeccionDetalle(titulo: 'Signos vitales', texto: contenido.signosVitales,
+                icono: Icons.monitor_heart_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.procedimientoEnfermeria.isNotEmpty)
+            _SeccionDetalle(titulo: 'Procedimientos de enfermería', texto: contenido.procedimientoEnfermeria,
+                icono: Icons.vaccines_outlined, eventoId: evento.id, tipoPdf: null),
+          if (contenido.evolucion.isNotEmpty)
+            _SeccionDetalle(titulo: 'Evolución', texto: contenido.evolucion,
+                icono: Icons.timeline_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.receta.isNotEmpty)
             _SeccionDetalle(titulo: 'Receta', texto: contenido.receta,
                 icono: Icons.medication_outlined, eventoId: evento.id, tipoPdf: 'receta'),
