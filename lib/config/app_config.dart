@@ -50,6 +50,9 @@ class AppConfig {
   static String fichaEventoExplicarEndpoint(int eventoId) =>
       '$fichaBase/evento/$eventoId'; // SSE
 
+  /// Visitas a domicilio del paciente (estado, código, tiempo de llegada, link al mapa)
+  static const String fichaDomicilioEndpoint = '$fichaBase/domicilio';
+
   static String fichaCuidadoEndpoint(String rutPaciente) =>
       '$fichaBase/cuidado/$rutPaciente';
 

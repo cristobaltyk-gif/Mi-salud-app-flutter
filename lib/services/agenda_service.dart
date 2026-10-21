@@ -10,6 +10,55 @@ library;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'storage_service.dart';
+
+/// Visita a domicilio del paciente (seguimiento tipo Uber, creado por Ficha Clínica).
+class VisitaDomicilio {
+  final String fecha;
+  final String hora;
+  final String profesional;
+  final String direccion;
+  final String estado; // confirmada | en_camino | en_domicilio
+  final String? codigo;
+  final int? etaSeg;
+  final DateTime? etaAt;
+  final String link;
+
+  VisitaDomicilio({
+    required this.fecha,
+    required this.hora,
+    required this.profesional,
+    required this.direccion,
+    required this.estado,
+    this.codigo,
+    this.etaSeg,
+    this.etaAt,
+    required this.link,
+  });
+
+  factory VisitaDomicilio.fromJson(Map<String, dynamic> json) {
+    return VisitaDomicilio(
+      fecha: json['fecha']?.toString() ?? '',
+      hora: json['hora']?.toString() ?? '',
+      profesional: json['profesional']?.toString() ?? '',
+      direccion: json['direccion']?.toString() ?? '',
+      estado: json['estado']?.toString() ?? 'confirmada',
+      codigo: json['codigo']?.toString(),
+      etaSeg: json['eta_seg'] is num ? (json['eta_seg'] as num).toInt() : null,
+      etaAt: json['eta_at'] != null ? DateTime.tryParse(json['eta_at'].toString()) : null,
+      link: json['link']?.toString() ?? '',
+    );
+  }
+
+  /// Minutos que faltan según el último tiempo estimado (se va descontando).
+  int? get minutosRestantes {
+    if (etaSeg == null) return null;
+    final pasado = etaAt == null ? 0 : DateTime.now().difference(etaAt!).inSeconds;
+    final restante = etaSeg! - (pasado < 0 ? 0 : pasado);
+    final min = (restante / 60).round();
+    return min < 1 ? 1 : min;
+  }
+}
 
 class ProfesionalAgenda {
   final String id;
@@ -86,6 +135,21 @@ class CentroAgenda {
 }
 
 class AgendaService {
+  /// Visitas a domicilio del paciente con sesión (MiSalud backend).
+  static Future<List<VisitaDomicilio>> misVisitasDomicilio() async {
+    final token = await StorageService.obtenerToken();
+    if (token == null) return [];
+    final res = await http.get(
+      Uri.parse(AppConfig.fichaDomicilioEndpoint),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode != 200) return [];
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return (body['visitas'] as List<dynamic>? ?? [])
+        .map((v) => VisitaDomicilio.fromJson(v as Map<String, dynamic>))
+        .toList();
+  }
+
   static Future<List<CentroAgenda>> centros(String modalidad) async {
     final res = await http.get(Uri.parse(AppConfig.serviciosCentrosEndpoint(modalidad)));
     if (res.statusCode != 200) {
