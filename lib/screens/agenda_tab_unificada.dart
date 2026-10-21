@@ -55,6 +55,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
           builder: (_) => AgendarScreen(
             modalidadInicial: modalidad,
             paraNombre: widget.carpeta.esPropia ? null : widget.carpeta.nombreMostrar,
+            paraRut: widget.carpeta.esPropia ? null : widget.carpeta.rutPaciente,
           ),
         ))
         .then((_) => _cargar());

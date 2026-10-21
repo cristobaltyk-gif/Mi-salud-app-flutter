@@ -6,15 +6,17 @@
 /// dermatólogo le responde por correo (se abre la consulta online del centro).
 /// 1. Centros que ofrecen esa modalidad.
 /// 2. Dentro de cada centro, sus profesionales con su especialidad.
-/// 3. "Agendar" abre la página de reservas del centro en el navegador, con
-///    el profesional ya elegido (mismo flujo que la web: horas reales,
-///    dirección registrada, pago en línea con el Flow del centro).
+/// 3. "Agendar" abre la página de reservas del centro DENTRO de la app
+///    (ReservaWebScreen, WebView en modo asistente), con el profesional ya
+///    elegido y el RUT del paciente precargado (el propio o el de la persona
+///    cuidada). Mismo flujo que la web: horas reales, dirección, pago con Flow.
 library;
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/agenda_service.dart';
 import '../widgets/etiqueta_especialidad.dart';
+import '../services/storage_service.dart';
+import 'reserva_web_screen.dart';
 
 const _azul = Color(0xFF1A3B8C);
 const _verde = Color(0xFF0F766E);
@@ -24,7 +26,8 @@ class AgendarScreen extends StatefulWidget {
   /// Cuidador agendando para la persona que cuida: se le recuerda usar
   /// el RUT de esa persona en la página de reservas.
   final String? paraNombre;
-  const AgendarScreen({super.key, this.modalidadInicial = 'domicilio', this.paraNombre});
+  final String? paraRut;
+  const AgendarScreen({super.key, this.modalidadInicial = 'domicilio', this.paraNombre, this.paraRut});
 
   @override
   State<AgendarScreen> createState() => _AgendarScreenState();
@@ -98,7 +101,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 border: Border.all(color: const Color(0xFFFDE68A)),
               ),
               child: Text(
-                'Estás agendando para ${widget.paraNombre}. En la reserva, ingresa su RUT (no el tuyo).',
+                'Estás agendando para ${widget.paraNombre}: la reserva queda a su nombre.',
                 style: const TextStyle(fontSize: 13, color: Color(0xFF92400E)),
               ),
             ),
@@ -140,7 +143,10 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 }
                 return ListView(
                   padding: const EdgeInsets.all(16),
-                  children: centros.map((c) => _TarjetaCentro(centro: c, modalidad: _modalidad)).toList(),
+                  children: centros.map((c) => _TarjetaCentro(
+                    centro: c, modalidad: _modalidad,
+                    paraNombre: widget.paraNombre, paraRut: widget.paraRut,
+                  )).toList(),
                 );
               },
             ),
@@ -194,15 +200,30 @@ class _BotonModalidad extends StatelessWidget {
 class _TarjetaCentro extends StatelessWidget {
   final CentroAgenda centro;
   final String modalidad;
-  const _TarjetaCentro({required this.centro, required this.modalidad});
+  final String? paraNombre;
+  final String? paraRut;
+  const _TarjetaCentro({required this.centro, required this.modalidad, this.paraNombre, this.paraRut});
 
+  /// Abre la reserva dentro de la app con el paciente precargado
   Future<void> _abrir(BuildContext context, Uri url) async {
-    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir la página de reservas')),
-      );
-    }
+    final rut = paraRut ?? await StorageService.obtenerRut();
+    final nombre = paraRut != null ? (paraNombre ?? '') : (await StorageService.obtenerNombre() ?? '');
+    if (!context.mounted) return;
+    final resultado = await Navigator.of(context).push<String>(MaterialPageRoute(
+      builder: (_) => ReservaWebScreen(
+        url: url,
+        titulo: centro.nombre,
+        paciente: (rut ?? '').isEmpty ? null : {'rut': rut!, 'nombre': nombre},
+      ),
+    ));
+    if (!context.mounted || resultado == null) return;
+    final aviso = resultado == 'pago'
+        ? 'Completa el pago: la hora queda apartada 30 minutos. También te llegó el link por correo.'
+        : 'Hora reservada. Te llegará la confirmación por correo.';
+    final mensajero = ScaffoldMessenger.maybeOf(context);
+    // Volver a Agenda: ahí (y en Recordatorios) aparece la hora nueva
+    Navigator.of(context).pop(resultado);
+    mensajero?.showSnackBar(SnackBar(content: Text(aviso)));
   }
 
   Future<void> _agendar(BuildContext context, ProfesionalAgenda p) =>
