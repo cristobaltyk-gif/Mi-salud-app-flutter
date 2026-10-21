@@ -15,6 +15,11 @@
 ///   - Cuidado: FichaCuidado.recordatorios (ya viene filtrado a esa
 ///     persona especifica desde el backend, sin necesidad de filtrar
 ///     en el cliente).
+///
+/// Carpeta propia: arriba, el botón "Agendar hora" (a domicilio o
+/// presencial) y las visitas a domicilio confirmadas / en camino, con su
+/// código y el mapa de seguimiento. Son citas, por eso viven aquí y no en
+/// la ficha clínica.
 library;
 
 import 'package:flutter/material.dart';
@@ -24,6 +29,9 @@ import '../models/ficha_cuidado.dart';
 import '../models/recordatorio.dart';
 import '../services/ficha_service.dart';
 import '../services/recordatorios_service.dart';
+import '../services/agenda_service.dart';
+import '../widgets/tarjeta_visita_domicilio.dart';
+import 'agendar_screen.dart';
 import '../widgets/estado_vacio.dart';
 import 'media_ejercicio_screen.dart';
 
@@ -37,6 +45,7 @@ class RecordatoriosTabUnificada extends StatefulWidget {
 
 class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
   Future<List<Recordatorio>>? _future;
+  List<VisitaDomicilio> _visitas = const [];
 
   @override
   void initState() {
@@ -48,6 +57,41 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
     setState(() {
       _future = widget.carpeta.esPropia ? _cargarPropios() : _cargarCuidado();
     });
+    if (widget.carpeta.esPropia) _cargarVisitas();
+  }
+
+  Future<void> _cargarVisitas() async {
+    try {
+      final v = await AgendaService.misVisitasDomicilio();
+      if (mounted) setState(() => _visitas = v);
+    } catch (_) {
+      // No bloqueante: si falla, simplemente no se muestran las visitas
+    }
+  }
+
+  /// Agendar hora + visitas a domicilio (solo en la carpeta propia)
+  List<Widget> _citas(BuildContext context) {
+    if (!widget.carpeta.esPropia) return const [];
+    return [
+      Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFFBFDBFE)),
+        ),
+        child: ListTile(
+          leading: const Text('📅', style: TextStyle(fontSize: 24)),
+          title: const Text('Agendar hora',
+              style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1A3B8C))),
+          subtitle: const Text('A domicilio o presencial, con el profesional que elijas'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AgendarScreen()),
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      ..._visitas.map((v) => TarjetaVisitaDomicilio(visita: v, onActualizar: _cargarVisitas)),
+    ];
   }
 
   Future<List<Recordatorio>> _cargarPropios() async {
@@ -97,9 +141,11 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
           final recordatorios = snapshot.data!;
           if (recordatorios.isEmpty) {
             return ListView(
-              children: const [
-                Padding(
-                  padding: EdgeInsets.only(top: 80),
+              padding: const EdgeInsets.all(16),
+              children: [
+                ..._citas(context),
+                const Padding(
+                  padding: EdgeInsets.only(top: 60),
                   child: EstadoVacio(texto: 'Sin medicamentos ni controles vigentes'),
                 ),
               ],
@@ -123,6 +169,7 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              ..._citas(context),
               if (urgentes.isNotEmpty) ...[
                 _SeccionHeader(icono: '⚡', titulo: 'Próximas 2 horas', color: Colors.orange[700]!),
                 const SizedBox(height: 8),

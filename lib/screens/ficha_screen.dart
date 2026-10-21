@@ -1,17 +1,16 @@
 /// lib/screens/ficha_screen.dart
 ///
 /// v1.1: todas las atenciones ("Ver más atenciones" carga de a 20), con su
-/// especialidad y cantidad de fotos; botón "Agendar hora" (a domicilio o
-/// presencial).
+/// especialidad y cantidad de fotos.
+/// v1.2: "Agendar hora" y las visitas a domicilio se movieron a la pestaña
+/// Recordatorios: son citas, no ficha clínica (la atención aparece aquí
+/// recién cuando el profesional la registra).
 library;
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/evento_clinico.dart';
-import '../services/agenda_service.dart';
 import '../services/ficha_service.dart';
 import '../widgets/etiqueta_especialidad.dart';
-import 'agendar_screen.dart';
 import 'evento_detalle_screen.dart';
 
 class FichaScreen extends StatefulWidget {
@@ -22,7 +21,6 @@ class FichaScreen extends StatefulWidget {
 
 class _FichaScreenState extends State<FichaScreen> {
   Future<FichaResumen>? _futureResumen;
-  List<VisitaDomicilio> _visitas = const [];
 
   @override
   void initState() {
@@ -32,16 +30,6 @@ class _FichaScreenState extends State<FichaScreen> {
 
   void _cargar() {
     setState(() { _futureResumen = FichaService.obtenerResumen(); });
-    _cargarVisitas();
-  }
-
-  Future<void> _cargarVisitas() async {
-    try {
-      final v = await AgendaService.misVisitasDomicilio();
-      if (mounted) setState(() => _visitas = v);
-    } catch (_) {
-      // No bloqueante: si falla, simplemente no se muestra la tarjeta
-    }
   }
 
   @override
@@ -75,7 +63,6 @@ class _FichaScreenState extends State<FichaScreen> {
               Text('¿Cómo te sientes hoy?',
                   style: TextStyle(color: const Color(0xFF0F766E), fontSize: 14)),
               const SizedBox(height: 16),
-              ..._visitas.map((v) => _TarjetaVisitaDomicilio(visita: v, onActualizar: _cargarVisitas)),
               _SeccionAntecedentesCriticos(antecedentes: resumen.antecedentes),
               const SizedBox(height: 12),
               _BotonAcceso(
@@ -88,17 +75,6 @@ class _FichaScreenState extends State<FichaScreen> {
                   MaterialPageRoute(
                     builder: (_) => ConsultasScreen(resumen: resumen, onExplicar: _abrirExplicacionGeneral),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _BotonAcceso(
-                icono: '📅',
-                titulo: 'Agendar hora',
-                subtitulo: 'A domicilio o presencial, con el profesional que elijas',
-                color: const Color(0xFF1A3B8C),
-                colorBorde: const Color(0xFFBFDBFE),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AgendarScreen()),
                 ),
               ),
             ],
@@ -115,89 +91,6 @@ class _FichaScreenState extends State<FichaScreen> {
       builder: (_) => _ExplicacionSheet(
         titulo: 'Tu historial, explicado simple',
         stream: FichaService.explicarFicha(),
-      ),
-    );
-  }
-}
-
-/// Visita a domicilio: estado, código para el profesional, tiempo de llegada
-/// y botón al mapa de seguimiento (se abre dentro de la app).
-class _TarjetaVisitaDomicilio extends StatelessWidget {
-  final VisitaDomicilio visita;
-  final Future<void> Function() onActualizar;
-  const _TarjetaVisitaDomicilio({required this.visita, required this.onActualizar});
-
-  @override
-  Widget build(BuildContext context) {
-    final enCamino = visita.estado == 'en_camino';
-    final llego = visita.estado == 'en_domicilio';
-    final color = llego ? const Color(0xFF166534) : enCamino ? const Color(0xFFB45309) : const Color(0xFF1D4ED8);
-    final fondo = llego ? const Color(0xFFF0FDF4) : enCamino ? const Color(0xFFFFFBEB) : const Color(0xFFEFF6FF);
-    final titulo = llego
-        ? '📍 El profesional llegó'
-        : enCamino
-            ? '🚗 Tu profesional va en camino'
-            : '🏠 Visita a domicilio confirmada';
-    final eta = enCamino ? visita.minutosRestantes : null;
-
-    return Card(
-      color: fondo,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(titulo, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: color)),
-            if (eta != null) ...[
-              const SizedBox(height: 4),
-              Text('Llega en aproximadamente $eta min', style: const TextStyle(fontSize: 15)),
-            ],
-            const SizedBox(height: 6),
-            Text('${visita.profesional} · ${visita.fecha} · ${visita.hora}',
-                style: TextStyle(color: Colors.grey[800])),
-            Text('📍 ${visita.direccion}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-            if (visita.codigo != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                child: Column(
-                  children: [
-                    const Text('Código para el profesional',
-                        style: TextStyle(color: Color(0xFF166534), fontWeight: FontWeight.w600, fontSize: 12)),
-                    Text(visita.codigo!,
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800,
-                            letterSpacing: 10, color: Color(0xFF14532D))),
-                    Text('Entrégaselo cuando llegue', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-            ],
-            if (!llego) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => launchUrl(Uri.parse(visita.link), mode: LaunchMode.inAppBrowserView),
-                      icon: const Icon(Icons.map_outlined),
-                      label: const Text('Ver en el mapa'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'Actualizar',
-                    onPressed: onActualizar,
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
