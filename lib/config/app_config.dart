@@ -21,7 +21,7 @@ class AppConfig {
   /// nunca tuvo este problema porque el backend (ficha_compartida_router.py
   /// -> email_service.py) ya arma el link con la URL correcta del lado
   /// del servidor.
-  static const String misaludWebUrl = 'https://misalud.icarticular.cl';
+  static const String misaludWebUrl = 'https://portal.hipokratia.health';
 
   /// Backend de ICA (distinto del backend de MiSalud) — usado solo para
   /// descargar PDFs clínicos (Documentospdf/pdfPacienteRouter.py).

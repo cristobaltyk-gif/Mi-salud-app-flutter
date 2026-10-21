@@ -15,7 +15,7 @@
 /// en MisCuidados.jsx del lado web (ya corregido ahí).
 ///
 /// v1.2: _EscanearQRScreen ahora acepta tanto un token crudo como una URL
-/// completa (ej. "https://misalud.icarticular.cl/cuidador/escanear/{token}").
+/// completa (ej. "https://portal.hipokratia.health/cuidador/escanear/{token}").
 /// El QR generado desde la web codifica la URL completa (para que también
 /// funcione al escanearlo con la cámara nativa del teléfono, ej. cuando lo
 /// usa un médico sin la app instalada), mientras que el QR generado desde
@@ -539,7 +539,7 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
   ///   - Token crudo (generado desde Flutter): "AbCdEf123..."
   ///   - URL completa (generado desde la web, para que también funcione
   ///     al escanearlo con la cámara nativa del teléfono, ej. un médico
-  ///     sin la app instalada): "https://misalud.icarticular.cl/cuidador/escanear/AbCdEf123..."
+  ///     sin la app instalada): "https://portal.hipokratia.health/cuidador/escanear/AbCdEf123..."
   ///
   /// Si el valor parsea como una URI con esquema (http/https), se toma el
   /// último segmento del path como token. Si no, se asume que el valor ya
