@@ -1,5 +1,8 @@
 /// lib/screens/reserva_web_screen.dart
 ///
+/// También se usa para el mapa de seguimiento de la visita a domicilio
+/// (/seguimiento/{token}), sin paciente ni mensajes: solo la página embebida.
+///
 /// Reserva dentro de la app (sin salir al navegador): la página de reservas
 /// del centro se abre en un WebView en "modo asistente", con el paciente ya
 /// identificado (el RUT llega precargado y la página busca su ficha sola).

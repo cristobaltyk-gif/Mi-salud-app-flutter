@@ -8,8 +8,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/agenda_service.dart';
+import '../screens/reserva_web_screen.dart';
 
 /// Visita a domicilio: estado, código para el profesional, tiempo de llegada
 /// y botón al mapa de seguimiento (se abre dentro de la app).
@@ -73,7 +73,16 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () => launchUrl(Uri.parse(visita.link), mode: LaunchMode.inAppBrowserView),
+                      // Mapa dentro de la app (WebView), sin salir al navegador
+                      onPressed: () async {
+                        await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => ReservaWebScreen(
+                            url: Uri.parse(visita.link),
+                            titulo: enCamino ? 'Tu profesional va en camino' : 'Seguimiento de tu visita',
+                          ),
+                        ));
+                        await onActualizar();
+                      },
                       icon: const Icon(Icons.map_outlined),
                       label: const Text('Ver en el mapa'),
                     ),
