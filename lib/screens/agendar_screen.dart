@@ -1,6 +1,9 @@
 /// lib/screens/agendar_screen.dart
 ///
-/// "Agendar hora": A domicilio | Presencial.
+/// "Agendar hora": A domicilio | Presencial | Telemedicina | Dermatología online.
+/// Telemedicina: profesionales con horario de telemedicina (dermatología).
+/// Dermatología online: sin hora — el paciente envía fotos, paga y un
+/// dermatólogo le responde por correo (se abre la consulta online del centro).
 /// 1. Centros que ofrecen esa modalidad.
 /// 2. Dentro de cada centro, sus profesionales con su especialidad.
 /// 3. "Agendar" abre la página de reservas del centro en el navegador, con
@@ -17,7 +20,7 @@ const _azul = Color(0xFF1A3B8C);
 const _verde = Color(0xFF0F766E);
 
 class AgendarScreen extends StatefulWidget {
-  final String modalidadInicial; // 'domicilio' | 'presencial'
+  final String modalidadInicial; // 'domicilio' | 'presencial' | 'telemedicina' | 'online'
   /// Cuidador agendando para la persona que cuida: se le recuerda usar
   /// el RUT de esa persona en la página de reservas.
   final String? paraNombre;
@@ -34,7 +37,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
   @override
   void initState() {
     super.initState();
-    _modalidad = widget.modalidadInicial == 'presencial' ? 'presencial' : 'domicilio';
+    _modalidad = _modalidades.containsKey(widget.modalidadInicial) ? widget.modalidadInicial : 'domicilio';
     _cargar();
   }
 
@@ -63,28 +66,24 @@ class _AgendarScreenState extends State<AgendarScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Expanded(child: _BotonModalidad(
-                  texto: '🏠 A domicilio',
-                  activo: _modalidad == 'domicilio',
-                  onTap: () => _cambiarModalidad('domicilio'),
-                )),
-                const SizedBox(width: 8),
-                Expanded(child: _BotonModalidad(
-                  texto: '🏥 Presencial',
-                  activo: _modalidad == 'presencial',
-                  onTap: () => _cambiarModalidad('presencial'),
-                )),
-              ],
+            child: GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 3.6,
+              children: _modalidades.entries.map((e) => _BotonModalidad(
+                texto: e.value.$1,
+                activo: _modalidad == e.key,
+                onTap: () => _cambiarModalidad(e.key),
+              )).toList(),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              _modalidad == 'domicilio'
-                  ? 'Un profesional te atiende en tu casa. El pago es en línea al reservar.'
-                  : 'Reserva tu hora en uno de nuestros centros.',
+              _modalidades[_modalidad]!.$2,
               style: TextStyle(color: Colors.grey[700], fontSize: 13),
             ),
           ),
@@ -132,9 +131,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
-                        _modalidad == 'domicilio'
-                            ? 'Por ahora no hay centros con atención a domicilio disponibles.'
-                            : 'Por ahora no hay centros con atención presencial disponibles.',
+                        'Por ahora no hay ${_modalidades[_modalidad]!.$3} disponible.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey[600]),
                       ),
@@ -153,6 +150,16 @@ class _AgendarScreenState extends State<AgendarScreen> {
     );
   }
 }
+
+/// modalidad → (botón, descripción, "no hay …")
+const Map<String, (String, String, String)> _modalidades = {
+  'domicilio': ('🏠 A domicilio', 'Un profesional te atiende en tu casa. El pago es en línea al reservar.',
+      'atención a domicilio'),
+  'presencial': ('🏥 Presencial', 'Reserva tu hora en uno de nuestros centros.', 'atención presencial'),
+  'telemedicina': ('📱 Telemedicina', 'Consulta por videollamada a la hora que elijas.', 'telemedicina'),
+  'online': ('💻 Derma online', 'Sin hora: envías tus fotos, pagas en línea y un dermatólogo te responde por correo.',
+      'dermatología online'),
+};
 
 class _BotonModalidad extends StatelessWidget {
   final String texto;
@@ -189,8 +196,8 @@ class _TarjetaCentro extends StatelessWidget {
   final String modalidad;
   const _TarjetaCentro({required this.centro, required this.modalidad});
 
-  Future<void> _agendar(BuildContext context, ProfesionalAgenda p) async {
-    final ok = await launchUrl(centro.urlReservaDe(p), mode: LaunchMode.externalApplication);
+  Future<void> _abrir(BuildContext context, Uri url) async {
+    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo abrir la página de reservas')),
@@ -198,9 +205,42 @@ class _TarjetaCentro extends StatelessWidget {
     }
   }
 
+  Future<void> _agendar(BuildContext context, ProfesionalAgenda p) =>
+      _abrir(context, centro.urlReservaDe(p));
+
   @override
   Widget build(BuildContext context) {
     final n = centro.profesionales.length;
+    if (modalidad == 'online' && centro.urlOnline != null) {
+      final precio = centro.precio ?? 0;
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(centro.nombre, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              const SizedBox(height: 4),
+              Text(centro.profesionales.map((p) => p.nombre).join(', '),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+              if (precio > 0)
+                Text('Consulta online · \$${_miles(precio)}',
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: _verde)),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: _verde),
+                  onPressed: () => _abrir(context, Uri.parse(centro.urlOnline!)),
+                  child: const Text('Iniciar consulta online'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
@@ -238,4 +278,14 @@ class _TarjetaCentro extends StatelessWidget {
       ),
     );
   }
+}
+
+String _miles(int n) {
+  final t = n.toString();
+  final b = StringBuffer();
+  for (var i = 0; i < t.length; i++) {
+    if (i > 0 && (t.length - i) % 3 == 0) b.write('.');
+    b.write(t[i]);
+  }
+  return b.toString();
 }

@@ -189,6 +189,9 @@ class CentroAgenda {
   final bool soloDomicilio;
   final String urlReservas;
   final List<ProfesionalAgenda> profesionales;
+  /// Dermatología online: precio y link directo a la consulta online.
+  final int? precio;
+  final String? urlOnline;
 
   CentroAgenda({
     required this.id,
@@ -196,6 +199,8 @@ class CentroAgenda {
     required this.soloDomicilio,
     required this.urlReservas,
     required this.profesionales,
+    this.precio,
+    this.urlOnline,
   });
 
   factory CentroAgenda.fromJson(Map<String, dynamic> json) {
@@ -207,6 +212,8 @@ class CentroAgenda {
       profesionales: (json['profesionales'] as List<dynamic>? ?? [])
           .map((p) => ProfesionalAgenda.fromJson(p as Map<String, dynamic>))
           .toList(),
+      precio: json['precio'] is num ? (json['precio'] as num).toInt() : null,
+      urlOnline: json['url_online']?.toString(),
     );
   }
 

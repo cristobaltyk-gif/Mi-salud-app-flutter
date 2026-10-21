@@ -165,6 +165,20 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
               )),
             ],
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _BotonNueva(
+                icono: '📱', titulo: 'Telemedicina', sub: 'Por videollamada',
+                onTap: () => _agendar('telemedicina'),
+              )),
+              const SizedBox(width: 10),
+              Expanded(child: _BotonNueva(
+                icono: '💻', titulo: 'Derma online', sub: 'Sin hora, con fotos',
+                onTap: () => _agendar('online'),
+              )),
+            ],
+          ),
           const SizedBox(height: 24),
           Text(paraOtro ? 'Horas agendadas de ${widget.carpeta.nombreMostrar}' : 'Tus horas agendadas',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
