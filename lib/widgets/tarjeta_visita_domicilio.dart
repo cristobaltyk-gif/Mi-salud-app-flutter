@@ -121,6 +121,7 @@ class TarjetaCita extends StatelessWidget {
       return TarjetaVisitaDomicilio(visita: visita, onActualizar: onActualizar);
     }
     final confirmada = cita.estado == 'confirmada';
+    final porConfirmar = cita.estado == 'por_confirmar';
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -141,17 +142,19 @@ class TarjetaCita extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: cita.pagoPendiente
+                    color: cita.pagoPendiente || porConfirmar
                         ? const Color(0xFFFFFBEB)
                         : confirmada ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    cita.pagoPendiente ? 'Pendiente de pago' : confirmada ? 'Confirmada' : 'Reservada',
+                    cita.pagoPendiente
+                        ? 'Pendiente de pago'
+                        : porConfirmar ? 'Por confirmar' : confirmada ? 'Confirmada' : 'Reservada',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: cita.pagoPendiente
+                      color: cita.pagoPendiente || porConfirmar
                           ? const Color(0xFFB45309)
                           : confirmada ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
                     ),
@@ -167,6 +170,10 @@ class TarjetaCita extends StatelessWidget {
             ),
             if (cita.direccion.isNotEmpty)
               Text('📍 ${cita.direccion}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            if (cita.pago == 'efectivo')
+              Text('💵 Pago en efectivo al profesional', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            if (cita.pago == 'mensual')
+              Text('🗓 Convenio mensual', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
             if (acciones != null) ...[
               const SizedBox(height: 12),
               acciones!,

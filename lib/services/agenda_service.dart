@@ -71,7 +71,8 @@ class Cita {
   final String especialidad;
   final String centro;
   final String tipo; // presencial | domicilio | telemedicina
-  final String estado; // reservada | confirmada
+  final String estado; // reservada | confirmada | por_confirmar (efectivo, lo aprueba el centro)
+  final String pago;   // domicilio: en_linea | efectivo | mensual
   final String direccion;
   final bool puedeCambiar;
   final bool puedeCancelar;
@@ -88,6 +89,7 @@ class Cita {
     required this.centro,
     required this.tipo,
     required this.estado,
+    this.pago = '',
     required this.direccion,
     required this.puedeCambiar,
     required this.puedeCancelar,
@@ -105,6 +107,7 @@ class Cita {
         centro: j['centro']?.toString() ?? '',
         tipo: j['tipo']?.toString() ?? 'presencial',
         estado: j['estado']?.toString() ?? 'reservada',
+        pago: j['pago']?.toString() ?? '',
         direccion: j['direccion']?.toString() ?? '',
         puedeCambiar: j['puede_cambiar'] == true,
         puedeCancelar: j['puede_cancelar'] == true,
