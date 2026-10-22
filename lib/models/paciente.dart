@@ -12,6 +12,7 @@ class Paciente {
   final String? email;
   final String? fechaNacimiento;
   final String? prevision;
+  final String? direccion;
 
   Paciente({
     required this.rut,
@@ -21,6 +22,7 @@ class Paciente {
     this.email,
     this.fechaNacimiento,
     this.prevision,
+    this.direccion,
   });
 
   /// Construye desde la respuesta de GET /api/auth/me
@@ -33,6 +35,7 @@ class Paciente {
       email: json['email'],
       fechaNacimiento: json['fecha_nacimiento'],
       prevision: json['prevision'],
+      direccion: json['direccion'],
     );
   }
 

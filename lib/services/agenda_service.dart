@@ -150,12 +150,18 @@ class ProfesionalAgenda {
   final String nombre;
   final String especialidad;
   final String rol;
+  /// Distancia al paciente (presencial: a su lugar más cercano; domicilio: desde su base)
+  final double? distanciaKm;
+  /// Presencial: dónde atiende {nombre, direccion, lat, lng}
+  final Map<String, dynamic>? lugar;
 
   ProfesionalAgenda({
     required this.id,
     required this.nombre,
     required this.especialidad,
     required this.rol,
+    this.distanciaKm,
+    this.lugar,
   });
 
   factory ProfesionalAgenda.fromJson(Map<String, dynamic> json) {
@@ -164,7 +170,19 @@ class ProfesionalAgenda {
       nombre: json['nombre']?.toString() ?? '',
       especialidad: json['especialidad']?.toString() ?? '',
       rol: json['rol']?.toString() ?? '',
+      distanciaKm: json['distancia_km'] is num ? (json['distancia_km'] as num).toDouble() : null,
+      lugar: json['lugar'] is Map<String, dynamic> ? json['lugar'] as Map<String, dynamic> : null,
     );
+  }
+
+  String get kmTexto => distanciaKm == null ? '' : '${distanciaKm!.toStringAsFixed(1).replaceAll('.', ',')} km';
+
+  /// Link "Cómo llegar" (Google Maps) al lugar de atención
+  Uri? get comoLlegar {
+    final l = lugar;
+    if (l == null) return null;
+    final destino = l['lat'] != null ? '${l['lat']},${l['lng']}' : (l['direccion'] ?? '').toString();
+    return Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(destino)}');
   }
 
   /// Especialidad para mostrar (Odontología, Kinesiología, Traumatología…).
@@ -305,8 +323,14 @@ class AgendaService {
         .toList();
   }
 
-  static Future<List<CentroAgenda>> centros(String modalidad) async {
-    final res = await http.get(Uri.parse(AppConfig.serviciosCentrosEndpoint(modalidad)));
+  /// direccion (opcional): la del paciente → ordenado por cercanía y, a
+  /// domicilio, solo profesionales que llegan a esa dirección.
+  static Future<List<CentroAgenda>> centros(String modalidad, {String? direccion}) async {
+    var url = AppConfig.serviciosCentrosEndpoint(modalidad);
+    if ((direccion ?? '').trim().length >= 4) {
+      url += '&direccion=${Uri.encodeQueryComponent(direccion!.trim())}';
+    }
+    final res = await http.get(Uri.parse(url));
     if (res.statusCode != 200) {
       throw Exception('No se pudieron cargar los centros (${res.statusCode})');
     }

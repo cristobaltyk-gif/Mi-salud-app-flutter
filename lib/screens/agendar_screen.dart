@@ -13,9 +13,11 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/agenda_service.dart';
 import '../widgets/etiqueta_especialidad.dart';
 import '../services/storage_service.dart';
+import '../services/auth_service.dart';
 import 'reserva_web_screen.dart';
 
 const _azul = Color(0xFF1A3B8C);
@@ -41,12 +43,25 @@ class _AgendarScreenState extends State<AgendarScreen> {
   void initState() {
     super.initState();
     _modalidad = _modalidades.containsKey(widget.modalidadInicial) ? widget.modalidadInicial : 'domicilio';
-    _cargar();
+    _iniciar();
+  }
+
+  /// Dirección del paciente para ordenar por cercanía (solo en la carpeta
+  /// propia: de la persona cuidada no tenemos la dirección).
+  String? _direccion;
+
+  Future<void> _iniciar() async {
+    if (widget.paraRut == null) {
+      try {
+        _direccion = (await AuthService.me()).direccion;
+      } catch (_) {}
+    }
+    if (mounted) _cargar();
   }
 
   void _cargar() {
     setState(() {
-      _futureCentros = AgendaService.centros(_modalidad);
+      _futureCentros = AgendaService.centros(_modalidad, direccion: _direccion);
     });
   }
 
@@ -143,10 +158,18 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 }
                 return ListView(
                   padding: const EdgeInsets.all(16),
-                  children: centros.map((c) => _TarjetaCentro(
-                    centro: c, modalidad: _modalidad,
-                    paraNombre: widget.paraNombre, paraRut: widget.paraRut,
-                  )).toList(),
+                  children: [
+                    if ((_direccion ?? '').isNotEmpty && _modalidad != 'online' && _modalidad != 'telemedicina')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text('📍 Ordenado por cercanía a $_direccion',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                      ),
+                    ...centros.map((c) => _TarjetaCentro(
+                      centro: c, modalidad: _modalidad,
+                      paraNombre: widget.paraNombre, paraRut: widget.paraRut,
+                    )),
+                  ],
                 );
               },
             ),
@@ -283,6 +306,24 @@ class _TarjetaCentro extends StatelessWidget {
                       Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                       const SizedBox(height: 4),
                       EtiquetaEspecialidad(especialidad: p.etiqueta),
+                      if (modalidad == 'domicilio' && p.distanciaKm != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text('🏠 Sale a ${p.kmTexto} de tu domicilio',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                        ),
+                      if (modalidad != 'domicilio' && p.lugar != null)
+                        InkWell(
+                          onTap: () => launchUrl(p.comoLlegar!, mode: LaunchMode.externalApplication),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '📍 ${[p.lugar!['nombre'], p.lugar!['direccion']].where((x) => (x ?? '').toString().isNotEmpty).join(' · ')}'
+                              '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · Cómo llegar',
+                              style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
