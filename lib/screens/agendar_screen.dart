@@ -250,7 +250,7 @@ class _TarjetaCentro extends StatelessWidget {
   }
 
   Future<void> _agendar(BuildContext context, ProfesionalAgenda p) =>
-      _abrir(context, centro.urlReservaDe(p));
+      _abrir(context, centro.urlReservaDe(p, modalidad: modalidad));
 
   @override
   Widget build(BuildContext context) {

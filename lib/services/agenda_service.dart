@@ -238,9 +238,11 @@ class CentroAgenda {
     );
   }
 
-  /// Página de reservas del centro con el profesional ya elegido.
-  Uri urlReservaDe(ProfesionalAgenda p) {
-    return Uri.parse('$urlReservas/?modo=asistente&dr=${Uri.encodeQueryComponent(p.id)}');
+  /// Página de reservas del centro con el profesional ya elegido; con
+  /// modalidad, solo muestra horas de esa modalidad.
+  Uri urlReservaDe(ProfesionalAgenda p, {String? modalidad}) {
+    final m = modalidad == null ? '' : '&modalidad=${Uri.encodeQueryComponent(modalidad)}';
+    return Uri.parse('$urlReservas/?modo=asistente&dr=${Uri.encodeQueryComponent(p.id)}$m');
   }
 }
 
