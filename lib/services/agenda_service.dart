@@ -217,6 +217,8 @@ class CentroAgenda {
   /// Dermatología online: precio y link directo a la consulta online.
   final int? precio;
   final String? urlOnline;
+  /// Distancia al paciente (el profesional más cercano del centro)
+  final double? distanciaKm;
 
   CentroAgenda({
     required this.id,
@@ -226,6 +228,7 @@ class CentroAgenda {
     required this.profesionales,
     this.precio,
     this.urlOnline,
+    this.distanciaKm,
   });
 
   factory CentroAgenda.fromJson(Map<String, dynamic> json) {
@@ -238,6 +241,7 @@ class CentroAgenda {
           .map((p) => ProfesionalAgenda.fromJson(p as Map<String, dynamic>))
           .toList(),
       precio: json['precio'] is num ? (json['precio'] as num).toInt() : null,
+      distanciaKm: json['distancia_km'] is num ? (json['distancia_km'] as num).toDouble() : null,
       urlOnline: json['url_online']?.toString(),
     );
   }

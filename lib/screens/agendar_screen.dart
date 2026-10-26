@@ -165,8 +165,11 @@ class _AgendarScreenState extends State<AgendarScreen> {
                         child: Text('📍 Ordenado por cercanía a $_direccion',
                             style: TextStyle(fontSize: 12, color: Colors.grey[700])),
                       ),
+                    // Primero los centros (cerrados, el más cercano arriba); al
+                    // tocar uno se ven sus profesionales. Con un solo centro, abierto.
                     ...centros.map((c) => _TarjetaCentro(
-                      centro: c, modalidad: _modalidad,
+                      key: ValueKey('${_modalidad}_${c.id}'),
+                      centro: c, modalidad: _modalidad, abierto: centros.length == 1,
                       paraNombre: widget.paraNombre, paraRut: widget.paraRut,
                     )),
                   ],
@@ -225,7 +228,9 @@ class _TarjetaCentro extends StatelessWidget {
   final String modalidad;
   final String? paraNombre;
   final String? paraRut;
-  const _TarjetaCentro({required this.centro, required this.modalidad, this.paraNombre, this.paraRut});
+  final bool abierto;
+  const _TarjetaCentro({super.key, required this.centro, required this.modalidad, this.abierto = false,
+      this.paraNombre, this.paraRut});
 
   /// Abre la reserva dentro de la app con el paciente precargado
   Future<void> _abrir(BuildContext context, Uri url) async {
@@ -288,10 +293,15 @@ class _TarjetaCentro extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
-        initiallyExpanded: true,
+        initiallyExpanded: abierto,
         title: Text(centro.nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
-          '$n ${n == 1 ? 'profesional' : 'profesionales'}${centro.soloDomicilio ? ' · Solo a domicilio' : ''}',
+          [
+            '$n ${n == 1 ? 'profesional' : 'profesionales'}',
+            if (centro.distanciaKm != null && modalidad != 'online' && modalidad != 'telemedicina')
+              'a ${centro.distanciaKm!.toStringAsFixed(1).replaceAll('.', ',')} km',
+            centro.profesionales.map((p) => p.etiqueta).where((e) => e.isNotEmpty).toSet().join(', '),
+          ].where((x) => x.isNotEmpty).join(' · '),
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         children: centro.profesionales.map((p) {
