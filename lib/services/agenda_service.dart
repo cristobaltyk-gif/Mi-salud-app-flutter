@@ -181,7 +181,11 @@ class ProfesionalAgenda {
   Uri? get comoLlegar {
     final l = lugar;
     if (l == null) return null;
-    final destino = l['lat'] != null ? '${l['lat']},${l['lng']}' : (l['direccion'] ?? '').toString();
+    // Sin coordenadas, la dirección se busca en Chile ("Pirineos 123" no es España)
+    final dir = (l['direccion'] ?? '').toString();
+    final destino = l['lat'] != null
+        ? '${l['lat']},${l['lng']}'
+        : (dir.toLowerCase().trim().endsWith('chile') ? dir : '$dir, Chile');
     return Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(destino)}');
   }
 
