@@ -19,6 +19,8 @@ import '../widgets/etiqueta_especialidad.dart';
 import '../services/storage_service.dart';
 import '../services/auth_service.dart';
 import 'reserva_web_screen.dart';
+import 'direccion_screen.dart';
+import '../services/direccion_service.dart';
 
 const _azul = Color(0xFF1A3B8C);
 const _verde = Color(0xFF0F766E);
@@ -49,20 +51,42 @@ class _AgendarScreenState extends State<AgendarScreen> {
   /// Dirección del paciente para ordenar por cercanía (solo en la carpeta
   /// propia: de la persona cuidada no tenemos la dirección).
   String? _direccion;
+  /// Domicilio (carpeta propia): SIEMPRE con la dirección registrada, nunca el
+  /// GPS. Sin dirección o sin comuna se pide actualizarla antes de buscar.
+  bool _dirConComuna = false;
 
   Future<void> _iniciar() async {
     if (widget.paraRut == null) {
       try {
         _direccion = (await AuthService.me()).direccion;
       } catch (_) {}
+      try {
+        _dirConComuna = DireccionService.tieneComuna(_direccion, await DireccionService.comunas());
+      } catch (_) {
+        // Sin lista de comunas (sin conexión): basta que tenga una comuna escrita
+        _dirConComuna = (_direccion ?? '').contains(',');
+      }
     }
     if (mounted) _cargar();
   }
 
+  bool get _faltaDireccion => _modalidad == 'domicilio' && widget.paraRut == null && !_dirConComuna;
+
   void _cargar() {
     setState(() {
-      _futureCentros = AgendaService.centros(_modalidad, direccion: _direccion);
+      _futureCentros = _faltaDireccion
+          ? Future.value(const <CentroAgenda>[])
+          : AgendaService.centros(_modalidad, direccion: _direccion);
     });
+  }
+
+  Future<void> _editarDireccion() async {
+    final nueva = await Navigator.of(context).push<String>(
+        MaterialPageRoute(builder: (_) => DireccionScreen(actual: _direccion)));
+    if (nueva == null || !mounted) return;
+    _direccion = nueva;
+    _dirConComuna = true;
+    _cargar();
   }
 
   void _cambiarModalidad(String m) {
@@ -121,6 +145,51 @@ class _AgendarScreenState extends State<AgendarScreen> {
               ),
             ),
           const SizedBox(height: 8),
+          if (_faltaDireccion)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text((_direccion ?? '').isEmpty ? '🏠 Agrega tu dirección' : '🏠 Actualiza tu dirección',
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF92400E))),
+                  const SizedBox(height: 4),
+                  Text(
+                    (_direccion ?? '').isEmpty
+                        ? 'Para ver quién puede atenderte en tu casa necesitamos tu dirección (calle, número y comuna).'
+                        : 'A tu dirección registrada le falta la comuna. La necesitamos para saber quién puede ir a atenderte.',
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF92400E)),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: _verde),
+                    onPressed: _editarDireccion,
+                    child: Text((_direccion ?? '').isEmpty ? 'Agregar mi dirección' : 'Actualizar mi dirección'),
+                  ),
+                ],
+              ),
+            ),
+          if (!_faltaDireccion && _modalidad == 'domicilio' && widget.paraRut == null && (_direccion ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('🏠 Visita en $_direccion',
+                        style: TextStyle(fontSize: 12.5, color: Colors.grey[800])),
+                  ),
+                  TextButton(onPressed: _editarDireccion, child: const Text('Cambiar')),
+                ],
+              ),
+            ),
+          if (!_faltaDireccion)
           Expanded(
             child: FutureBuilder<List<CentroAgenda>>(
               future: _futureCentros,
@@ -144,6 +213,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                   );
                 }
                 final centros = snapshot.data ?? [];
+                if (centros.isEmpty && _faltaDireccion) return const SizedBox.shrink();
                 if (centros.isEmpty) {
                   return Center(
                     child: Padding(
@@ -159,7 +229,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    if ((_direccion ?? '').isNotEmpty && _modalidad != 'online' && _modalidad != 'telemedicina')
+                    if ((_direccion ?? '').isNotEmpty && _modalidad == 'presencial')
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Text('📍 Ordenado por cercanía a $_direccion',
@@ -171,6 +241,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                       key: ValueKey('${_modalidad}_${c.id}'),
                       centro: c, modalidad: _modalidad, abierto: centros.length == 1,
                       paraNombre: widget.paraNombre, paraRut: widget.paraRut,
+                      direccion: widget.paraRut == null ? _direccion : null,
                     )),
                   ],
                 );
@@ -229,8 +300,10 @@ class _TarjetaCentro extends StatelessWidget {
   final String? paraNombre;
   final String? paraRut;
   final bool abierto;
+  /// Dirección registrada del paciente (carpeta propia): domicilio se agenda ahí
+  final String? direccion;
   const _TarjetaCentro({super.key, required this.centro, required this.modalidad, this.abierto = false,
-      this.paraNombre, this.paraRut});
+      this.paraNombre, this.paraRut, this.direccion});
 
   /// Abre la reserva dentro de la app con el paciente precargado
   Future<void> _abrir(BuildContext context, Uri url) async {
@@ -241,7 +314,11 @@ class _TarjetaCentro extends StatelessWidget {
       builder: (_) => ReservaWebScreen(
         url: url,
         titulo: centro.nombre,
-        paciente: (rut ?? '').isEmpty ? null : {'rut': rut!, 'nombre': nombre},
+        paciente: (rut ?? '').isEmpty ? null : {
+          'rut': rut!, 'nombre': nombre,
+          // La página de reservas usa esta dirección (no el GPS) para el domicilio
+          if ((direccion ?? '').isNotEmpty) 'direccion': direccion!,
+        },
       ),
     ));
     if (!context.mounted || resultado == null) return;
