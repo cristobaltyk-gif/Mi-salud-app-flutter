@@ -59,6 +59,13 @@ class StorageService {
     return token != null && token.isNotEmpty;
   }
 
+  /// Sesión vencida (no la cerró el paciente): se borra el token y el RUT,
+  /// pero NO los recordatorios — las alarmas de medicamentos siguen sonando.
+  static Future<void> cerrarSesionVencida() async {
+    await _secure.delete(key: AppConfig.prefsJwtKey);
+    await _secure.delete(key: AppConfig.prefsRutKey);
+  }
+
   static Future<void> cerrarSesion() async {
     await _secure.delete(key: AppConfig.prefsJwtKey);
     await _secure.delete(key: AppConfig.prefsRutKey);

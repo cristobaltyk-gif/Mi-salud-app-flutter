@@ -19,7 +19,7 @@
 library;
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'http_sesion.dart' as http;
 import '../config/app_config.dart';
 import '../models/paciente.dart';
 import 'storage_service.dart';

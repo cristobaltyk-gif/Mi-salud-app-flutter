@@ -35,7 +35,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'http_sesion.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import '../config/app_config.dart';
 import '../models/evento_clinico.dart';
@@ -171,6 +171,12 @@ class FichaService {
 
       final response = await client.send(request);
 
+      if (response.statusCode == 401) {
+        // Sesión vencida → inicio de sesión (services/http_sesion.dart)
+        http.SesionVencida.cerrar();
+        yield ExplicacionError('Tu sesión expiró. Vuelve a ingresar.');
+        return;
+      }
       if (response.statusCode != 200) {
         yield ExplicacionError('Error al conectar (${response.statusCode})');
         return;

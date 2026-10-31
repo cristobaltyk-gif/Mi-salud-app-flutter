@@ -44,7 +44,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:http/http.dart' as http;
+import 'http_sesion.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../config/app_config.dart';

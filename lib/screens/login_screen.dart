@@ -1,4 +1,7 @@
-/// lib/screens/login_screen.dart — v1.1
+/// lib/screens/login_screen.dart — v1.2
+///
+/// v1.2: aviso opcional arriba del formulario (p. ej. "Tu sesión expiró",
+/// cuando services/http_sesion.dart cierra una sesión vencida).
 ///
 /// v1.1 (mejora): se agrega isValidRut() y su chequeo antes de intentar
 /// el login — antes solo se formateaba el RUT (guion + dígito
@@ -41,7 +44,8 @@ bool _isValidRut(String rut) {
 }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? aviso;
+  const LoginScreen({super.key, this.aviso});
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -173,6 +177,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F235A)),
                           textAlign: TextAlign.center,
                         ),
+                        if (widget.aviso != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFBEB),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFFDE68A)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.lock_clock_outlined, color: Color(0xFF92400E), size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(widget.aviso!, style: const TextStyle(color: Color(0xFF92400E), fontSize: 13))),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         TextField(
                           controller: _rutController,

@@ -1,5 +1,11 @@
 /// lib/main.dart
 ///
+/// v1.9 — Sesión vencida: al abrir la app, si el token guardado ya venció
+/// se va directo al inicio de sesión (antes entraba al inicio y cada
+/// pantalla quedaba en "error / Reintentar"). Mientras la app está abierta,
+/// y cada vez que se vuelve a ella, se revisa el vencimiento
+/// (services/http_sesion.dart). Las alarmas de medicamentos siguen sonando.
+///
 /// v1.8 — Arranque a prueba de fallas: antes, si cualquiera de las
 /// tareas de inicio (alarmas, Firebase, formato de fechas) fallaba o se
 /// quedaba esperando, runApp() nunca se ejecutaba y la app quedaba en
@@ -45,6 +51,7 @@ import 'services/alarm_service.dart';
 import 'services/fcm_service.dart';
 import 'services/storage_service.dart';
 import 'services/navigation_service.dart';
+import 'services/http_sesion.dart' show SesionVencida;
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 /// Ejecuta una tarea de inicio sin que pueda bloquear la apertura de la app.
@@ -84,8 +91,45 @@ void main() async {
   await _pasoInicio('Firebase', () => FcmService.inicializar());
   runApp(const MiSaludApp());
 }
-class MiSaludApp extends StatelessWidget {
+class MiSaludApp extends StatefulWidget {
   const MiSaludApp({super.key});
+  @override
+  State<MiSaludApp> createState() => _MiSaludAppState();
+}
+
+class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
+  Timer? _reloj;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _armarReloj();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _reloj?.cancel();
+    super.dispose();
+  }
+
+  // Con la app abierta: cada minuto se revisa si la sesión venció
+  void _armarReloj() {
+    _reloj?.cancel();
+    _reloj = Timer.periodic(const Duration(minutes: 1), (_) => SesionVencida.revisar());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      SesionVencida.revisar();   // al volver a la app
+      _armarReloj();
+    } else if (state == AppLifecycleState.paused) {
+      _reloj?.cancel();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -101,20 +145,36 @@ class MiSaludApp extends StatelessWidget {
     );
   }
 }
+// Sesión guardada y vigente → inicio. Si venció, se borra (no los recordatorios).
+bool _vencida = false;
+Future<bool> _haySesionVigente() async {
+  if (!await StorageService.haySesionGuardada()) return false;
+  final token = await StorageService.obtenerToken();
+  if (SesionVencida.tokenVencido(token)) {
+    await StorageService.cerrarSesionVencida();
+    _vencida = true;
+    return false;
+  }
+  return true;
+}
+
 class _DecidirInicio extends StatelessWidget {
   const _DecidirInicio();
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: StorageService.haySesionGuardada(),
+      future: _haySesionVigente(),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        final haySesion = snapshot.data ?? false;
-        return haySesion ? const DashboardScreen() : const LoginScreen();
+        final estado = snapshot.data ?? false;
+        if (estado) return const DashboardScreen();
+        return _vencida
+            ? const LoginScreen(aviso: 'Tu sesión expiró. Vuelve a ingresar con tu contraseña.')
+            : const LoginScreen();
       },
     );
   }
