@@ -16,7 +16,17 @@
 /// se evalúa a futuro): el paciente pide el link desde la app
 /// (buscarRut), y completa la activación en el link del correo, en el
 /// navegador del teléfono. Después vuelve a la app y hace login normal.
+///
+/// v2.1 (huella y código al correo, auth_router v2.4):
+/// - login() manda la llave del teléfono (si es de confianza entra directo).
+///   Si el teléfono es nuevo, el backend manda un código de 6 dígitos al
+///   correo: login() devuelve ResultadoLogin con `desafio` y se completa con
+///   loginCodigo(). Al completar, el teléfono queda de confianza (llave).
+/// - renovar(): después de la huella, sesión nueva con la llave (sin contraseña).
+/// - cerrarSesionServidor(): al tocar "Salir", anula la sesión y la llave.
 library;
+
+import 'dart:io' show Platform;
 
 import 'dart:convert';
 import 'http_sesion.dart' as http;
@@ -34,7 +44,31 @@ class AuthException implements Exception {
   String toString() => mensaje;
 }
 
+/// Resultado del login: o ya hay sesión (paciente), o falta el código del correo.
+class ResultadoLogin {
+  final Paciente? paciente;
+  final String? desafio;
+  final String? email;
+  ResultadoLogin({this.paciente, this.desafio, this.email});
+  bool get requiereCodigo => desafio != null;
+}
+
 class AuthService {
+  static Map<String, String> get _dispositivo => {
+        'tipo': 'app',
+        'nombre_dispositivo': Platform.isAndroid ? 'Teléfono Android' : (Platform.isIOS ? 'iPhone' : 'Teléfono'),
+      };
+
+  static Future<Paciente> _guardar(Map<String, dynamic> body) async {
+    await StorageService.guardarSesion(
+      token: body['token'],
+      rut: body['rut'],
+      nombre: body['nombre'] ?? '',
+    );
+    await StorageService.guardarLlave(body['llave_dispositivo'] as String?);
+    return Paciente.fromLogin(body);
+  }
+
   static Map<String, String> get _headersJson => {
         'Content-Type': 'application/json',
       };
@@ -70,11 +104,17 @@ class AuthService {
   /// Lanza AuthException con el detalle exacto:
   ///   404 → "RUT no registrado"
   ///   401 → "Cuenta no activada" | "Contraseña incorrecta"
-  static Future<Paciente> login(String rut, String password) async {
+  static Future<ResultadoLogin> login(String rut, String password) async {
     final res = await http.post(
       Uri.parse(AppConfig.loginEndpoint),
       headers: _headersJson,
-      body: jsonEncode({'rut': rut, 'password': password}),
+      body: jsonEncode({
+        'rut': rut,
+        'password': password,
+        'soporta_codigo': true,
+        'llave_dispositivo': await StorageService.obtenerLlave(),
+        ..._dispositivo,
+      }),
     );
 
     if (res.statusCode != 200) {
@@ -82,12 +122,61 @@ class AuthService {
     }
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    await StorageService.guardarSesion(
-      token: body['token'],
-      rut: body['rut'],
-      nombre: body['nombre'] ?? '',
+    if (body['requiere_codigo'] == true) {
+      return ResultadoLogin(desafio: body['desafio'] as String?, email: body['email'] as String?);
+    }
+    return ResultadoLogin(paciente: await _guardar(body));
+  }
+
+  /// POST /api/auth/login/codigo — código de 6 dígitos del correo (teléfono nuevo).
+  static Future<Paciente> loginCodigo(String desafio, String codigo) async {
+    final res = await http.post(
+      Uri.parse(AppConfig.loginCodigoEndpoint),
+      headers: _headersJson,
+      body: jsonEncode({'desafio': desafio, 'codigo': codigo, ..._dispositivo}),
     );
-    return Paciente.fromLogin(body);
+    if (res.statusCode != 200) {
+      throw AuthException(res.statusCode, _detailDe(res));
+    }
+    return _guardar(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  /// POST /api/auth/renovar — después de la huella: sesión nueva sin contraseña.
+  /// Lanza AuthException(403) si el teléfono ya no está vinculado.
+  static Future<void> renovar() async {
+    final llave = await StorageService.obtenerLlave();
+    if (llave == null || llave.isEmpty) {
+      throw AuthException(403, 'Este teléfono no está vinculado');
+    }
+    final res = await http.post(
+      Uri.parse(AppConfig.renovarEndpoint),
+      headers: _headersJson,
+      body: jsonEncode({'llave_dispositivo': llave}),
+    );
+    if (res.statusCode != 200) {
+      if (res.statusCode == 403) {
+        // Llave anulada (salió, cambió la contraseña o la quitó): vuelve la contraseña
+        await StorageService.guardarBiometria(false);
+      }
+      throw AuthException(res.statusCode, _detailDe(res));
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    await StorageService.guardarSesion(token: body['token'], rut: body['rut'], nombre: body['nombre'] ?? '');
+  }
+
+  /// "Salir": anula la sesión y la llave del teléfono en el backend (si falla, igual se sale).
+  static Future<void> cerrarSesionServidor() async {
+    try {
+      final token = await StorageService.obtenerToken();
+      if (token == null || token.isEmpty) return;
+      await http.post(
+        Uri.parse(AppConfig.logoutEndpoint),
+        headers: {..._headersJson, 'Authorization': 'Bearer $token'},
+        body: jsonEncode({'llave_dispositivo': await StorageService.obtenerLlave()}),
+      ).timeout(const Duration(seconds: 6));
+    } catch (_) {
+      // sin conexión: se sale igual
+    }
   }
 
   /// GET /api/auth/me — requiere token guardado.

@@ -1,5 +1,9 @@
 /// lib/main.dart
 ///
+/// v2.0 — Huella: con la huella activa, la sesión vencida se renueva con la
+/// huella (DesbloquearScreen) en vez de la contraseña, y si la app estuvo 5
+/// minutos o más en segundo plano, se pide la huella al volver.
+///
 /// v1.9 — Sesión vencida: al abrir la app, si el token guardado ya venció
 /// se va directo al inicio de sesión (antes entraba al inicio y cada
 /// pantalla quedaba en "error / Reintentar"). Mientras la app está abierta,
@@ -54,6 +58,7 @@ import 'services/navigation_service.dart';
 import 'services/http_sesion.dart' show SesionVencida;
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/desbloquear_screen.dart';
 /// Ejecuta una tarea de inicio sin que pueda bloquear la apertura de la app.
 Future<void> _pasoInicio(String nombre, Future<void> Function() tarea) async {
   try {
@@ -99,6 +104,8 @@ class MiSaludApp extends StatefulWidget {
 
 class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
   Timer? _reloj;
+  DateTime? _enSegundoPlanDesde;
+  static const _bloqueoTras = Duration(minutes: 5);
 
   @override
   void initState() {
@@ -123,11 +130,29 @@ class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      SesionVencida.revisar();   // al volver a la app
+      final desde = _enSegundoPlanDesde;
+      _enSegundoPlanDesde = null;
+      _alVolver(desde);
       _armarReloj();
     } else if (state == AppLifecycleState.paused) {
+      _enSegundoPlanDesde ??= DateTime.now();
       _reloj?.cancel();
     }
+  }
+
+  // Al volver: 5 minutos o más afuera y huella activa → huella; si no,
+  // solo se revisa si la sesión venció
+  Future<void> _alVolver(DateTime? desde) async {
+    final largo = desde != null && DateTime.now().difference(desde) >= _bloqueoTras;
+    final token = await StorageService.obtenerToken();
+    final conSesion = token != null && token.isNotEmpty;
+    if (largo && conSesion && !DesbloquearScreen.abierta && await StorageService.puedeUsarHuella()) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (_) => const DesbloquearScreen(bloqueo: true)),
+      );
+      return;
+    }
+    SesionVencida.revisar();
   }
 
   @override
@@ -146,8 +171,13 @@ class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
   }
 }
 // Sesión guardada y vigente → inicio. Si venció, se borra (no los recordatorios).
+// Con huella activa: al abrir la app se pide la huella; si la sesión venció,
+// la huella la renueva (DesbloquearScreen).
 bool _vencida = false;
+bool _huella = false;
+bool _huellaAlAbrir = false;
 Future<bool> _haySesionVigente() async {
+  _huella = await StorageService.puedeUsarHuella();
   if (!await StorageService.haySesionGuardada()) return false;
   final token = await StorageService.obtenerToken();
   if (SesionVencida.tokenVencido(token)) {
@@ -155,6 +185,7 @@ Future<bool> _haySesionVigente() async {
     _vencida = true;
     return false;
   }
+  _huellaAlAbrir = _huella;
   return true;
 }
 
@@ -171,7 +202,8 @@ class _DecidirInicio extends StatelessWidget {
           );
         }
         final estado = snapshot.data ?? false;
-        if (estado) return const DashboardScreen();
+        if (estado) return _huellaAlAbrir ? const DesbloquearScreen() : const DashboardScreen();
+        if (_vencida && _huella) return const DesbloquearScreen();
         return _vencida
             ? const LoginScreen(aviso: 'Tu sesión expiró. Vuelve a ingresar con tu contraseña.')
             : const LoginScreen();

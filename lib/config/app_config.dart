@@ -33,6 +33,9 @@ class AppConfig {
   static const String buscarRutEndpoint = '$authBase/buscar';
   static const String registroEndpoint = '$authBase/registro';
   static const String meEndpoint = '$authBase/me';
+  static const String loginCodigoEndpoint = '$authBase/login/codigo';   // código del correo (teléfono nuevo)
+  static const String renovarEndpoint = '$authBase/renovar';             // sesión nueva después de la huella
+  static const String logoutEndpoint = '$authBase/logout';
   static const String cambiarPasswordEndpoint = '$authBase/cambiar-password';
 
   /// v2.0 — reemplazan a activarCuentaEndpoint (POST /api/auth/activar,
@@ -129,6 +132,8 @@ class AppConfig {
   static const String prefsRutKey = 'misalud_rut_paciente';
   static const String prefsNombreKey = 'misalud_nombre_paciente';
   static const String prefsRecordatoriosKey = 'misalud_recordatorios';
+  static const String prefsLlaveKey = 'misalud_llave_dispositivo';   // teléfono de confianza (huella)
+  static const String prefsBiometriaKey = 'misalud_biometria';         // 'si' | 'no' (ya se le preguntó)
 
   // --- Notificaciones / Alarmas ---
   static const String notifChannelId = 'misalud_alarmas_medicamentos';

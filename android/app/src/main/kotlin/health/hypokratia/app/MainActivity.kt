@@ -1,5 +1,6 @@
 package health.hypokratia.app
 
-import io.flutter.embedding.android.FlutterActivity
+// FlutterFragmentActivity: requerido por local_auth (huella / rostro)
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+class MainActivity : FlutterFragmentActivity()

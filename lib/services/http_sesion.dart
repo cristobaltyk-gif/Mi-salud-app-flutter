@@ -15,6 +15,9 @@
 ///    Los recordatorios y las alarmas de medicamentos se mantienen
 ///    (siguen sonando); solo "Salir" en el inicio los borra.
 ///
+///    v1.1: si el teléfono tiene la huella activa, en vez del inicio de
+///    sesión abre DesbloquearScreen (huella → sesión nueva sin contraseña).
+///
 /// 3. SesionVencida.tokenVencido(token): lee la fecha de vencimiento del
 ///    JWT sin llamar al servidor (al abrir la app y al volver a ella).
 library;
@@ -24,6 +27,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../screens/login_screen.dart';
+import '../screens/desbloquear_screen.dart';
 import 'navigation_service.dart';
 import 'storage_service.dart';
 
@@ -104,10 +108,13 @@ class SesionVencida {
     try {
       await StorageService.cerrarSesionVencida();
       final nav = navigatorKey.currentState;
-      if (nav != null) {
+      if (nav != null && !DesbloquearScreen.abierta) {
+        final huella = await StorageService.puedeUsarHuella();
         nav.pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (_) => const LoginScreen(aviso: 'Tu sesión expiró. Vuelve a ingresar con tu contraseña.'),
+            builder: (_) => huella
+                ? const DesbloquearScreen()
+                : const LoginScreen(aviso: 'Tu sesión expiró. Vuelve a ingresar con tu contraseña.'),
           ),
           (route) => false,
         );

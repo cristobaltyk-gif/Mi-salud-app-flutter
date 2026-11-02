@@ -59,6 +59,27 @@ class StorageService {
     return token != null && token.isNotEmpty;
   }
 
+  // ── Teléfono de confianza: llave del dispositivo y huella ──
+  static Future<void> guardarLlave(String? llave) async {
+    if (llave == null || llave.isEmpty) return;
+    await _secure.write(key: AppConfig.prefsLlaveKey, value: llave);
+  }
+
+  static Future<String?> obtenerLlave() => _secure.read(key: AppConfig.prefsLlaveKey);
+
+  /// null: aún no se le preguntó · true: entra con huella · false: no quiso
+  static Future<bool?> biometriaActiva() async {
+    final v = await _secure.read(key: AppConfig.prefsBiometriaKey);
+    return v == null ? null : v == 'si';
+  }
+
+  static Future<void> guardarBiometria(bool activa) =>
+      _secure.write(key: AppConfig.prefsBiometriaKey, value: activa ? 'si' : 'no');
+
+  /// Huella activa y llave guardada: puede renovar la sesión sin contraseña.
+  static Future<bool> puedeUsarHuella() async =>
+      (await biometriaActiva() ?? false) && ((await obtenerLlave()) ?? '').isNotEmpty;
+
   /// Sesión vencida (no la cerró el paciente): se borra el token y el RUT,
   /// pero NO los recordatorios — las alarmas de medicamentos siguen sonando.
   static Future<void> cerrarSesionVencida() async {
@@ -70,6 +91,9 @@ class StorageService {
     await _secure.delete(key: AppConfig.prefsJwtKey);
     await _secure.delete(key: AppConfig.prefsRutKey);
     await _secure.delete(key: AppConfig.prefsRecordatoriosKey);
+    // "Salir": el teléfono deja de ser de confianza (la llave ya se anuló en el backend)
+    await _secure.delete(key: AppConfig.prefsLlaveKey);
+    await _secure.delete(key: AppConfig.prefsBiometriaKey);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConfig.prefsNombreKey);
