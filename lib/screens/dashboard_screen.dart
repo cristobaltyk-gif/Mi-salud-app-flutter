@@ -65,6 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _sincronizarAlarmas();
     _cargarCuidados();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ofrecerHuellaAlEntrar());
   }
 
   Future<void> _cargarCuidados() async {
@@ -114,52 +115,133 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Activar / desactivar el ingreso con huella
+  // ── Ingreso con huella ────────────────────────────────────────────────
+  // Al llegar al inicio por primera vez se ofrece (una sola vez). El botón 🔑
+  // la activa o desactiva. Si el teléfono aún no está vinculado (p. ej. tenía
+  // la sesión abierta de antes), se vincula confirmando la contraseña.
+  // Si algo falla se muestra el motivo (antes fallaba en silencio).
+  Future<void> _ofrecerHuellaAlEntrar() async {
+    if (await StorageService.biometriaActiva() != null) return;   // ya se le preguntó
+    if (!mounted) return;
+    await _activarHuella(alEntrar: true);
+  }
+
   Future<void> _configurarHuella() async {
     final activa = await StorageService.biometriaActiva() ?? false;
-    final vinculado = (await StorageService.obtenerLlave() ?? '').isNotEmpty;
-    final disponible = await BiometriaService.disponible();
     if (!mounted) return;
-    if (!disponible || !vinculado) {
-      await showDialog<void>(
+    if (activa) {
+      final desactivar = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Ingreso con huella'),
-          content: Text(!disponible
-              ? 'Este teléfono no tiene huella, rostro ni bloqueo de pantalla configurado.'
-              : 'Para activar la huella, cierra sesión y vuelve a entrar con tu contraseña y el código de tu correo.'),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido'))],
+          icon: const Icon(Icons.fingerprint, size: 40, color: Color(0xFF1A3B8C)),
+          title: const Text('La huella está activa'),
+          content: const Text('Entras con tu huella y te la pedimos si no usas la app por 5 minutos. '
+              '¿Quieres desactivarla? Volverás a entrar con tu contraseña.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Desactivar')),
+          ],
         ),
       );
+      if (desactivar == true) {
+        await StorageService.guardarBiometria(false);
+        _aviso('Huella desactivada');
+      }
       return;
     }
-    final cambiar = await showDialog<bool>(
+    await _activarHuella(alEntrar: false);
+  }
+
+  Future<void> _activarHuella({required bool alEntrar}) async {
+    if (!await BiometriaService.disponible()) {
+      if (!alEntrar) await _mensaje('Ingreso con huella', BiometriaService.ultimoError ?? 'Este teléfono no permite huella.');
+      if (alEntrar) {
+        _aviso(BiometriaService.ultimoError ?? 'Este teléfono no permite huella.');
+        await StorageService.guardarBiometria(false);
+      }
+      return;
+    }
+    if (!mounted) return;
+    final quiere = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.fingerprint, size: 40, color: Color(0xFF1A3B8C)),
-        title: Text(activa ? 'La huella está activa' : 'Ingreso con huella'),
-        content: Text(activa
-            ? 'Entras con tu huella y te la pedimos si no usas la app por 5 minutos. ¿Quieres desactivarla? '
-              'Volverás a entrar con tu contraseña.'
-            : 'Entra con tu huella (o el PIN de tu teléfono) sin escribir la contraseña. ¿La activamos?'),
+        title: const Text('¿Entrar con tu huella?'),
+        content: const Text('Entra con tu huella (o el PIN de tu teléfono) sin escribir la contraseña. '
+            'Si no usas la app por 5 minutos, te la pediremos para proteger tu ficha.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(activa ? 'Desactivar' : 'Activar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ahora no')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Activar')),
         ],
       ),
     );
-    if (cambiar != true) return;
-    if (activa) {
-      await StorageService.guardarBiometria(false);
-    } else if (await BiometriaService.autenticar(motivo: 'Confirma tu huella para activarla en MiSalud')) {
-      await StorageService.guardarBiometria(true);
-    } else {
+    if (quiere != true) {
+      if (alEntrar) await StorageService.guardarBiometria(false);   // no volver a preguntar solo
       return;
     }
+
+    // Teléfono no vinculado: se vincula confirmando la contraseña
+    if ((await StorageService.obtenerLlave() ?? '').isEmpty) {
+      final password = await _pedirContrasena();
+      if (password == null) return;
+      try {
+        await AuthService.vincularTelefono(password);
+      } on AuthException catch (e) {
+        await _mensaje('No se pudo activar', e.mensaje);
+        return;
+      } catch (_) {
+        await _mensaje('No se pudo activar', 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+        return;
+      }
+    }
+
+    if (!await BiometriaService.autenticar(motivo: 'Confirma tu huella para activarla en MiSalud')) {
+      await _mensaje('No se activó la huella', BiometriaService.ultimoError ?? 'No se confirmó la huella.');
+      return;
+    }
+    await StorageService.guardarBiometria(true);
+    _aviso('✓ Huella activada');
+  }
+
+  Future<String?> _pedirContrasena() async {
+    final ctrl = TextEditingController();
+    final r = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirma tu contraseña'),
+        content: TextField(
+          controller: ctrl,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Contraseña de MiSalud'),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Confirmar')),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return (r == null || r.isEmpty) ? null : r;
+  }
+
+  Future<void> _mensaje(String titulo, String texto) async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(activa ? 'Huella desactivada' : '✓ Huella activada'),
-    ));
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(titulo),
+        content: Text(texto),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido'))],
+      ),
+    );
+  }
+
+  void _aviso(String texto) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
   Future<void> _cerrarSesion() async {

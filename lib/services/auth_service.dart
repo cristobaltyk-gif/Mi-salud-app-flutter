@@ -164,6 +164,22 @@ class AuthService {
     await StorageService.guardarSesion(token: body['token'], rut: body['rut'], nombre: body['nombre'] ?? '');
   }
 
+  /// POST /api/auth/dispositivos/vincular — con sesión y la contraseña confirmada,
+  /// este teléfono queda de confianza (para activar la huella sin salir).
+  static Future<void> vincularTelefono(String password) async {
+    final token = await StorageService.obtenerToken();
+    final res = await http.post(
+      Uri.parse(AppConfig.vincularEndpoint),
+      headers: {..._headersJson, 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'password': password, ..._dispositivo}),
+    );
+    if (res.statusCode != 200) {
+      throw AuthException(res.statusCode, _detailDe(res));
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    await StorageService.guardarLlave(body['llave_dispositivo'] as String?);
+  }
+
   /// "Salir": anula la sesión y la llave del teléfono en el backend (si falla, igual se sale).
   static Future<void> cerrarSesionServidor() async {
     try {

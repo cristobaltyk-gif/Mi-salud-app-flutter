@@ -17,8 +17,6 @@ library;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
-import '../services/biometria_service.dart';
-import '../services/storage_service.dart';
 import 'activar_cuenta_screen.dart';
 import 'dashboard_screen.dart';
 
@@ -151,40 +149,12 @@ class _LoginScreenState extends State<LoginScreen> {
     // llegó al backend. Ahora que el login fue exitoso y hay un JWT
     // guardado, reintentamos el registro del token.
     await FcmService.registrarTokenSiHaySesion();
-    await _ofrecerHuella();
+    // La huella se ofrece al llegar al inicio (DashboardScreen)
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const DashboardScreen()),
       (route) => false,
     );
-  }
-
-  Future<void> _ofrecerHuella() async {
-    if (await StorageService.biometriaActiva() != null) return;      // ya se le preguntó
-    if ((await StorageService.obtenerLlave() ?? '').isEmpty) return;  // teléfono no vinculado
-    if (!await BiometriaService.disponible()) return;
-    if (!mounted) return;
-    final quiere = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.fingerprint, size: 40, color: Color(0xFF1A3B8C)),
-        title: const Text('¿Entrar con tu huella?'),
-        content: const Text(
-          'La próxima vez entras con tu huella (o el PIN de tu teléfono), sin escribir la contraseña. '
-          'Si no usas la app por un rato, te la pediremos para proteger tu ficha.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ahora no')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Activar')),
-        ],
-      ),
-    );
-    if (quiere == true && await BiometriaService.autenticar(motivo: 'Confirma tu huella para activarla en MiSalud')) {
-      await StorageService.guardarBiometria(true);
-    } else {
-      await StorageService.guardarBiometria(false);
-    }
   }
 
   List<Widget> _camposCodigo() => [

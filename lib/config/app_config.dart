@@ -36,6 +36,7 @@ class AppConfig {
   static const String loginCodigoEndpoint = '$authBase/login/codigo';   // código del correo (teléfono nuevo)
   static const String renovarEndpoint = '$authBase/renovar';             // sesión nueva después de la huella
   static const String logoutEndpoint = '$authBase/logout';
+  static const String vincularEndpoint = '$authBase/dispositivos/vincular'; // huella sin salir
   static const String cambiarPasswordEndpoint = '$authBase/cambiar-password';
 
   /// v2.0 — reemplazan a activarCuentaEndpoint (POST /api/auth/activar,
