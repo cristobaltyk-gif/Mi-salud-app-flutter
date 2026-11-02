@@ -64,6 +64,14 @@ Future<void> _procesarMensaje(RemoteMessage message) async {
     final titulo = message.data['titulo'] ?? 'Recordatorio';
     final cuerpo = message.data['cuerpo'] ?? '';
     final mediaPath = message.data['media_path'] as String?;
+    // v1.7: si esta toma ya estaba programada como alarma en el teléfono
+    // (próximos 7 días), ya sonó a la hora exacta — no se repite el aviso.
+    final recId = int.tryParse(message.data['recordatorio_id'] ?? '');
+    final cuando = DateTime.tryParse(message.data['programado_para'] ?? '');
+    if (recId != null && cuando != null &&
+        await AlarmService.tomaProgramadaEnTelefono(recId, cuando.toLocal())) {
+      return;
+    }
     try {
       await AlarmService.inicializar();
       await AlarmService.mostrarAhora(

@@ -33,6 +33,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../config/app_config.dart';
 import '../models/recordatorio.dart';
 import '../screens/media_ejercicio_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'storage_service.dart';
 import 'navigation_service.dart';
 
@@ -152,33 +153,82 @@ class AlarmService {
     return true;
   }
 
+  // v2: se programan en el teléfono TODAS las tomas de los próximos 7 días
+  // (antes solo la próxima: con la sesión cerrada sonaba una vez y nada más).
+  // Android permite ~500 alarmas por app: tope de 400, las más cercanas.
+  static const int _maxAlarmas = 400;
+  static const int _porRecordatorio = 64;   // id de la alarma = id*64 + n
+
+  static int _idAlarma(int recordatorioId, int n) => recordatorioId * _porRecordatorio + n;
+
+  static Future<void> _programarLista(List<Recordatorio> recordatorios) async {
+    await _plugin.cancelAll();
+    final ahora = DateTime.now();
+    final tomas = <(Recordatorio, DateTime, int)>[];
+    for (final r in recordatorios) {
+      final horarios = r.horariosAProgramar.where((h) => h.isAfter(ahora)).toList()..sort();
+      for (var n = 0; n < horarios.length && n < _porRecordatorio; n++) {
+        tomas.add((r, horarios[n], n));
+      }
+    }
+    tomas.sort((a, b) => a.$2.compareTo(b.$2));
+    final programadas = <String>[];
+    for (final (r, horario, n) in tomas.take(_maxAlarmas)) {
+      if (await _programarUna(r, horario, _idAlarma(r.id, n))) {
+        programadas.add(_claveToma(r.id, horario));
+      }
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Se conservan las que ya sonaron hace poco: el aviso del servidor
+      // puede llegar hasta una hora después y no debe repetirse.
+      final desde = ahora.toUtc().millisecondsSinceEpoch ~/ 60000 - 180;
+      final recientes = (prefs.getStringList(_prefsProgramadas) ?? const <String>[]).where((k) {
+        final m = int.tryParse(k.split('@').last) ?? 0;
+        return m >= desde && m <= ahora.toUtc().millisecondsSinceEpoch ~/ 60000;
+      });
+      await prefs.setStringList(_prefsProgramadas, {...recientes, ...programadas}.toList());
+    } catch (_) {}
+  }
+
+  static const String _prefsProgramadas = 'misalud_alarmas_programadas';
+  static String _claveToma(int recordatorioId, DateTime cuando) =>
+      '$recordatorioId@${cuando.toUtc().millisecondsSinceEpoch ~/ 60000}';
+
   static Future<void> reprogramarTodas(List<Recordatorio> recordatorios) async {
     await StorageService.guardarRecordatorios(
       recordatorios.map((r) => r.toJson()).toList(),
     );
-    await _plugin.cancelAll();
-    for (final r in recordatorios) {
-      if (r.proximoDisparo == null) continue;
-      await _programarUna(r);
-    }
+    await _programarLista(recordatorios);
   }
 
   static Future<void> reprogramarDesdeStorage() async {
     try {
       final raw = await StorageService.obtenerRecordatorios();
       if (raw.isEmpty) return;
-      final recordatorios = raw.map((e) => Recordatorio.fromJson(e)).toList();
-      await _plugin.cancelAll();
-      for (final r in recordatorios) {
-        if (r.proximoDisparo == null) continue;
-        await _programarUna(r);
-      }
+      await _programarLista(raw.map((e) => Recordatorio.fromJson(e)).toList());
     } catch (_) {}
   }
 
-  static Future<void> _programarUna(Recordatorio r) async {
-    final horario = tz.TZDateTime.from(r.proximoDisparo!, tz.local);
-    if (horario.isBefore(tz.TZDateTime.now(tz.local))) return;
+  /// ¿Esta toma ya estaba programada en el teléfono? (para no repetir el
+  /// aviso push del servidor — fcm_service.dart)
+  /// Solo cuenta si la alarma se programó de verdad (si el teléfono no dio
+  /// permiso de alarmas exactas, el aviso del servidor sí se muestra).
+  static Future<bool> tomaProgramadaEnTelefono(int recordatorioId, DateTime programadoPara) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();   // puede venir de otro isolate (FCM en segundo plano)
+      final lista = prefs.getStringList(_prefsProgramadas) ?? const [];
+      final minuto = programadoPara.toUtc().millisecondsSinceEpoch ~/ 60000;
+      return [minuto - 1, minuto, minuto + 1].any((m) => lista.contains('$recordatorioId@$m'));
+    } catch (_) {}
+    return false;
+  }
+
+  /// true si la alarma quedó programada.
+  static Future<bool> _programarUna(Recordatorio r, DateTime cuando, int idAlarma) async {
+    final horario = tz.TZDateTime.from(cuando, tz.local);
+    if (horario.isBefore(tz.TZDateTime.now(tz.local))) return false;
 
     final androidDetails = AndroidNotificationDetails(
       AppConfig.notifChannelId,
@@ -207,7 +257,7 @@ class AlarmService {
 
     try {
       await _plugin.zonedSchedule(
-        r.id,
+        idAlarma,
         'Hora de tu medicamento',
         r.textoMostrar,
         horario,
@@ -217,13 +267,20 @@ class AlarmService {
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: 'recordatorio:${r.id}',
       );
-    } catch (_) {}
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   static Future<void> cancelarTodas() => _plugin.cancelAll();
 
-  static Future<void> cancelar(int recordatorioId) =>
-      _plugin.cancel(recordatorioId);
+  static Future<void> cancelar(int recordatorioId) async {
+    await _plugin.cancel(recordatorioId);   // id antiguo (una sola alarma)
+    for (var n = 0; n < _porRecordatorio; n++) {
+      await _plugin.cancel(_idAlarma(recordatorioId, n));
+    }
+  }
 
   /// Muestra la notificación DE INMEDIATO, sin programar nada con
   /// anticipación — se llama cuando llega un FCM tipo "recordatorio_ahora"

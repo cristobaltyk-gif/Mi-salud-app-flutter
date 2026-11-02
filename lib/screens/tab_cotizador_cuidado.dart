@@ -16,6 +16,7 @@ library;
 import 'package:flutter/material.dart';
 import '../models/cotizacion.dart';
 import '../models/ficha_cuidado.dart';
+import '../services/cotizador_service.dart';
 import 'cotizacion_detalle_screen.dart';
 
 class TabCotizadorCuidado extends StatelessWidget {
@@ -26,6 +27,7 @@ class TabCotizadorCuidado extends StatelessWidget {
   Widget build(BuildContext context) {
     final recetas = ficha.eventos
         .where((ev) => ev.medicamentosEstructurados.isNotEmpty)
+        .where((ev) => CotizadorService.recetaReciente(ev.fecha))
         .toList();
 
     return ListView(
@@ -53,7 +55,7 @@ class TabCotizadorCuidado extends StatelessWidget {
                   Icon(Icons.medication_outlined, size: 40, color: Colors.grey[400]),
                   const SizedBox(height: 12),
                   Text(
-                    'Aún no hay recetas con medicamentos\npara cotizar',
+                    'No hay recetas de los últimos ${CotizadorService.diasRecetasParaCotizar} días\npara cotizar',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey[600]),
                   ),

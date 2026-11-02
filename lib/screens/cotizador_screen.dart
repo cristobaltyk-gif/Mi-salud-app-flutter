@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/cotizacion.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
+import '../services/cotizador_service.dart';
 import 'cotizacion_detalle_screen.dart';
 
 class CotizadorScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
           final resumen = snapshot.data!;
           final recetas = resumen.eventos
               .where((ev) => ev.contenido.tieneMedicamentosParaCotizar)
+              .where((ev) => CotizadorService.recetaReciente(ev.fecha))
               .toList();
 
           return ListView(
@@ -77,7 +79,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
                             size: 40, color: Colors.grey[400]),
                         const SizedBox(height: 12),
                         Text(
-                          'Aún no tienes recetas con medicamentos\npara cotizar',
+                          'No tienes recetas de los últimos ${CotizadorService.diasRecetasParaCotizar} días\npara cotizar',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey[600]),
                         ),

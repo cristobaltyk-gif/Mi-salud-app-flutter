@@ -22,6 +22,18 @@ class CotizadorException implements Exception {
 }
 
 class CotizadorService {
+  /// Solo se cotizan las recetas recientes (no las de hace un año).
+  static const int diasRecetasParaCotizar = 3;
+
+  /// fecha 'AAAA-MM-DD' (o ISO) de la atención: ¿es de los últimos 3 días?
+  static bool recetaReciente(String fecha) {
+    final f = DateTime.tryParse(fecha.length >= 10 ? fecha.substring(0, 10) : fecha);
+    if (f == null) return false;
+    final ahora = DateTime.now();
+    final hoy = DateTime(ahora.year, ahora.month, ahora.day);
+    return !f.isBefore(hoy.subtract(const Duration(days: diasRecetasParaCotizar)));
+  }
+
   static String _detailDe(http.Response r) {
     try {
       final body = jsonDecode(r.body);

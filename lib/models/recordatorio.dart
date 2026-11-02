@@ -64,6 +64,9 @@ class Recordatorio {
   final DateTime createdAt;
   final String creadoPor;
   final DateTime? proximoDisparo;
+  /// Tomas de los próximos 7 días (el servidor las manda) — se programan
+  /// todas en el teléfono para que suenen sin sesión ni internet.
+  final List<DateTime> proximosDisparos;
   final bool esPropio;
   final String? pacienteNombre;
   final String? mediaPath;
@@ -84,6 +87,7 @@ class Recordatorio {
     required this.createdAt,
     required this.creadoPor,
     this.proximoDisparo,
+    this.proximosDisparos = const [],
     this.esPropio = true,
     this.pacienteNombre,
     this.mediaPath,
@@ -119,6 +123,10 @@ class Recordatorio {
       createdAt: parseFechaRequerida(json['created_at'], 'created_at'),
       creadoPor: json['creado_por'] ?? '',
       proximoDisparo: parseFecha(json['proximo_disparo']),
+      proximosDisparos: ((json['proximos_disparos'] as List?) ?? const [])
+          .map((v) => v is String ? DateTime.tryParse(v)?.toLocal() : null)
+          .whereType<DateTime>()
+          .toList(),
       esPropio: json['es_propio'] ?? true,
       pacienteNombre: json['paciente_nombre'],
       mediaPath: json['media_path'],
@@ -126,6 +134,11 @@ class Recordatorio {
     );
   }
   bool get esRecurrente => frecuenciaHoras != null;
+
+  /// Horarios a programar en el teléfono: los de los próximos 7 días, o
+  /// solo el próximo si el servidor aún no manda la lista.
+  List<DateTime> get horariosAProgramar =>
+      proximosDisparos.isNotEmpty ? proximosDisparos : [if (proximoDisparo != null) proximoDisparo!];
   String get textoMostrar =>
       (detalle != null && detalle!.isNotEmpty) ? detalle! : descripcion;
   /// Serializa a JSON para guardar en storage local.
@@ -146,6 +159,7 @@ class Recordatorio {
     'created_at': createdAt.toIso8601String(),
     'creado_por': creadoPor,
     'proximo_disparo': proximoDisparo?.toIso8601String(),
+    'proximos_disparos': proximosDisparos.map((d) => d.toIso8601String()).toList(),
     'es_propio': esPropio,
     'paciente_nombre': pacienteNombre,
     'media_path': mediaPath,
