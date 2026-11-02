@@ -17,8 +17,10 @@ library;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
+import '../services/storage_service.dart';
 import 'activar_cuenta_screen.dart';
 import 'dashboard_screen.dart';
+import 'desbloquear_screen.dart';
 
 String _normalizarRut(String raw) {
   final limpio = raw.replaceAll(RegExp(r'[^0-9kK]'), '').toUpperCase();
@@ -63,6 +65,21 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _desafio;
   String? _emailCodigo;
   final _codigoController = TextEditingController();
+  // v2: teléfono de confianza con huella → "Entrar con huella" (como un banco)
+  bool _huella = false;
+
+  @override
+  void initState() {
+    super.initState();
+    StorageService.puedeUsarHuella().then((v) { if (mounted) setState(() => _huella = v); });
+  }
+
+  void _entrarConHuella() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const DesbloquearScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   void dispose() {
@@ -381,6 +398,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                 : const Text('Ingresar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                           ),
                         ),
+                        if (_huella && _desafio == null) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 52,
+                            child: OutlinedButton.icon(
+                              onPressed: _cargando ? null : _entrarConHuella,
+                              icon: const Icon(Icons.fingerprint, size: 26),
+                              label: const Text('Entrar con huella', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF1A3B8C),
+                                side: const BorderSide(color: Color(0xFF1A3B8C), width: 1.5),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

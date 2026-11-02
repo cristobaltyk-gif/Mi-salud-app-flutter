@@ -23,7 +23,8 @@
 ///   correo: login() devuelve ResultadoLogin con `desafio` y se completa con
 ///   loginCodigo(). Al completar, el teléfono queda de confianza (llave).
 /// - renovar(): después de la huella, sesión nueva con la llave (sin contraseña).
-/// - cerrarSesionServidor(): al tocar "Salir", anula la sesión y la llave.
+/// - cerrarSesionServidor(): al tocar "Salir", anula la sesión; la llave
+///   solo si se eligió "Olvidar este teléfono".
 library;
 
 import 'dart:io' show Platform;
@@ -180,15 +181,19 @@ class AuthService {
     await StorageService.guardarLlave(body['llave_dispositivo'] as String?);
   }
 
-  /// "Salir": anula la sesión y la llave del teléfono en el backend (si falla, igual se sale).
-  static Future<void> cerrarSesionServidor() async {
+  /// "Salir": anula la sesión en el backend (si falla, igual se sale). La llave
+  /// del teléfono solo se anula con olvidar=true ("Olvidar este teléfono").
+  static Future<void> cerrarSesionServidor({bool olvidar = false}) async {
     try {
       final token = await StorageService.obtenerToken();
       if (token == null || token.isEmpty) return;
       await http.post(
         Uri.parse(AppConfig.logoutEndpoint),
         headers: {..._headersJson, 'Authorization': 'Bearer $token'},
-        body: jsonEncode({'llave_dispositivo': await StorageService.obtenerLlave()}),
+        body: jsonEncode({
+          'llave_dispositivo': await StorageService.obtenerLlave(),
+          'olvidar_dispositivo': olvidar,
+        }),
       ).timeout(const Duration(seconds: 6));
     } catch (_) {
       // sin conexión: se sale igual
@@ -214,7 +219,7 @@ class AuthService {
     return Paciente.fromMe(jsonDecode(res.body));
   }
 
-  static Future<void> logout() async {
-    await StorageService.cerrarSesion();
+  static Future<void> logout({bool olvidar = false}) async {
+    await StorageService.cerrarSesion(olvidar: olvidar);
   }
 }

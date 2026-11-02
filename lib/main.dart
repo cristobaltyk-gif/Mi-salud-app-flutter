@@ -203,7 +203,8 @@ class _DecidirInicio extends StatelessWidget {
         }
         final estado = snapshot.data ?? false;
         if (estado) return _huellaAlAbrir ? const DesbloquearScreen() : const DashboardScreen();
-        if (_vencida && _huella) return const DesbloquearScreen();
+        // Sesión vencida o cerrada con "Salir" en un teléfono de confianza: huella
+        if (_huella) return const DesbloquearScreen();
         return _vencida
             ? const LoginScreen(aviso: 'Tu sesión expiró. Vuelve a ingresar con tu contraseña.')
             : const LoginScreen();

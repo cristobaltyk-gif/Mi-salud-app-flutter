@@ -42,6 +42,7 @@ import 'cotizador_tab_unificada.dart';
 import 'autorizar_tab_unificada.dart';
 import 'cuidador_screen.dart';
 import 'login_screen.dart';
+import 'desbloquear_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -244,29 +245,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
+  // v2: "Salir" como un banco — el teléfono sigue de confianza, la próxima
+  // vez se entra con huella y las alarmas de medicamentos siguen sonando.
+  // "Olvidar este teléfono" borra todo (teléfono prestado o que se vende).
   Future<void> _cerrarSesion() async {
-    final confirmar = await showDialog<bool>(
+    final huella = await StorageService.puedeUsarHuella();
+    if (!mounted) return;
+    final opcion = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content: const Text('¿Seguro que quieres salir de tu cuenta?'),
+        content: Text(huella
+            ? 'La próxima vez entras con tu huella. Tus recordatorios seguirán sonando.'
+            : 'Tus recordatorios seguirán sonando en este teléfono.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Salir'),
+            onPressed: () => Navigator.pop(ctx, 'olvidar'),
+            child: const Text('Olvidar este teléfono'),
           ),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'salir'), child: const Text('Salir')),
         ],
       ),
     );
-    if (confirmar != true) return;
-    await AlarmService.cancelarTodas();
-    await AuthService.cerrarSesionServidor();   // anula la sesión y la llave del teléfono
-    await AuthService.logout();
+    if (opcion == null) return;
+    final olvidar = opcion == 'olvidar';
+    if (olvidar) await AlarmService.cancelarTodas();
+    await AuthService.cerrarSesionServidor(olvidar: olvidar);
+    await AuthService.logout(olvidar: olvidar);
+    final conHuella = !olvidar && await StorageService.puedeUsarHuella();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => conHuella ? const DesbloquearScreen() : const LoginScreen()),
       (route) => false,
     );
   }

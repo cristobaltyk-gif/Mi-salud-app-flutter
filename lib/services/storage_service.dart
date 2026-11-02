@@ -62,6 +62,12 @@ class StorageService {
   // ── Teléfono de confianza: llave del dispositivo y huella ──
   static Future<void> guardarLlave(String? llave) async {
     if (llave == null || llave.isEmpty) return;
+    // Llave distinta (otra cuenta en este teléfono, o la anterior se anuló):
+    // la huella de antes ya no corresponde — se vuelve a ofrecer.
+    final anterior = await obtenerLlave();
+    if (anterior != null && anterior.isNotEmpty && anterior != llave) {
+      await _secure.delete(key: AppConfig.prefsBiometriaKey);
+    }
     await _secure.write(key: AppConfig.prefsLlaveKey, value: llave);
   }
 
@@ -87,11 +93,15 @@ class StorageService {
     await _secure.delete(key: AppConfig.prefsRutKey);
   }
 
-  static Future<void> cerrarSesion() async {
+  /// "Salir" (v2): como un banco, el teléfono sigue de confianza — se
+  /// conservan la llave, la huella, el nombre ("Hola, …") y los recordatorios
+  /// (las alarmas siguen sonando). Solo se borra la sesión.
+  /// olvidar=true ("Olvidar este teléfono"): se borra todo.
+  static Future<void> cerrarSesion({bool olvidar = false}) async {
     await _secure.delete(key: AppConfig.prefsJwtKey);
     await _secure.delete(key: AppConfig.prefsRutKey);
+    if (!olvidar) return;
     await _secure.delete(key: AppConfig.prefsRecordatoriosKey);
-    // "Salir": el teléfono deja de ser de confianza (la llave ya se anuló en el backend)
     await _secure.delete(key: AppConfig.prefsLlaveKey);
     await _secure.delete(key: AppConfig.prefsBiometriaKey);
 
