@@ -67,6 +67,8 @@ class Recordatorio {
   /// Tomas de los próximos 7 días (el servidor las manda) — se programan
   /// todas en el teléfono para que suenen sin sesión ni internet.
   final List<DateTime> proximosDisparos;
+  /// Uso crónico: sin fecha de término (suena hasta que se apague)
+  final bool cronico;
   final bool esPropio;
   final String? pacienteNombre;
   final String? mediaPath;
@@ -88,6 +90,7 @@ class Recordatorio {
     required this.creadoPor,
     this.proximoDisparo,
     this.proximosDisparos = const [],
+    this.cronico = false,
     this.esPropio = true,
     this.pacienteNombre,
     this.mediaPath,
@@ -127,6 +130,7 @@ class Recordatorio {
           .map((v) => v is String ? DateTime.tryParse(v)?.toLocal() : null)
           .whereType<DateTime>()
           .toList(),
+      cronico: json['cronico'] == true,
       esPropio: json['es_propio'] ?? true,
       pacienteNombre: json['paciente_nombre'],
       mediaPath: json['media_path'],
@@ -135,10 +139,32 @@ class Recordatorio {
   }
   bool get esRecurrente => frecuenciaHoras != null;
 
-  /// Horarios a programar en el teléfono: los de los próximos 7 días, o
-  /// solo el próximo si el servidor aún no manda la lista.
-  List<DateTime> get horariosAProgramar =>
-      proximosDisparos.isNotEmpty ? proximosDisparos : [if (proximoDisparo != null) proximoDisparo!];
+  /// Tomas que faltan, calculadas en el teléfono con la regla de la receta
+  /// (desde fecha_inicio, cada frecuencia_horas, hasta fecha_fin) — no
+  /// necesita sesión ni internet. Termina donde termina la receta: los días
+  /// indicados, 7 si no traía días, o nunca si es de uso crónico.
+  List<DateTime> horariosDesde(DateTime desde, {int maximo = 400}) {
+    if (!activo) return const [];
+    final horas = frecuenciaHoras;
+    if (horas == null || horas <= 0) {
+      final t = proximoDisparo ?? fechaInicio;
+      return t.isAfter(desde) ? [t] : const [];
+    }
+    final paso = Duration(hours: horas);
+    // Sin fecha de término y sin ser crónico (recordatorios antiguos): 90 días
+    final fin = fechaFin ?? (cronico ? null : fechaInicio.add(const Duration(days: 90)));
+    var t = fechaInicio;
+    if (t.isBefore(desde)) {
+      final pasos = (desde.difference(t).inMinutes / paso.inMinutes).ceil();
+      t = t.add(paso * pasos);
+    }
+    final salida = <DateTime>[];
+    while ((fin == null || !t.isAfter(fin)) && salida.length < maximo) {
+      if (t.isAfter(desde)) salida.add(t);
+      t = t.add(paso);
+    }
+    return salida;
+  }
   String get textoMostrar =>
       (detalle != null && detalle!.isNotEmpty) ? detalle! : descripcion;
   /// Serializa a JSON para guardar en storage local.
@@ -160,6 +186,7 @@ class Recordatorio {
     'creado_por': creadoPor,
     'proximo_disparo': proximoDisparo?.toIso8601String(),
     'proximos_disparos': proximosDisparos.map((d) => d.toIso8601String()).toList(),
+    'cronico': cronico,
     'es_propio': esPropio,
     'paciente_nombre': pacienteNombre,
     'media_path': mediaPath,

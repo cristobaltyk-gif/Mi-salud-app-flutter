@@ -153,28 +153,30 @@ class AlarmService {
     return true;
   }
 
-  // v2: se programan en el teléfono TODAS las tomas de los próximos 7 días
-  // (antes solo la próxima: con la sesión cerrada sonaba una vez y nada más).
+  // v3: el teléfono calcula las tomas con la regla de cada recordatorio
+  // (Recordatorio.horariosDesde) y deja programadas las más cercanas. Suenan
+  // hasta donde termina la receta, sin sesión ni internet. Se recalcula al
+  // abrir la app, al reiniciar el teléfono, con cada aviso del servidor y con
+  // el aviso silencioso diario (fcm_service.dart).
   // Android permite ~500 alarmas por app: tope de 400, las más cercanas.
   static const int _maxAlarmas = 400;
-  static const int _porRecordatorio = 64;   // id de la alarma = id*64 + n
 
-  static int _idAlarma(int recordatorioId, int n) => recordatorioId * _porRecordatorio + n;
+  static int _idAlarma(int recordatorioId, DateTime cuando) =>
+      (recordatorioId * 100003 + cuando.toUtc().millisecondsSinceEpoch ~/ 60000) & 0x7fffffff;
 
   static Future<void> _programarLista(List<Recordatorio> recordatorios) async {
     await _plugin.cancelAll();
     final ahora = DateTime.now();
-    final tomas = <(Recordatorio, DateTime, int)>[];
+    final tomas = <(Recordatorio, DateTime)>[];
     for (final r in recordatorios) {
-      final horarios = r.horariosAProgramar.where((h) => h.isAfter(ahora)).toList()..sort();
-      for (var n = 0; n < horarios.length && n < _porRecordatorio; n++) {
-        tomas.add((r, horarios[n], n));
+      for (final h in r.horariosDesde(ahora, maximo: _maxAlarmas)) {
+        tomas.add((r, h));
       }
     }
     tomas.sort((a, b) => a.$2.compareTo(b.$2));
     final programadas = <String>[];
-    for (final (r, horario, n) in tomas.take(_maxAlarmas)) {
-      if (await _programarUna(r, horario, _idAlarma(r.id, n))) {
+    for (final (r, horario) in tomas.take(_maxAlarmas)) {
+      if (await _programarUna(r, horario, _idAlarma(r.id, horario))) {
         programadas.add(_claveToma(r.id, horario));
       }
     }
@@ -277,9 +279,17 @@ class AlarmService {
 
   static Future<void> cancelar(int recordatorioId) async {
     await _plugin.cancel(recordatorioId);   // id antiguo (una sola alarma)
-    for (var n = 0; n < _porRecordatorio; n++) {
-      await _plugin.cancel(_idAlarma(recordatorioId, n));
-    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final k in prefs.getStringList(_prefsProgramadas) ?? const <String>[]) {
+        final partes = k.split('@');
+        if (partes.first != '$recordatorioId') continue;
+        final minuto = int.tryParse(partes.last);
+        if (minuto == null) continue;
+        await _plugin.cancel(_idAlarma(recordatorioId,
+            DateTime.fromMillisecondsSinceEpoch(minuto * 60000, isUtc: true)));
+      }
+    } catch (_) {}
   }
 
   /// Muestra la notificación DE INMEDIATO, sin programar nada con

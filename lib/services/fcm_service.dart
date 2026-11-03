@@ -60,16 +60,24 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> _procesarMensaje(RemoteMessage message) async {
   final tipo = message.data['tipo'];
 
+  // v1.8: aviso silencioso diario — recalcula las alarmas con lo guardado
+  // en el teléfono (sin sesión ni internet: no le pide nada al servidor)
+  if (tipo == 'reprogramar_local') {
+    await _reprogramarLocal();
+    return;
+  }
+
   if (tipo == 'recordatorio_ahora') {
     final titulo = message.data['titulo'] ?? 'Recordatorio';
     final cuerpo = message.data['cuerpo'] ?? '';
     final mediaPath = message.data['media_path'] as String?;
-    // v1.7: si esta toma ya estaba programada como alarma en el teléfono
-    // (próximos 7 días), ya sonó a la hora exacta — no se repite el aviso.
+    // v1.7: si esta toma ya estaba programada como alarma en el teléfono,
+    // ya sonó a la hora exacta — no se repite el aviso.
     final recId = int.tryParse(message.data['recordatorio_id'] ?? '');
     final cuando = DateTime.tryParse(message.data['programado_para'] ?? '');
     if (recId != null && cuando != null &&
         await AlarmService.tomaProgramadaEnTelefono(recId, cuando.toLocal())) {
+      await _reprogramarLocal();   // de paso, mantiene llenas las próximas
       return;
     }
     try {
@@ -94,8 +102,18 @@ Future<void> _reprogramarDesdeNotificacion() async {
     final recordatorios = await RecordatoriosService.misRecordatorios();
     await AlarmService.reprogramarTodas(recordatorios);
   } catch (e) {
+    // Sin sesión (o sin internet): se reprograma con lo guardado
+    await _reprogramarLocal();
+  }
+}
+
+Future<void> _reprogramarLocal() async {
+  try {
+    await AlarmService.inicializar();
+    await AlarmService.reprogramarDesdeStorage();
+  } catch (e) {
     // ignore: avoid_print
-    print('Error reprogramando desde FCM: $e');
+    print('Error reprogramando alarmas locales: $e');
   }
 }
 
