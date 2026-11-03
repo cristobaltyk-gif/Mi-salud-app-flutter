@@ -333,18 +333,24 @@ class AgendaService {
         .toList();
   }
 
+  /// Presencial: cuántos centros quedaron fuera de los 50 km (última consulta)
+  static int ultimoMasLejos = 0;
+
   /// direccion (opcional): la del paciente → ordenado por cercanía y, a
   /// domicilio, solo profesionales que llegan a esa dirección.
-  static Future<List<CentroAgenda>> centros(String modalidad, {String? direccion}) async {
+  /// todos: presencial sin el límite de 50 km ("Ver centros más lejos").
+  static Future<List<CentroAgenda>> centros(String modalidad, {String? direccion, bool todos = false}) async {
     var url = AppConfig.serviciosCentrosEndpoint(modalidad);
     if ((direccion ?? '').trim().length >= 4) {
       url += '&direccion=${Uri.encodeQueryComponent(direccion!.trim())}';
     }
+    if (todos) url += '&radio_km=0';
     final res = await http.get(Uri.parse(url));
     if (res.statusCode != 200) {
       throw Exception('No se pudieron cargar los centros (${res.statusCode})');
     }
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    ultimoMasLejos = (body['mas_lejos'] as num?)?.toInt() ?? 0;
     return (body['centros'] as List<dynamic>? ?? [])
         .map((c) => CentroAgenda.fromJson(c as Map<String, dynamic>))
         .toList();

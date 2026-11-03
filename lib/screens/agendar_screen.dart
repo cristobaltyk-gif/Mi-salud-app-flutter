@@ -40,6 +40,7 @@ class AgendarScreen extends StatefulWidget {
 class _AgendarScreenState extends State<AgendarScreen> {
   late String _modalidad;
   Future<List<CentroAgenda>>? _futureCentros;
+  bool _verTodos = false;   // presencial: también los centros a más de 50 km
 
   @override
   void initState() {
@@ -76,7 +77,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
     setState(() {
       _futureCentros = _faltaDireccion
           ? Future.value(const <CentroAgenda>[])
-          : AgendaService.centros(_modalidad, direccion: _direccion);
+          : AgendaService.centros(_modalidad, direccion: _direccion, todos: _verTodos);
     });
   }
 
@@ -92,6 +93,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
   void _cambiarModalidad(String m) {
     if (m == _modalidad) return;
     _modalidad = m;
+    _verTodos = false;
     _cargar();
   }
 
@@ -214,14 +216,33 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 }
                 final centros = snapshot.data ?? [];
                 if (centros.isEmpty && _faltaDireccion) return const SizedBox.shrink();
+                final hayMasLejos = _modalidad == 'presencial' && !_verTodos && AgendaService.ultimoMasLejos > 0;
+                final botonMasLejos = OutlinedButton(
+                  onPressed: () { _verTodos = true; _cargar(); },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _verde,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Ver centros más lejos (${AgendaService.ultimoMasLejos})',
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                );
                 if (centros.isEmpty) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'Por ahora no hay ${_modalidades[_modalidad]!.$3} disponible.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            hayMasLejos
+                                ? 'No hay centros a menos de 50 km de tu dirección.'
+                                : 'Por ahora no hay ${_modalidades[_modalidad]!.$3} disponible.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          if (hayMasLejos) ...[const SizedBox(height: 14), botonMasLejos],
+                        ],
                       ),
                     ),
                   );
@@ -243,6 +264,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                       paraNombre: widget.paraNombre, paraRut: widget.paraRut,
                       direccion: widget.paraRut == null ? _direccion : null,
                     )),
+                    if (hayMasLejos) botonMasLejos,
                   ],
                 );
               },
@@ -367,63 +389,173 @@ class _TarjetaCentro extends StatelessWidget {
         ),
       );
     }
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ExpansionTile(
-        initiallyExpanded: abierto,
-        title: Text(centro.nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(
-          [
-            '$n ${n == 1 ? 'profesional' : 'profesionales'}',
-            if (centro.distanciaKm != null && modalidad != 'online' && modalidad != 'telemedicina')
-              'a ${centro.distanciaKm!.toStringAsFixed(1).replaceAll('.', ',')} km',
-            centro.profesionales.map((p) => p.etiqueta).where((e) => e.isNotEmpty).toSet().join(', '),
-          ].where((x) => x.isNotEmpty).join(' · '),
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        children: centro.profesionales.map((p) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 12, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                      const SizedBox(height: 4),
-                      EtiquetaEspecialidad(especialidad: p.etiqueta),
-                      if (modalidad == 'domicilio' && p.distanciaKm != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text('🏠 Sale a ${p.kmTexto} de tu domicilio',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                        ),
-                      if (modalidad != 'domicilio' && p.lugar != null)
-                        InkWell(
-                          onTap: () => launchUrl(p.comoLlegar!, mode: LaunchMode.externalApplication),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '📍 ${[p.lugar!['nombre'], p.lugar!['direccion']].where((x) => (x ?? '').toString().isNotEmpty).join(' · ')}'
-                              '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · Cómo llegar',
-                              style: TextStyle(fontSize: 12, color: Colors.blue[800]),
-                            ),
-                          ),
-                        ),
-                    ],
+    return _CentroDesplegable(
+      centro: centro, modalidad: modalidad, abierto: abierto,
+      onAgendar: (p) => _agendar(context, p),
+    );
+  }
+}
+
+/// Iniciales: "Instituto de Cirugía Articular" → ICA; "Familia Vital" → FV
+String _iniciales(String nombre) {
+  final p = nombre
+      .replaceFirst(RegExp(r'^(dra?|e\.u|klgo|klga|t\.o|sra?|psic)\.?\s+', caseSensitive: false), '')
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty && !RegExp(r'^(de|del|la|las|los|y)$', caseSensitive: false).hasMatch(w))
+      .toList();
+  if (p.isEmpty) return '·';
+  final t = p.length >= 3 ? p.take(3).map((w) => w[0]).join() : p[0][0] + (p.length > 1 ? p[1][0] : '');
+  return t.toUpperCase();
+}
+
+/// v2: el centro con franja de color, iniciales y nombre destacado; cada
+/// profesional en su propia tarjeta blanca (se distinguen de un vistazo).
+class _CentroDesplegable extends StatefulWidget {
+  final CentroAgenda centro;
+  final String modalidad;
+  final bool abierto;
+  final void Function(ProfesionalAgenda) onAgendar;
+  const _CentroDesplegable({required this.centro, required this.modalidad, required this.abierto,
+      required this.onAgendar});
+
+  @override
+  State<_CentroDesplegable> createState() => _CentroDesplegableState();
+}
+
+class _CentroDesplegableState extends State<_CentroDesplegable> {
+  late bool _abierto = widget.abierto;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.centro;
+    final n = c.profesionales.length;
+    final subtitulo = [
+      '$n ${n == 1 ? 'profesional' : 'profesionales'}',
+      if (c.distanciaKm != null && widget.modalidad != 'online' && widget.modalidad != 'telemedicina')
+        'a ${c.distanciaKm!.toStringAsFixed(1).replaceAll('.', ',')} km',
+    ].join(' · ');
+    final especialidades = c.profesionales.map((p) => p.etiqueta).where((e) => e.isNotEmpty).toSet().toList();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 8, offset: Offset(0, 2))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _abierto = !_abierto),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [_verde, Color(0xFF1B3B8C)]),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 23,
+                    backgroundColor: Colors.white,
+                    child: Text(_iniciales(c.nombre),
+                        style: const TextStyle(color: _verde, fontWeight: FontWeight.w800, fontSize: 15)),
                   ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: _verde),
-                  onPressed: () => _agendar(context, p),
-                  child: const Text('Agendar'),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.nombre,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
+                        const SizedBox(height: 2),
+                        Text(subtitulo, style: const TextStyle(color: Color(0xE6FFFFFF), fontSize: 12.5)),
+                      ],
+                    ),
+                  ),
+                  Icon(_abierto ? Icons.expand_less : Icons.expand_more, color: Colors.white),
+                ],
+              ),
+            ),
+          ),
+          if (!_abierto && especialidades.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              child: Wrap(
+                spacing: 6, runSpacing: 6,
+                children: especialidades.map((e) => EtiquetaEspecialidad(especialidad: e)).toList(),
+              ),
+            ),
+          if (_abierto)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 2),
+              child: Column(children: c.profesionales.map(_tarjetaProfesional).toList()),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tarjetaProfesional(ProfesionalAgenda p) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 19,
+            backgroundColor: const Color(0xFFF0FDFA),
+            child: Text(_iniciales(p.nombre),
+                style: const TextStyle(color: _verde, fontWeight: FontWeight.w800, fontSize: 13)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                const SizedBox(height: 4),
+                EtiquetaEspecialidad(especialidad: p.etiqueta),
+                if (widget.modalidad == 'domicilio' && p.distanciaKm != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('🏠 Sale a ${p.kmTexto} de tu domicilio',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                  ),
+                if (widget.modalidad != 'domicilio' && p.lugar != null)
+                  InkWell(
+                    onTap: () => launchUrl(p.comoLlegar!, mode: LaunchMode.externalApplication),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '📍 ${[p.lugar!['nombre'], p.lugar!['direccion']].where((x) => (x ?? '').toString().isNotEmpty).join(' · ')}'
+                        '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · Cómo llegar',
+                        style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+                      ),
+                    ),
+                  ),
               ],
             ),
-          );
-        }).toList(),
+          ),
+          const SizedBox(width: 6),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: _verde,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              minimumSize: const Size(0, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => widget.onAgendar(p),
+            child: const Text('Agendar', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }
