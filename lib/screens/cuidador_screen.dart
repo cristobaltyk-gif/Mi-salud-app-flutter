@@ -39,6 +39,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../widgets/tarjetas.dart';
 import '../models/cuidador.dart';
 import '../services/cuidador_service.dart';
 import 'ficha_cuidado_screen.dart';
@@ -80,18 +81,13 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
-            child: Row(
-              children: [
-                Expanded(child: _BotonLado(
-                  icono: '🤝', titulo: 'Yo cuido', sub: 'Personas que cuidas y tus invitaciones',
-                  activo: _tabController.index == 0, onTap: () => _tabController.animateTo(0))),
-                const SizedBox(width: 10),
-                Expanded(child: _BotonLado(
-                  icono: '🛡️', titulo: 'Me cuidan', sub: 'Quién puede ver tus recordatorios',
-                  activo: _tabController.index == 1, onTap: () => _tabController.animateTo(1))),
-              ],
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+            child: GrillaOpciones(opciones: [
+              TarjetaOpcion(icono: '🤝', titulo: 'Yo cuido', sub: 'Personas que cuidas y tus invitaciones',
+                  seleccionada: _tabController.index == 0, onTap: () => _tabController.animateTo(0)),
+              TarjetaOpcion(icono: '🛡️', titulo: 'Me cuidan', sub: 'Quién puede ver tus recordatorios',
+                  seleccionada: _tabController.index == 1, onTap: () => _tabController.animateTo(1)),
+            ]),
           ),
           Expanded(
             child: TabBarView(
@@ -103,45 +99,6 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BotonLado extends StatelessWidget {
-  final String icono, titulo, sub;
-  final bool activo;
-  final VoidCallback onTap;
-  const _BotonLado({required this.icono, required this.titulo, required this.sub,
-      required this.activo, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    const azul = Color(0xFF1B3B8C);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: activo ? azul : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: activo ? azul : const Color(0xFFE2E8F0), width: 2),
-          boxShadow: activo ? const [BoxShadow(color: Color(0x401B3B8C), blurRadius: 12, offset: Offset(0, 4))] : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(icono, style: const TextStyle(fontSize: 22)),
-            const SizedBox(height: 4),
-            Text(titulo, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
-                color: activo ? Colors.white : const Color(0xFF0F172A))),
-            const SizedBox(height: 2),
-            Text(sub, style: TextStyle(fontSize: 11.5, height: 1.3,
-                color: activo ? const Color(0xE6FFFFFF) : const Color(0xFF64748B))),
-          ],
-        ),
       ),
     );
   }
@@ -264,23 +221,14 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
               itemBuilder: (context, i) {
                 final inv = invitaciones[i];
                 final puedeRevocar = inv.estado == 'pendiente' || inv.estado == 'vinculado';
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: _colorEstado(inv.estado).withOpacity(0.15),
-                      child: Icon(Icons.person_outline, color: _colorEstado(inv.estado)),
-                    ),
-                    title: Text(inv.nombreCompleto),
-                    subtitle: Text(
-                      '${_textoEstado(inv.estado)}'
+                return TarjetaPersona(
+                  nombre: inv.nombreCompleto,
+                  detalle: '${_textoEstado(inv.estado)}'
                       '${inv.relacion != null && inv.relacion!.isNotEmpty ? ' · ${inv.relacion}' : ''}',
-                      style: TextStyle(color: _colorEstado(inv.estado)),
-                    ),
-                    trailing: puedeRevocar
-                        ? IconButton(icon: const Icon(Icons.close), onPressed: () => _revocar(inv))
-                        : null,
-                  ),
+                  colorDetalle: _colorEstado(inv.estado),
+                  derecha: puedeRevocar
+                      ? IconButton(icon: const Icon(Icons.close), tooltip: 'Quitar', onPressed: () => _revocar(inv))
+                      : null,
                 );
               },
             );
@@ -632,18 +580,11 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
               itemBuilder: (context, i) {
                 if (i < _invitaciones.length) return _tarjetaInvitacion(_invitaciones[i]);
                 final c = cuidados[i - _invitaciones.length];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                    title: Text(c.nombreCompleto),
-                    subtitle: Text(
-                      'Acceso: ${c.nivelAcceso}'
+                return TarjetaPersona(
+                  nombre: c.nombreCompleto,
+                  detalle: 'Acceso: ${c.nivelAcceso}'
                       '${c.relacion != null && c.relacion!.isNotEmpty ? ' · ${c.relacion}' : ''}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _verFicha(c.rutPaciente),
-                  ),
+                  onTap: () => _verFicha(c.rutPaciente),
                 );
               },
             );

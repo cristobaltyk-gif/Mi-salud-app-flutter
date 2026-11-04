@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/agenda_service.dart';
 import '../widgets/etiqueta_especialidad.dart';
+import '../widgets/tarjetas.dart';
 import '../services/storage_service.dart';
 import '../services/auth_service.dart';
 import 'reserva_web_screen.dart';
@@ -110,19 +111,14 @@ class _AgendarScreenState extends State<AgendarScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 3.6,
-              children: _modalidades.entries.map((e) => _BotonModalidad(
-                texto: e.value.$1,
-                activo: _modalidad == e.key,
-                onTap: () => _cambiarModalidad(e.key),
-              )).toList(),
-            ),
+            // Mismo estilo que la Agenda (widgets/tarjetas.dart)
+            child: GrillaOpciones(opciones: _modalidades.entries.map((e) => TarjetaOpcion(
+              icono: e.value.$1.split(' ').first,
+              titulo: e.value.$1.substring(e.value.$1.indexOf(' ') + 1),
+              sub: _subtitulos[e.key],
+              seleccionada: _modalidad == e.key,
+              onTap: () => _cambiarModalidad(e.key),
+            )).toList()),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -276,6 +272,13 @@ class _AgendarScreenState extends State<AgendarScreen> {
   }
 }
 
+const Map<String, String> _subtitulos = {
+  'domicilio': 'Te atienden en casa',
+  'presencial': 'En un centro',
+  'telemedicina': 'Por videollamada',
+  'online': 'Sin hora, con fotos',
+};
+
 /// modalidad → (botón, descripción, "no hay …")
 const Map<String, (String, String, String)> _modalidades = {
   'domicilio': ('🏠 A domicilio', 'Un profesional te atiende en tu casa. El pago es en línea al reservar.',
@@ -285,36 +288,6 @@ const Map<String, (String, String, String)> _modalidades = {
   'online': ('💻 Derma online', 'Sin hora: envías tus fotos, pagas en línea y un dermatólogo te responde por correo.',
       'dermatología online'),
 };
-
-class _BotonModalidad extends StatelessWidget {
-  final String texto;
-  final bool activo;
-  final VoidCallback onTap;
-  const _BotonModalidad({required this.texto, required this.activo, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: activo ? const Color(0xFFF0FDF9) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: activo ? _verde : const Color(0xFFE2E8F0)),
-        ),
-        child: Text(texto,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: activo ? _verde : Colors.grey[700],
-            )),
-      ),
-    );
-  }
-}
 
 class _TarjetaCentro extends StatelessWidget {
   final CentroAgenda centro;
@@ -396,17 +369,6 @@ class _TarjetaCentro extends StatelessWidget {
   }
 }
 
-/// Iniciales: "Instituto de Cirugía Articular" → ICA; "Familia Vital" → FV
-String _iniciales(String nombre) {
-  final p = nombre
-      .replaceFirst(RegExp(r'^(dra?|e\.u|klgo|klga|t\.o|sra?|psic)\.?\s+', caseSensitive: false), '')
-      .split(RegExp(r'\s+'))
-      .where((w) => w.isNotEmpty && !RegExp(r'^(de|del|la|las|los|y)$', caseSensitive: false).hasMatch(w))
-      .toList();
-  if (p.isEmpty) return '·';
-  final t = p.length >= 3 ? p.take(3).map((w) => w[0]).join() : p[0][0] + (p.length > 1 ? p[1][0] : '');
-  return t.toUpperCase();
-}
 
 /// v2: el centro con franja de color, iniciales y nombre destacado; cada
 /// profesional en su propia tarjeta blanca (se distinguen de un vistazo).
@@ -459,7 +421,7 @@ class _CentroDesplegableState extends State<_CentroDesplegable> {
                   CircleAvatar(
                     radius: 23,
                     backgroundColor: Colors.white,
-                    child: Text(_iniciales(c.nombre),
+                    child: Text(iniciales(c.nombre),
                         style: const TextStyle(color: _verde, fontWeight: FontWeight.w800, fontSize: 15)),
                   ),
                   const SizedBox(width: 12),
@@ -498,64 +460,39 @@ class _CentroDesplegableState extends State<_CentroDesplegable> {
   }
 
   Widget _tarjetaProfesional(ProfesionalAgenda p) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 19,
-            backgroundColor: const Color(0xFFF0FDFA),
-            child: Text(_iniciales(p.nombre),
-                style: const TextStyle(color: _verde, fontWeight: FontWeight.w800, fontSize: 13)),
+    return TarjetaPersona(
+      nombre: p.nombre,
+      extra: [
+        const SizedBox(height: 4),
+        EtiquetaEspecialidad(especialidad: p.etiqueta),
+        if (widget.modalidad == 'domicilio' && p.distanciaKm != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text('🏠 Sale a ${p.kmTexto} de tu domicilio',
+                style: const TextStyle(fontSize: 12, color: kTextoGris)),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                const SizedBox(height: 4),
-                EtiquetaEspecialidad(especialidad: p.etiqueta),
-                if (widget.modalidad == 'domicilio' && p.distanciaKm != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text('🏠 Sale a ${p.kmTexto} de tu domicilio',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                  ),
-                if (widget.modalidad != 'domicilio' && p.lugar != null)
-                  InkWell(
-                    onTap: () => launchUrl(p.comoLlegar!, mode: LaunchMode.externalApplication),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '📍 ${[p.lugar!['nombre'], p.lugar!['direccion']].where((x) => (x ?? '').toString().isNotEmpty).join(' · ')}'
-                        '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · Cómo llegar',
-                        style: TextStyle(fontSize: 12, color: Colors.blue[800]),
-                      ),
-                    ),
-                  ),
-              ],
+        if (widget.modalidad != 'domicilio' && p.lugar != null)
+          InkWell(
+            onTap: () => launchUrl(p.comoLlegar!, mode: LaunchMode.externalApplication),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '📍 ${[p.lugar!['nombre'], p.lugar!['direccion']].where((x) => (x ?? '').toString().isNotEmpty).join(' · ')}'
+                '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · Cómo llegar',
+                style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+              ),
             ),
           ),
-          const SizedBox(width: 6),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: _verde,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              minimumSize: const Size(0, 36),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            onPressed: () => widget.onAgendar(p),
-            child: const Text('Agendar', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-          ),
-        ],
+      ],
+      derecha: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: _verde,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          minimumSize: const Size(0, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: () => widget.onAgendar(p),
+        child: const Text('Agendar', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
       ),
     );
   }

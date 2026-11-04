@@ -14,6 +14,7 @@
 ///   telemedicina) solo se cambian de hora.
 library;
 
+import '../widgets/tarjetas.dart';
 import 'package:flutter/material.dart';
 import '../models/carpeta_activa.dart';
 import '../services/agenda_service.dart';
@@ -153,33 +154,16 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
           Text(paraOtro ? 'Agendar hora para ${widget.carpeta.nombreMostrar}' : 'Agendar hora',
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _azul)),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _BotonNueva(
-                icono: '🏠', titulo: 'A domicilio', sub: 'Te atienden en casa',
-                onTap: () => _agendar('domicilio'),
-              )),
-              const SizedBox(width: 10),
-              Expanded(child: _BotonNueva(
-                icono: '🏥', titulo: 'Presencial', sub: 'En un centro',
-                onTap: () => _agendar('presencial'),
-              )),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _BotonNueva(
-                icono: '📱', titulo: 'Telemedicina', sub: 'Por videollamada',
-                onTap: () => _agendar('telemedicina'),
-              )),
-              const SizedBox(width: 10),
-              Expanded(child: _BotonNueva(
-                icono: '💻', titulo: 'Derma online', sub: 'Sin hora, con fotos',
-                onTap: () => _agendar('online'),
-              )),
-            ],
-          ),
+          GrillaOpciones(opciones: [
+            TarjetaOpcion(icono: '🏠', titulo: 'A domicilio', sub: 'Te atienden en casa',
+                onTap: () => _agendar('domicilio')),
+            TarjetaOpcion(icono: '🏥', titulo: 'Presencial', sub: 'En un centro',
+                onTap: () => _agendar('presencial')),
+            TarjetaOpcion(icono: '📱', titulo: 'Telemedicina', sub: 'Por videollamada',
+                onTap: () => _agendar('telemedicina')),
+            TarjetaOpcion(icono: '💻', titulo: 'Derma online', sub: 'Sin hora, con fotos',
+                onTap: () => _agendar('online')),
+          ]),
           const SizedBox(height: 24),
           Text(paraOtro ? 'Horas agendadas de ${widget.carpeta.nombreMostrar}' : 'Tus horas agendadas',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
@@ -220,42 +204,6 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BotonNueva extends StatelessWidget {
-  final String icono;
-  final String titulo;
-  final String sub;
-  final VoidCallback onTap;
-  const _BotonNueva({required this.icono, required this.titulo, required this.sub, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFBFDBFE)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(icono, style: const TextStyle(fontSize: 26)),
-              const SizedBox(height: 6),
-              Text(titulo, style: const TextStyle(fontWeight: FontWeight.w800, color: _azul)),
-              Text(sub, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            ],
-          ),
-        ),
       ),
     );
   }
