@@ -108,6 +108,11 @@ class AppConfig {
       '$cuidadorBase/vinculo/$vinculoId';
   static const String cuidadorEscanearEndpoint = '$cuidadorBase/escanear';
   static const String cuidadorMisCuidadosEndpoint = '$cuidadorBase/mis-cuidados';
+  // v2 (estilo GitHub): el invitado acepta o rechaza desde su cuenta
+  static const String cuidadorRecibidasEndpoint = '$cuidadorBase/invitaciones-recibidas';
+  static String cuidadorResponderEndpoint(int id, bool aceptar) =>
+      '$cuidadorBase/invitaciones/$id/${aceptar ? 'aceptar' : 'rechazar'}';
+  static const String cuidadorVerQREndpoint = '$cuidadorBase/escanear/ver';
 
   // --- Endpoints de ficha compartida (ficha_compartida_router.py, prefix /api/compartir) ---
   static const String compartirBase = '$backendBaseUrl/api/compartir';

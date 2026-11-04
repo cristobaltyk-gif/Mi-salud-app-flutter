@@ -57,6 +57,7 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() { if (mounted) setState(() {}); });
   }
 
   @override
@@ -65,27 +66,83 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
     super.dispose();
   }
 
+  // v2: pantalla propia con barra de título (antes las pestañas quedaban
+  // tapadas por la barra del teléfono) y dos botones grandes:
+  // "Yo cuido" (primero) y "Me cuidan".
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Mis cuidadores'),
-            Tab(text: 'A quién cuido'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Cuidadores'),
+        backgroundColor: const Color(0xFF1B3B8C),
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+            child: Row(
+              children: [
+                Expanded(child: _BotonLado(
+                  icono: '🤝', titulo: 'Yo cuido', sub: 'Personas que cuidas y tus invitaciones',
+                  activo: _tabController.index == 0, onTap: () => _tabController.animateTo(0))),
+                const SizedBox(width: 10),
+                Expanded(child: _BotonLado(
+                  icono: '🛡️', titulo: 'Me cuidan', sub: 'Quién puede ver tus recordatorios',
+                  activo: _tabController.index == 1, onTap: () => _tabController.animateTo(1))),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                _AQuienCuidoTab(),
+                _MisCuidadoresTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BotonLado extends StatelessWidget {
+  final String icono, titulo, sub;
+  final bool activo;
+  final VoidCallback onTap;
+  const _BotonLado({required this.icono, required this.titulo, required this.sub,
+      required this.activo, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const azul = Color(0xFF1B3B8C);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: activo ? azul : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: activo ? azul : const Color(0xFFE2E8F0), width: 2),
+          boxShadow: activo ? const [BoxShadow(color: Color(0x401B3B8C), blurRadius: 12, offset: Offset(0, 4))] : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(icono, style: const TextStyle(fontSize: 22)),
+            const SizedBox(height: 4),
+            Text(titulo, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
+                color: activo ? Colors.white : const Color(0xFF0F172A))),
+            const SizedBox(height: 2),
+            Text(sub, style: TextStyle(fontSize: 11.5, height: 1.3,
+                color: activo ? const Color(0xE6FFFFFF) : const Color(0xFF64748B))),
           ],
         ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: const [
-              _MisCuidadoresTab(),
-              _AQuienCuidoTab(),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -161,7 +218,8 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
   String _textoEstado(String estado) {
     switch (estado) {
       case 'vinculado': return 'Vinculado';
-      case 'pendiente': return 'Esperando que escanee el QR';
+      case 'pendiente': return 'Esperando que acepte la invitación';
+      case 'rechazado': return 'Rechazó la invitación';
       case 'expirado': return 'Expiró sin confirmar';
       default: return 'Revocado';
     }
@@ -173,7 +231,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirNuevaInvitacion,
         icon: const Icon(Icons.qr_code),
-        label: const Text('Invitar cuidador'),
+        label: const Text('Agregar cuidador'),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _cargar(),
@@ -347,8 +405,8 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Pídele a tu cuidador que abra MiSalud, inicie sesión, y escanee '
-            'este código desde "A quién cuido". Expira el '
+            '✓ Invitación enviada. Tu cuidador debe aceptarla desde su cuenta, en '
+            '"Cuidadores → Yo cuido". Si está contigo, también puede escanear este código. Vence el '
             '${inv.expiraInvitacion.day}/${inv.expiraInvitacion.month}/${inv.expiraInvitacion.year}.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[700]),
@@ -425,6 +483,9 @@ class _AQuienCuidoTab extends StatefulWidget {
 
 class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
   Future<List<PacienteCuidado>>? _futureCuidados;
+  // v2: invitaciones que me hicieron (se aceptan o rechazan aquí)
+  List<Map<String, dynamic>> _invitaciones = [];
+  int? _ocupado;
 
   @override
   void initState() {
@@ -434,24 +495,92 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
 
   void _cargar() {
     setState(() { _futureCuidados = CuidadorService.misCuidados(); });
+    CuidadorService.invitacionesRecibidas()
+        .then((l) { if (mounted) setState(() => _invitaciones = l); })
+        .catchError((_) {});
   }
 
+  void _aviso(String texto) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
+
+  Future<void> _responder(Map<String, dynamic> inv, bool aceptar) async {
+    setState(() => _ocupado = inv['id'] as int);
+    try {
+      await CuidadorService.responder(inv['id'] as int, aceptar: aceptar);
+      _aviso(aceptar ? 'Ahora cuidas a ${inv['paciente']}' : 'Invitación rechazada');
+      _cargar();
+    } catch (e) {
+      _aviso('$e');
+    } finally {
+      if (mounted) setState(() => _ocupado = null);
+    }
+  }
+
+  /// QR en persona: muestra la invitación y se acepta o rechaza aquí mismo.
   Future<void> _escanear() async {
     final token = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const _EscanearQRScreen()),
     );
     if (token == null) return;
     try {
-      await CuidadorService.escanearQR(token);
-      _cargar();
+      final inv = await CuidadorService.verQR(token);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vínculo confirmado correctamente')),
+      final aceptar = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('${inv['paciente']} te invita a ser su cuidador'),
+          content: Text('Podrás recibir ${inv['que_podras_ver']}.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Rechazar', style: TextStyle(color: Colors.red))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Aceptar')),
+          ],
+        ),
       );
+      if (aceptar == null) return;
+      await _responder(inv, aceptar);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      _aviso('$e');
     }
+  }
+
+  Widget _tarjetaInvitacion(Map<String, dynamic> inv) {
+    final relacion = (inv['relacion'] ?? '').toString();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('📩 ${inv['paciente']} te invita a ser su cuidador${relacion.isNotEmpty ? ' ($relacion)' : ''}',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 4),
+          Text('Podrás recibir ${inv['que_podras_ver']}.',
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF92400E))),
+          const SizedBox(height: 10),
+          Row(children: [
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
+              onPressed: _ocupado == inv['id'] ? null : () => _responder(inv, true),
+              child: const Text('✓ Aceptar'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: _ocupado == inv['id'] ? null : () => _responder(inv, false),
+              child: const Text('Rechazar'),
+            ),
+          ]),
+        ],
+      ),
+    );
   }
 
   void _verFicha(String rutPaciente) {
@@ -481,14 +610,15 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
             }
             final cuidados = snapshot.data!;
             if (cuidados.isEmpty) {
-              return ListView(children: [
+              return ListView(padding: const EdgeInsets.all(16), children: [
+                ..._invitaciones.map(_tarjetaInvitacion),
                 Padding(
                   padding: const EdgeInsets.only(top: 80),
                   child: Center(child: Column(children: [
                     Icon(Icons.qr_code_scanner, size: 56, color: Colors.grey[400]),
                     const SizedBox(height: 12),
                     Text(
-                      'No cuidas a nadie todavía.\nEscanea el código que te compartan.',
+                      'No cuidas a nadie todavía.\nCuando alguien te invite, la invitación aparecerá aquí.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey[600]),
                     ),
@@ -498,9 +628,10 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
             }
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-              itemCount: cuidados.length,
+              itemCount: _invitaciones.length + cuidados.length,
               itemBuilder: (context, i) {
-                final c = cuidados[i];
+                if (i < _invitaciones.length) return _tarjetaInvitacion(_invitaciones[i]);
+                final c = cuidados[i - _invitaciones.length];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(

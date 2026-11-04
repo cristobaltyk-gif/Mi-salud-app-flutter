@@ -131,6 +131,33 @@ class CuidadorService {
     }
   }
 
+  /// v2: invitaciones pendientes a mi RUT (quién me invita y qué podré ver).
+  static Future<List<Map<String, dynamic>>> invitacionesRecibidas() async {
+    final headers = await _authHeaders();
+    final res = await http.get(Uri.parse(AppConfig.cuidadorRecibidasEndpoint), headers: headers);
+    if (res.statusCode != 200) throw CuidadorException(_detailDe(res));
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return (body['invitaciones'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  /// v2: aceptar o rechazar una invitación desde la propia cuenta.
+  static Future<void> responder(int invitacionId, {required bool aceptar}) async {
+    final headers = await _authHeaders();
+    final res = await http.post(Uri.parse(AppConfig.cuidadorResponderEndpoint(invitacionId, aceptar)),
+        headers: headers);
+    if (res.statusCode != 200) throw CuidadorException(_detailDe(res));
+  }
+
+  /// v2: QR en persona → la invitación (no vincula todavía; luego responder()).
+  static Future<Map<String, dynamic>> verQR(String token) async {
+    final headers = await _authHeaders();
+    final res = await http.post(Uri.parse(AppConfig.cuidadorVerQREndpoint),
+        headers: headers, body: jsonEncode({'token': token}));
+    if (res.statusCode != 200) throw CuidadorException(_detailDe(res));
+    final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return body['invitacion'] as Map<String, dynamic>;
+  }
+
   /// GET /api/cuidador/mis-cuidados — pacientes que este usuario cuida.
   static Future<List<PacienteCuidado>> misCuidados() async {
     final headers = await _authHeaders();
