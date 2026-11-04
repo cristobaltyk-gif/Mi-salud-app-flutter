@@ -25,6 +25,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../config/app_config.dart';
 import '../models/carpeta_activa.dart';
 import '../services/auth_service.dart';
 import '../services/biometria_service.dart';
@@ -255,9 +257,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content: Text(huella
-            ? 'La próxima vez entras con tu huella. Tus recordatorios seguirán sonando.'
-            : 'Tus recordatorios seguirán sonando en este teléfono.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(huella
+                ? 'La próxima vez entras con tu huella. Tus recordatorios seguirán sonando.'
+                : 'Tus recordatorios seguirán sonando en este teléfono.'),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 4,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact,
+                      foregroundColor: const Color(0xFF64748B)),
+                  onPressed: () => launchUrl(Uri.parse(AppConfig.privacidadUrl), mode: LaunchMode.inAppBrowserView),
+                  child: const Text('Política de privacidad', style: TextStyle(fontSize: 12.5)),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact,
+                      foregroundColor: const Color(0xFFB91C1C)),
+                  onPressed: () => Navigator.pop(ctx, 'eliminar'),
+                  child: const Text('Eliminar mi cuenta', style: TextStyle(fontSize: 12.5)),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
@@ -270,6 +296,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
     if (opcion == null) return;
+    if (opcion == 'eliminar') return _eliminarCuenta();
     final olvidar = opcion == 'olvidar';
     if (olvidar) await AlarmService.cancelarTodas();
     await AuthService.cerrarSesionServidor(olvidar: olvidar);
@@ -280,6 +307,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MaterialPageRoute(builder: (_) => conHuella ? const DesbloquearScreen() : const LoginScreen()),
       (route) => false,
     );
+  }
+
+  // Exigencia de Google Play: borrar la cuenta desde la app. Se borra el
+  // acceso, los recordatorios y los cuidadores; la ficha clínica no (es del
+  // centro y la ley obliga a conservarla). También en la web: /eliminar-cuenta
+  Future<void> _eliminarCuenta() async {
+    final ctrl = TextEditingController();
+    var entiende = false;
+    final password = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          icon: const Icon(Icons.delete_forever, size: 40, color: Color(0xFFB91C1C)),
+          title: const Text('Eliminar mi cuenta'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Se borran tu acceso, tus recordatorios, tus cuidadores y las personas que cuidas.\n\n'
+                    'Tu ficha clínica no se borra: la conserva tu centro de salud porque la ley lo exige. '
+                    'Si vuelves a activar tu cuenta podrás verla de nuevo.'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: ctrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Confirma con tu contraseña'),
+                  onChanged: (_) => setD(() {}),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: entiende,
+                  onChanged: (v) => setD(() => entiende = v ?? false),
+                  title: const Text('Entiendo que no se puede deshacer', style: TextStyle(fontSize: 13.5)),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB91C1C)),
+              onPressed: entiende && ctrl.text.isNotEmpty ? () => Navigator.pop(ctx, ctrl.text) : null,
+              child: const Text('Eliminar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+    if (password == null || password.isEmpty) return;
+    try {
+      final mensaje = await AuthService.eliminarCuenta(password);
+      await AlarmService.cancelarTodas();
+      await AuthService.logout(olvidar: true);
+      if (!mounted) return;
+      await _mensaje('Cuenta eliminada', mensaje);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } on AuthException catch (e) {
+      await _mensaje('No se pudo eliminar', e.mensaje);
+    } catch (_) {
+      await _mensaje('No se pudo eliminar', 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+    }
   }
 
   void _abrirCuidadores() {

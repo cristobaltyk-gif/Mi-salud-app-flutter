@@ -227,7 +227,9 @@ class AlarmService {
     return false;
   }
 
-  /// true si la alarma quedó programada.
+  /// true solo si quedó programada a la hora EXACTA. Si quedó aproximada
+  /// (sin el permiso "Alarmas y recordatorios") devuelve false: así el aviso
+  /// del servidor también suena y no se depende de una alarma atrasada.
   static Future<bool> _programarUna(Recordatorio r, DateTime cuando, int idAlarma) async {
     final horario = tz.TZDateTime.from(cuando, tz.local);
     if (horario.isBefore(tz.TZDateTime.now(tz.local))) return false;
@@ -257,22 +259,27 @@ class AlarmService {
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
-    try {
-      await _plugin.zonedSchedule(
-        idAlarma,
-        'Hora de tu medicamento',
-        r.textoMostrar,
-        horario,
-        NotificationDetails(android: androidDetails, iOS: iosDetails),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: 'recordatorio:${r.id}',
-      );
-      return true;
-    } catch (_) {
-      return false;
+    // Exacta si el usuario dio el permiso "Alarmas y recordatorios"; si no
+    // (Android 14+ lo trae apagado y la app de Google Play ya no usa
+    // USE_EXACT_ALARM), igual se programa, aunque Android puede atrasarla
+    // unos minutos. El aviso del servidor (FCM) sigue de respaldo.
+    for (final modo in [AndroidScheduleMode.exactAllowWhileIdle, AndroidScheduleMode.inexactAllowWhileIdle]) {
+      try {
+        await _plugin.zonedSchedule(
+          idAlarma,
+          'Hora de tu medicamento',
+          r.textoMostrar,
+          horario,
+          NotificationDetails(android: androidDetails, iOS: iosDetails),
+          androidScheduleMode: modo,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'recordatorio:${r.id}',
+        );
+        return modo == AndroidScheduleMode.exactAllowWhileIdle;
+      } catch (_) {}
     }
+    return false;
   }
 
   static Future<void> cancelarTodas() => _plugin.cancelAll();

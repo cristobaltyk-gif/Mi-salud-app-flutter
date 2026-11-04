@@ -200,6 +200,21 @@ class AuthService {
     }
   }
 
+  /// POST /api/auth/eliminar-cuenta — borra la cuenta del Portal (acceso,
+  /// recordatorios, cuidadores). La ficha clínica la conserva el centro.
+  static Future<String> eliminarCuenta(String password) async {
+    final token = await StorageService.obtenerToken();
+    final res = await http.post(
+      Uri.parse(AppConfig.eliminarCuentaEndpoint),
+      headers: {..._headersJson, 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'password': password}),
+    );
+    if (res.statusCode != 200) {
+      throw AuthException(res.statusCode, _detailDe(res));
+    }
+    return (jsonDecode(res.body) as Map<String, dynamic>)['mensaje'] as String? ?? 'Tu cuenta fue eliminada.';
+  }
+
   /// GET /api/auth/me — requiere token guardado.
   static Future<Paciente> me() async {
     final token = await StorageService.obtenerToken();
