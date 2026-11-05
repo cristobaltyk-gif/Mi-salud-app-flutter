@@ -259,6 +259,15 @@ class AlarmService {
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
+    // Ejercicio del kine con foto/video: la alarma lleva la media, así al
+    // tocarla se abre MediaEjercicioScreen (antes solo la traía el aviso del
+    // servidor, que ahora se omite cuando la alarma ya estaba en el teléfono).
+    final conMedia = r.tipo == 'ejercicio' && (r.mediaPath ?? '').isNotEmpty;
+    final titulo = r.tipo == 'ejercicio' ? '🏃 Hora de tu ejercicio' : 'Hora de tu medicamento';
+    final payload = conMedia
+        ? jsonEncode({'titulo': titulo, 'cuerpo': r.textoMostrar, 'mediaPath': r.mediaPath})
+        : 'recordatorio:${r.id}';
+
     // Exacta si el usuario dio el permiso "Alarmas y recordatorios"; si no
     // (Android 14+ lo trae apagado y la app de Google Play ya no usa
     // USE_EXACT_ALARM), igual se programa, aunque Android puede atrasarla
@@ -267,14 +276,14 @@ class AlarmService {
       try {
         await _plugin.zonedSchedule(
           idAlarma,
-          'Hora de tu medicamento',
+          titulo,
           r.textoMostrar,
           horario,
           NotificationDetails(android: androidDetails, iOS: iosDetails),
           androidScheduleMode: modo,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          payload: 'recordatorio:${r.id}',
+          payload: payload,
         );
         return modo == AndroidScheduleMode.exactAllowWhileIdle;
       } catch (_) {}
