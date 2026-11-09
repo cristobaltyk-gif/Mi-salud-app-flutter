@@ -35,6 +35,8 @@ import '../services/recordatorios_service.dart';
 import '../services/alarm_service.dart';
 import '../services/fcm_service.dart';
 import '../services/cuidador_service.dart';
+import '../services/contratos_service.dart';
+import '../widgets/firma_terminos.dart';
 import '../widgets/barra_inferior_tabs.dart';
 import '../widgets/selector_carpetas.dart';
 import 'ficha_tab_unificada.dart';
@@ -68,7 +70,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _sincronizarAlarmas();
     _cargarCuidados();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _ofrecerHuellaAlEntrar());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await _revisarTerminos()) return;
+      await _ofrecerHuellaAlEntrar();
+    });
   }
 
   Future<void> _cargarCuidados() async {
@@ -123,6 +128,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // la activa o desactiva. Si el teléfono aún no está vinculado (p. ej. tenía
   // la sesión abierta de antes), se vincula confirmando la contraseña.
   // Si algo falla se muestra el motivo (antes fallaba en silencio).
+  /// Términos de uso sin aceptar (primera vez o versión nueva): sin aceptarlos no sigue.
+  /// Devuelve false si eligió salir (ya se cerró la sesión).
+  Future<bool> _revisarTerminos() async {
+    final doc = await ContratosService.pendiente();
+    if (doc == null || !mounted) return true;
+    if (await pedirFirmaTerminos(context, doc)) return true;
+    await AuthService.cerrarSesionServidor();
+    await AuthService.logout();
+    if (!mounted) return false;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+    return false;
+  }
+
   Future<void> _ofrecerHuellaAlEntrar() async {
     if (await StorageService.biometriaActiva() != null) return;   // ya se le preguntó
     if (!mounted) return;
