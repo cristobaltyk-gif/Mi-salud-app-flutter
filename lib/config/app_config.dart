@@ -6,7 +6,7 @@ library;
 class AppConfig {
   AppConfig._(); // no instanciable
 
-  static const String backendBaseUrl = 'https://misalud-backend.onrender.com';
+  static const String backendBaseUrl = 'https://portal-api.hipokratia.health';
 
   /// URL del frontend web de MiSalud (distinta del backend/API de arriba).
   /// Se usa para armar links que un humano debe abrir en un navegador —
