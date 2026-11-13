@@ -35,12 +35,18 @@ class CotizadorService {
   }
 
   static String _detailDe(http.Response r) {
+    // El cuerpo se lee como UTF-8 (el servidor no declara la codificación y los
+    // acentos llegaban mal). Si no trae "detail" (no lo mandó el Portal sino lo que
+    // está delante, p. ej. el servidor reiniciándose), se explica en palabras.
     try {
-      final body = jsonDecode(r.body);
-      return body['detail']?.toString() ?? 'Error inesperado (${r.statusCode})';
-    } catch (_) {
-      return 'Error inesperado (${r.statusCode})';
+      final body = jsonDecode(utf8.decode(r.bodyBytes));
+      final d = body is Map ? body['detail'] : null;
+      if (d != null && d.toString().trim().isNotEmpty) return d.toString();
+    } catch (_) {}
+    if (r.statusCode >= 500) {
+      return 'No pudimos conectar con el servidor. Intenta de nuevo en un momento (${r.statusCode}).';
     }
+    return 'Error inesperado (${r.statusCode})';
   }
 
   /// POST /api/cotizador/cotizar
