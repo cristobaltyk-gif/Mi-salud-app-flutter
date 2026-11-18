@@ -5,16 +5,18 @@
 /// v1.2: "Agendar hora" y las visitas a domicilio se movieron a la pestaña
 /// Recordatorios: son citas, no ficha clínica (la atención aparece aquí
 /// recién cuando el profesional la registra).
-/// v1.3: copia cifrada en el teléfono — con la ficha abierta en línea se
-/// guarda/actualiza sola (cada 24 h) y, sin internet, "Ver mi ficha sin
-/// internet" la abre con huella (abrirFichaSinInternet).
+/// v1.3: copia cifrada en el teléfono, automática — con red se lee del servidor
+/// y la copia se deja al día (cada 24 h); sin red se lee la copia guardada,
+/// sin avisos ni botones.
 library;
 
 import 'dart:async';
+import 'dart:io' show SocketException;
 import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
 import '../services/copia_cifrada_service.dart';
 import '../services/ficha_service.dart';
+import '../services/http_sesion.dart' as http;
 import '../widgets/etiqueta_especialidad.dart';
 import 'evento_detalle_screen.dart';
 
@@ -34,12 +36,30 @@ class _FichaScreenState extends State<FichaScreen> {
   }
 
   void _cargar() {
-    setState(() {
-      _futureResumen = FichaService.obtenerResumen().then((resumen) {
-        unawaited(CopiaCifradaService.actualizarSiHaceFalta()); // copia cifrada para leer sin internet
-        return resumen;
-      });
-    });
+    setState(() { _futureResumen = _obtenerResumen(); });
+  }
+
+  /// Con red: del servidor, y la copia cifrada del teléfono queda al día.
+  /// Sin red: de la copia guardada en el teléfono (si la hay).
+  Future<FichaResumen> _obtenerResumen() async {
+    try {
+      final resumen = await FichaService.obtenerResumen();
+      unawaited(CopiaCifradaService.actualizarSiHaceFalta());
+      return resumen;
+    } on SocketException {
+      return _desdeCopiaOReintentar();
+    } on TimeoutException {
+      return _desdeCopiaOReintentar();
+    } on http.ClientException {
+      return _desdeCopiaOReintentar();
+    }
+  }
+
+  Future<FichaResumen> _desdeCopiaOReintentar() async {
+    if (await CopiaCifradaService.hayCopia()) {
+      return CopiaCifradaService.leer(pedirHuella: false);
+    }
+    throw FichaException('Sin conexión');
   }
 
   @override
@@ -56,7 +76,6 @@ class _FichaScreenState extends State<FichaScreen> {
             return _ErrorConReintentar(
               mensaje: 'No se pudo cargar tu ficha: ${snapshot.error}',
               onReintentar: _cargar,
-              conCopia: true,
             );
           }
           final resumen = snapshot.data!;
@@ -404,14 +423,8 @@ class _ExplicacionSheetState extends State<_ExplicacionSheet> {
 class _ErrorConReintentar extends StatelessWidget {
   final String mensaje;
   final VoidCallback onReintentar;
-  /// Ofrece abrir la copia cifrada guardada en el teléfono (si la hay).
-  final bool conCopia;
 
-  const _ErrorConReintentar({
-    required this.mensaje,
-    required this.onReintentar,
-    this.conCopia = false,
-  });
+  const _ErrorConReintentar({required this.mensaje, required this.onReintentar});
 
   @override
   Widget build(BuildContext context) {
@@ -426,21 +439,6 @@ class _ErrorConReintentar extends StatelessWidget {
             Text(mensaje, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(onPressed: onReintentar, child: const Text('Reintentar')),
-            if (conCopia)
-              FutureBuilder<bool>(
-                future: CopiaCifradaService.hayCopia(),
-                builder: (context, snap) {
-                  if (snap.data != true) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: OutlinedButton.icon(
-                      onPressed: () => abrirFichaSinInternet(context),
-                      icon: const Icon(Icons.fingerprint),
-                      label: const Text('Ver mi ficha sin internet'),
-                    ),
-                  );
-                },
-              ),
           ],
         ),
       ),
@@ -506,14 +504,11 @@ class _BotonAcceso extends StatelessWidget {
 class ConsultasScreen extends StatefulWidget {
   final FichaResumen resumen;
   final void Function(BuildContext) onExplicar;
-  /// Si viene, se muestra arriba (ej. "copia guardada en tu teléfono, sin internet").
-  final String? avisoCopia;
 
   const ConsultasScreen({
     super.key,
     required this.resumen,
     required this.onExplicar,
-    this.avisoCopia,
   });
 
   @override
@@ -559,23 +554,6 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (widget.avisoCopia != null)
-            Card(
-              color: const Color(0xFFFFFDF0),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.cloud_off_outlined, color: Color(0xFF92400E)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(widget.avisoCopia!,
-                          style: const TextStyle(color: Color(0xFF92400E), fontSize: 13)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -710,28 +688,5 @@ class AntecedentesScreen extends StatelessWidget {
         }).toList(),
       ),
     );
-  }
-}
-
-/// Abre la ficha desde la copia cifrada guardada en el teléfono (pide huella
-/// o PIN del teléfono). Funciona sin internet y sin sesión.
-Future<void> abrirFichaSinInternet(BuildContext context) async {
-  try {
-    final resumen = await CopiaCifradaService.leer();
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ConsultasScreen(
-          resumen: resumen,
-          avisoCopia: 'Copia guardada en tu teléfono. Puede no incluir lo más reciente.',
-          onExplicar: (ctx) => ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(content: Text('La explicación en simple necesita internet')),
-          ),
-        ),
-      ),
-    );
-  } on CopiaException catch (e) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.mensaje)));
   }
 }

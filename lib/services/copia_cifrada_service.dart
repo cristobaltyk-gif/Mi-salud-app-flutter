@@ -10,8 +10,9 @@
 /// - actualizarSiHaceFalta(): con la ficha abierta en línea, baja una copia
 ///   nueva si no hay o tiene más de 24 horas. Nunca interrumpe nada: sin
 ///   internet, la copia anterior se conserva.
-/// - leer(): pide huella (o el PIN del teléfono), descifra en el teléfono y
-///   devuelve la ficha. Funciona sin internet y sin sesión.
+/// - leer(): descifra en el teléfono y devuelve la ficha. Pide huella (o el PIN
+///   del teléfono) salvo que la persona ya se haya identificado (pedirHuella:
+///   false). Funciona sin internet y sin sesión.
 /// - Si el teléfono no tiene ningún bloqueo de pantalla (huella, rostro, PIN)
 ///   no se guarda la copia.
 library;
@@ -115,13 +116,17 @@ class CopiaCifradaService {
     }
   }
 
-  /// Pide huella (o el PIN del teléfono), descifra la copia y devuelve la ficha.
-  static Future<FichaResumen> leer() async {
-    final ok = await BiometriaService.autenticar(
-      motivo: 'Confirma que eres tú para abrir tu ficha sin internet',
-    );
-    if (!ok) {
-      throw CopiaException(BiometriaService.ultimoError ?? 'No se confirmó tu identidad.');
+  /// Descifra la copia y devuelve la ficha. Con pedirHuella (lo normal) pide
+  /// huella o el PIN del teléfono antes; false solo si la persona ya se
+  /// identificó recién (sesión abierta o huella de entrada).
+  static Future<FichaResumen> leer({bool pedirHuella = true}) async {
+    if (pedirHuella) {
+      final ok = await BiometriaService.autenticar(
+        motivo: 'Confirma que eres tú para abrir tu ficha',
+      );
+      if (!ok) {
+        throw CopiaException(BiometriaService.ultimoError ?? 'No se confirmó tu identidad.');
+      }
     }
 
     final llave = await StorageService.obtenerLlaveCopia();
