@@ -20,7 +20,9 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 
@@ -104,9 +106,30 @@ class StorageService {
     await _secure.delete(key: AppConfig.prefsRecordatoriosKey);
     await _secure.delete(key: AppConfig.prefsLlaveKey);
     await _secure.delete(key: AppConfig.prefsBiometriaKey);
+    await borrarCopia(); // sin su llave la copia cifrada no sirve; el archivo también se borra
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConfig.prefsNombreKey);
+  }
+
+  // ── Copia cifrada de la ficha (lectura sin internet) ──
+  // El archivo cifrado vive en el sandbox de la app; su llave, en el
+  // almacenamiento seguro (Keystore/Keychain). Una sin la otra no sirve.
+  static Future<void> guardarLlaveCopia(String llaveBase64) =>
+      _secure.write(key: AppConfig.prefsCopiaLlaveKey, value: llaveBase64);
+
+  static Future<String?> obtenerLlaveCopia() => _secure.read(key: AppConfig.prefsCopiaLlaveKey);
+
+  static Future<File> archivoCopia() async {
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/${AppConfig.copiaArchivoNombre}');
+  }
+
+  /// Borra la copia cifrada y su llave de este teléfono.
+  static Future<void> borrarCopia() async {
+    await _secure.delete(key: AppConfig.prefsCopiaLlaveKey);
+    final archivo = await archivoCopia();
+    if (await archivo.exists()) await archivo.delete();
   }
 
   /// Guarda la lista de recordatorios como JSON al hacer login o

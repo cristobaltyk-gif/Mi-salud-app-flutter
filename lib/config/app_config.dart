@@ -62,6 +62,9 @@ class AppConfig {
   static String fichaCuidadoEndpoint(String rutPaciente) =>
       '$fichaBase/cuidado/$rutPaciente';
 
+  /// Copia cifrada de la ficha para leerla sin internet (copia_cifrada_router.py)
+  static const String copiaFichaEndpoint = '$backendBaseUrl/api/copia/ficha';
+
   // --- Endpoints de PDF clínico (Documentospdf/pdfPacienteRouter.py,
   //     backend de ICA, prefix /api/paciente/pdf) ---
   static String pdfDescargarEndpoint(int eventoId, String tipo, {String? rutPaciente}) {
@@ -142,6 +145,8 @@ class AppConfig {
   static const String prefsRecordatoriosKey = 'misalud_recordatorios';
   static const String prefsLlaveKey = 'misalud_llave_dispositivo';   // teléfono de confianza (huella)
   static const String prefsBiometriaKey = 'misalud_biometria';         // 'si' | 'no' (ya se le preguntó)
+  static const String prefsCopiaLlaveKey = 'misalud_copia_llave';       // llave de la copia cifrada de la ficha
+  static const String copiaArchivoNombre = 'copia_ficha.enc';           // la copia cifrada (en el sandbox de la app)
 
   // --- Notificaciones / Alarmas ---
   static const String notifChannelId = 'misalud_alarmas_medicamentos';

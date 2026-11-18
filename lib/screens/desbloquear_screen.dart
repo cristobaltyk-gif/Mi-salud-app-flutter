@@ -6,14 +6,18 @@
 ///  - bloqueo:  la app estuvo 5 minutos o más en segundo plano → huella →
 ///              vuelve a donde estaba (si además venció la sesión, la renueva).
 /// "Usar mi contraseña" lleva al inicio de sesión de siempre.
+/// v1.1: si hay una copia cifrada de la ficha en el teléfono, "Ver mi ficha
+/// sin internet" la abre con huella (sin sesión ni conexión).
 library;
 
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/biometria_service.dart';
+import '../services/copia_cifrada_service.dart';
 import '../services/http_sesion.dart' show SesionVencida;
 import '../services/storage_service.dart';
 import 'dashboard_screen.dart';
+import 'ficha_screen.dart' show abrirFichaSinInternet;
 import 'login_screen.dart';
 
 class DesbloquearScreen extends StatefulWidget {
@@ -32,11 +36,15 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
   bool _ocupado = false;
   String? _error;
   String _nombre = '';
+  bool _hayCopia = false;
 
   @override
   void initState() {
     super.initState();
     DesbloquearScreen.abierta = true;
+    CopiaCifradaService.hayCopia().then((hay) {
+      if (mounted) setState(() => _hayCopia = hay);
+    });
     StorageService.obtenerNombre().then((n) {
       if (mounted) setState(() => _nombre = (n ?? '').split(' ').first);
     });
@@ -161,6 +169,13 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
                     onPressed: _ocupado ? null : () => _usarContrasena(),
                     child: const Text('Usar mi contraseña', style: TextStyle(color: Colors.white, fontSize: 14)),
                   ),
+                  if (_hayCopia)
+                    TextButton.icon(
+                      onPressed: _ocupado ? null : () => abrirFichaSinInternet(context),
+                      icon: const Icon(Icons.cloud_off_outlined, color: Colors.white, size: 18),
+                      label: const Text('Ver mi ficha sin internet',
+                          style: TextStyle(color: Colors.white, fontSize: 14)),
+                    ),
                 ],
               ),
             ),
