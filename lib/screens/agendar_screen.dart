@@ -22,6 +22,7 @@ import '../services/auth_service.dart';
 import 'reserva_web_screen.dart';
 import 'direccion_screen.dart';
 import '../services/direccion_service.dart';
+import '../services/http_sesion.dart' as http;
 
 const _azul = Color(0xFF1A3B8C);
 const _verde = Color(0xFF0F766E);
@@ -57,10 +58,17 @@ class _AgendarScreenState extends State<AgendarScreen> {
   /// GPS. Sin dirección o sin comuna se pide actualizarla antes de buscar.
   bool _dirConComuna = false;
 
+  /// Sin internet no se puede agendar: se muestra "sin conexión", no
+  /// "agrega tu dirección" (antes la falta de red parecía falta de dirección).
+  bool _sinRed = false;
+
   Future<void> _iniciar() async {
+    _sinRed = false;
     if (widget.paraRut == null) {
       try {
         _direccion = (await AuthService.me()).direccion;
+      } on http.ClientException {
+        _sinRed = true;
       } catch (_) {}
       try {
         _dirConComuna = DireccionService.tieneComuna(_direccion, await DireccionService.comunas());
@@ -72,9 +80,14 @@ class _AgendarScreenState extends State<AgendarScreen> {
     if (mounted) _cargar();
   }
 
-  bool get _faltaDireccion => _modalidad == 'domicilio' && widget.paraRut == null && !_dirConComuna;
+  bool get _faltaDireccion =>
+      !_sinRed && _modalidad == 'domicilio' && widget.paraRut == null && !_dirConComuna;
 
   void _cargar() {
+    if (_sinRed) {
+      setState(() { _futureCentros = Future.error(http.SinRedException()); });
+      return;
+    }
     setState(() {
       _futureCentros = _faltaDireccion
           ? Future.value(const <CentroAgenda>[])
@@ -204,7 +217,8 @@ class _AgendarScreenState extends State<AgendarScreen> {
                         children: [
                           Text('${snapshot.error}', textAlign: TextAlign.center),
                           const SizedBox(height: 12),
-                          OutlinedButton(onPressed: _cargar, child: const Text('Reintentar')),
+                          // Reintentar desde el principio (dirección incluida)
+                          OutlinedButton(onPressed: _iniciar, child: const Text('Reintentar')),
                         ],
                       ),
                     ),

@@ -95,6 +95,8 @@ class FichaService {
 
   static Future<FichaCuidado> obtenerFichaCuidado(String rutPaciente, {int offset = 0}) async {
     final headers = await _authHeaders();
+    // Primero las notas de consultas sin conexión: así la ficha ya las trae
+    final hubo = offset == 0 && await NotasOfflineService.enviarPendientes();
     final http.Response res;
     try {
       res = await http.get(
@@ -114,8 +116,9 @@ class FichaService {
     }
 
     if (offset == 0) {
-      unawaited(CopiaCifradaService.actualizarSiHaceFalta(rutCuidado: rutPaciente));
-      unawaited(NotasOfflineService.enviarPendientes());
+      unawaited(hubo
+          ? CopiaCifradaService.descargar(rutCuidado: rutPaciente).catchError((_) {})
+          : CopiaCifradaService.actualizarSiHaceFalta(rutCuidado: rutPaciente));
     }
     return FichaCuidado.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
   }
@@ -195,7 +198,14 @@ class FichaService {
       final request = http.Request('GET', Uri.parse(url));
       request.headers.addAll(headers);
 
-      final response = await client.send(request);
+      final http.StreamedResponse response;
+      try {
+        response = await client.send(request);
+      } catch (_) {
+        // Sin internet: mensaje claro en vez del error técnico
+        yield ExplicacionError(http.SinRedException().message);
+        return;
+      }
 
       if (response.statusCode == 401) {
         // Sesión vencida → inicio de sesión (services/http_sesion.dart)

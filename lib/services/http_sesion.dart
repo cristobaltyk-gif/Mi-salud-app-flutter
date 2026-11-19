@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../screens/login_screen.dart';
 import '../screens/desbloquear_screen.dart';
+import '../config/app_config.dart';
 import 'navigation_service.dart';
 import 'storage_service.dart';
 
@@ -85,6 +86,18 @@ Future<http.Response> patch(Uri url, {Map<String, String>? headers, Object? body
 
 Future<http.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
     _revisar(http.delete(url, headers: headers, body: body, encoding: encoding), headers);
+
+/// ¿Hay conexión con el servidor de MiSalud? (respuesta en máx. 5 segundos)
+Future<bool> hayInternet() async {
+  try {
+    final r = await http
+        .get(Uri.parse('${AppConfig.backendBaseUrl}/'))
+        .timeout(const Duration(seconds: 5));
+    return r.statusCode < 500;
+  } catch (_) {
+    return false;
+  }
+}
 
 class SesionVencida {
   static bool _cerrando = false;

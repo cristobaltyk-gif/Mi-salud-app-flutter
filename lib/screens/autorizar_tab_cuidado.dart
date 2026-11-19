@@ -5,19 +5,48 @@
 /// propio espacio y archivo, solo visible cuando el nivel de acceso es
 /// completo (ver _tabsPara en ficha_cuidado_screen.dart).
 ///
-/// v1.1: botón "Consulta sin conexión" (Android): compartir la ficha con un
-/// profesional sin internet, por red local y QR (consulta_sin_conexion_screen).
+/// v1.2: un solo botón "Autorizar médico". La app detecta la conexión: con
+/// internet abre el acceso por enlace de siempre; sin internet, la consulta
+/// sin conexión (consulta_sin_conexion_screen, Android).
 library;
 
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'compartir_ficha_cuidado_screen.dart';
 import 'consulta_sin_conexion_screen.dart';
+import '../services/http_sesion.dart' as http;
 
 class TabAutorizarCuidado extends StatelessWidget {
   final String rutPaciente;
   final bool esPropia;
   const TabAutorizarCuidado({super.key, required this.rutPaciente, this.esPropia = false});
+
+  /// Un solo botón: con internet, el acceso por enlace de siempre; sin
+  /// internet, la consulta sin conexión (Android). La app decide sola.
+  Future<void> _autorizar(BuildContext context) async {
+    final navegador = Navigator.of(context);
+    final avisos = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    final conRed = await http.hayInternet();
+    navegador.pop();
+    if (conRed) {
+      navegador.push(MaterialPageRoute(
+        builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rutPaciente),
+      ));
+    } else if (Platform.isAndroid) {
+      navegador.push(MaterialPageRoute(
+        builder: (_) => ConsultaSinConexionScreen(rutPaciente: rutPaciente, esPropia: esPropia),
+      ));
+    } else {
+      avisos.showSnackBar(const SnackBar(
+        content: Text('Sin conexión a internet. Para autorizar a un médico necesitas red.'),
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +72,7 @@ class TabAutorizarCuidado extends StatelessWidget {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            'Genera un acceso temporal para que un médico revise esta ficha',
+            'Da acceso temporal a un médico para que revise esta ficha',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: Colors.purple[300]),
           ),
@@ -51,51 +80,12 @@ class TabAutorizarCuidado extends StatelessWidget {
         const SizedBox(height: 24),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: const Color(0xFF4C1D95)),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rutPaciente),
-              ),
-            );
-          },
+          onPressed: () => _autorizar(context),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 6),
-            child: Text('Generar acceso'),
+            child: Text('Autorizar médico'),
           ),
         ),
-        if (Platform.isAndroid) ...[
-          const SizedBox(height: 28),
-          const Divider(),
-          const SizedBox(height: 16),
-          Center(
-            child: Text('¿Sin internet?',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.purple[800])),
-          ),
-          const SizedBox(height: 6),
-          Center(
-            child: Text(
-              'Comparte la ficha con el profesional desde este teléfono, por una red local y QR',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.purple[300]),
-            ),
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF4C1D95)),
-            icon: const Icon(Icons.wifi_tethering),
-            label: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 6),
-              child: Text('Consulta sin conexión'),
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ConsultaSinConexionScreen(rutPaciente: rutPaciente, esPropia: esPropia),
-                ),
-              );
-            },
-          ),
-        ],
       ],
     );
   }

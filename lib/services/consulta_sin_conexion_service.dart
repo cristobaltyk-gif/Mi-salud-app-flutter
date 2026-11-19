@@ -1,4 +1,7 @@
-/// lib/services/consulta_sin_conexion_service.dart — v1.0
+/// lib/services/consulta_sin_conexion_service.dart — v1.1
+///
+/// v1.1: el profesional ve la misma pantalla "Atención Clínica" de la Ficha
+/// (lib/web/atencion_pagina.dart), con todos sus campos y la receta estructurada.
 ///
 /// CONSULTA SIN CONEXIÓN: el teléfono del paciente hace de servidor.
 ///
@@ -23,6 +26,7 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'notas_offline_service.dart';
+import '../web/atencion_pagina.dart';
 
 class ConsultaException implements Exception {
   final String mensaje;
@@ -190,7 +194,7 @@ class ConsultaSinConexionService {
       final ruta = req.uri.path;
       if (req.method == 'GET' && ruta == '/') {
         res.headers.contentType = ContentType.html;
-        res.write(_pagina);
+        res.write(atencionPagina);
         await res.close();
         return;
       }
@@ -215,7 +219,9 @@ class ConsultaSinConexionService {
         final contenido = <String, String>{
           for (final c in NotasOfflineService.campos) c: ((b['contenido'] as Map?)?[c] as String? ?? ''),
         };
-        if (contenido.values.every((v) => v.trim().isEmpty)) {
+        final vacia = contenido.entries.every((e) =>
+            e.key == 'medicamentos' ? (e.value.trim().isEmpty || e.value.trim() == '[]') : e.value.trim().isEmpty);
+        if (vacia) {
           return _responder(res, 400, {'detail': 'La nota está vacía'});
         }
         await NotasOfflineService.guardar(
@@ -262,69 +268,4 @@ class ConsultaSinConexionService {
     final dv = r == 11 ? '0' : r == 10 ? 'K' : '$r';
     return dv == m[2];
   }
-
-  // ── Página que ve el profesional (todo en un archivo, sin internet) ───────
-  static const String _pagina = r'''<!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HypokratIA · Consulta sin conexión</title>
-<style>
-body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;background:#f5f3ff;color:#1f1b2e}
-header{background:#4c1d95;color:#fff;padding:14px 20px;font-weight:700}
-main{max-width:900px;margin:0 auto;padding:20px}
-.card{background:#fff;border-radius:12px;padding:16px 18px;margin:12px 0;box-shadow:0 1px 3px #0001}
-h2{font-size:17px;margin:0 0 8px;color:#4c1d95} h3{font-size:15px;margin:0 0 4px}
-label{display:block;font-size:13px;margin:10px 0 4px;color:#555}
-input,textarea{width:100%;box-sizing:border-box;padding:9px;border:1px solid #ccc;border-radius:8px;font:inherit}
-textarea{min-height:70px}
-button{background:#4c1d95;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;margin-top:12px;cursor:pointer}
-.muted{color:#777;font-size:13px} .err{color:#b91c1c;font-size:14px} .ok{color:#15803d;font-size:14px}
-.ev{border-top:1px solid #eee;padding:10px 0} pre{white-space:pre-wrap;font:inherit;margin:4px 0}
-</style></head><body>
-<header>HypokratIA · Consulta sin conexión</header>
-<main>
-<div id="id" class="card"><h2>Identifíquese</h2>
-<p class="muted">El paciente le comparte su ficha bajo su responsabilidad. Su nombre y RUT quedan registrados.
-Al volver la conexión se verifican en el Registro Nacional de Prestadores Individuales (RNPI).</p>
-<label>Nombre completo</label><input id="nom" autocomplete="name">
-<label>RUT (ej. 12345678-9)</label><input id="rut">
-<button onclick="entrar()">Ver ficha</button><p id="e1" class="err"></p></div>
-<div id="ficha" hidden></div>
-<div id="nota" class="card" hidden><h2>Nota de la consulta</h2>
-<p class="muted">Queda sellada en el teléfono del paciente y no se puede modificar después.</p>
-<label>Motivo / atención</label><textarea id="atencion"></textarea>
-<label>Diagnóstico</label><textarea id="diagnostico"></textarea>
-<label>Indicaciones</label><textarea id="indicaciones"></textarea>
-<label>Receta</label><textarea id="receta"></textarea>
-<label>Exámenes</label><textarea id="examenes"></textarea>
-<button onclick="guardar()">Guardar nota</button><p id="e2"></p></div>
-</main>
-<script>
-const k=new URLSearchParams(location.search).get('k');
-let yo=null;
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
- const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||'Error');return j}
-async function entrar(){const e=document.getElementById('e1');e.textContent='';
- yo={nombre:document.getElementById('nom').value.trim(),rut:document.getElementById('rut').value.trim()};
- try{const j=await post('/api/identificar',yo);mostrar(j.ficha||{});document.getElementById('id').hidden=true;
- document.getElementById('nota').hidden=false}catch(x){e.textContent=x.message}}
-function mostrar(f){const p=f.paciente||{};let h='<div class="card"><h2>'+esc([p.nombre,p.apellido_paterno,p.apellido_materno].filter(Boolean).join(' '))+'</h2>';
- h+='<div class="muted">RUT '+esc(p.rut||'')+(p.fecha_nacimiento?' · Nac. '+esc(p.fecha_nacimiento):'')+(p.sexo?' · '+esc(p.sexo):'')+(p.prevision?' · '+esc(p.prevision):'')+'</div>';
- h+='<div class="muted">Copia generada: '+esc(f.generado_at||'')+'</div></div>';
- const a=f.antecedentes||{};const ks=Object.keys(a).filter(c=>(a[c]||[]).length);
- if(ks.length){h+='<div class="card"><h2>Antecedentes</h2>';for(const c of ks){h+='<h3>'+esc(c.replace(/_/g,' '))+'</h3><ul>';
-  for(const x of a[c])h+='<li>'+esc(x.descripcion)+'</li>';h+='</ul>'}h+='</div>'}
- if((f.recordatorios||[]).length){h+='<div class="card"><h2>Medicamentos</h2><ul>';for(const r of f.recordatorios)h+='<li>'+esc(r.medicamento||r.titulo||r.nombre||'')+' '+esc(r.dosis||'')+'</li>';h+='</ul></div>'}
- const ev=f.eventos||[];const ind=f.eventos_con_indicaciones||[];
- h+='<div class="card"><h2>Atenciones ('+(ev.length||ind.length)+')</h2>';
- for(const e of ev){const c=e.contenido||{};h+='<div class="ev"><h3>'+esc(e.fecha)+' · '+esc(e.especialidad||e.tipo||'')+' · '+esc(e.medico||'')+'</h3>';
-  for(const [t,v] of [['Diagnóstico',e.diagnostico],['Atención',c.atencion],['Indicaciones',c.indicaciones],['Receta',c.receta],['Exámenes',c.examenes],['Evolución',c.evolucion]])
-   if(v)h+='<div><b>'+t+':</b><pre>'+esc(v)+'</pre></div>';h+='</div>'}
- for(const e of ind)h+='<div class="ev"><h3>'+esc(e.fecha)+'</h3><pre>'+esc(e.indicaciones)+'</pre></div>';
- h+='</div>';const d=document.getElementById('ficha');d.innerHTML=h;d.hidden=false}
-async function guardar(){const m=document.getElementById('e2');m.className='';m.textContent='';
- const contenido={};for(const c of ['atencion','diagnostico','indicaciones','receta','examenes'])contenido[c]=document.getElementById(c).value;
- try{await post('/api/nota',{...yo,contenido});m.className='ok';m.textContent='Nota guardada y sellada en el teléfono del paciente.';
- for(const c in contenido)document.getElementById(c).value=''}catch(x){m.className='err';m.textContent=x.message}}
-</script></body></html>''';
 }

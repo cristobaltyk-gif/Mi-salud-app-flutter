@@ -10,6 +10,8 @@
 /// sin avisos ni botones.
 /// v1.4: con red también se envían las notas de consultas sin conexión y se
 /// dejan al día las copias de las personas que el usuario cuida.
+/// v1.5: las notas pendientes se envían ANTES de pedir la ficha (antes la
+/// ficha se mostraba sin la nota recién subida) y la copia se renueva.
 library;
 
 import 'dart:async';
@@ -46,9 +48,11 @@ class _FichaScreenState extends State<FichaScreen> {
   /// Sin red: de la copia guardada en el teléfono (si la hay).
   Future<FichaResumen> _obtenerResumen() async {
     try {
+      // Primero las notas de consultas sin conexión: así la ficha ya las trae
+      final hubo = await NotasOfflineService.enviarPendientes();
       final resumen = await FichaService.obtenerResumen();
-      unawaited(CopiaCifradaService.actualizarSiHaceFalta());
-      unawaited(NotasOfflineService.enviarPendientes());
+      unawaited(hubo ? CopiaCifradaService.descargar().catchError((_) {})
+                     : CopiaCifradaService.actualizarSiHaceFalta());
       unawaited(CopiaCifradaService.actualizarCuidados());
       return resumen;
     } on SocketException {

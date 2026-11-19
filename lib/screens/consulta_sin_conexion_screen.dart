@@ -1,4 +1,7 @@
-/// lib/screens/consulta_sin_conexion_screen.dart — v1.0
+/// lib/screens/consulta_sin_conexion_screen.dart — v1.1
+///
+/// v1.1: los dos QR van uno después del otro (paso 1: red; "Conectado ·
+/// Siguiente"; paso 2: ficha), nunca los dos juntos.
 ///
 /// Consulta SIN CONEXIÓN (Android): el paciente (o su cuidador con acceso
 /// completo) acepta compartir la ficha bajo su responsabilidad, confirma con
@@ -34,6 +37,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
   SesionConsulta? _sesion;
   StreamSubscription<void>? _sub;
   Timer? _tic;
+  int _paso = 1; // uno a la vez: primero la red, luego la ficha
 
   @override
   void initState() {
@@ -81,7 +85,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
       );
       _tic?.cancel();
       _tic = Timer.periodic(const Duration(seconds: 1), (_) { if (mounted) setState(() {}); });
-      setState(() => _sesion = sesion);
+      setState(() { _sesion = sesion; _paso = 1; });
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -187,24 +191,33 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
               style: const TextStyle(fontWeight: FontWeight.w700, color: _morado, fontSize: 16)),
         ),
         const SizedBox(height: 14),
-        if (s.qrWifi != null) ...[
-          const Text('1. Conectar a la red del teléfono',
+        if (s.qrWifi != null && _paso == 1) ...[
+          const Text('Paso 1 de 2 · Conectar el computador a este teléfono',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           const SizedBox(height: 6),
-          Center(child: QrImageView(data: s.qrWifi!, size: 200)),
+          Center(child: QrImageView(data: s.qrWifi!, size: 220)),
           Center(
             child: SelectableText('Red: ${s.ssid}\nClave: ${s.clave ?? ''}',
                 textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
           ),
-          const SizedBox(height: 18),
-          const Text('2. Abrir la ficha en el navegador',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-        ] else
-          const Text('El equipo del profesional debe estar en la misma red Wi-Fi que este teléfono. '
-              'Luego, abrir esta dirección:', style: TextStyle(fontSize: 14)),
-        const SizedBox(height: 6),
-        Center(child: QrImageView(data: s.url, size: 200)),
-        Center(child: SelectableText(s.url, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
+          const SizedBox(height: 12),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _morado),
+            onPressed: () => setState(() => _paso = 2),
+            child: const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Conectado · Siguiente')),
+          ),
+        ] else ...[
+          Text(s.qrWifi != null ? 'Paso 2 de 2 · Abrir la ficha' : 'Abrir la ficha',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          if (s.qrWifi == null)
+            const Text('El computador debe estar en la misma red Wi-Fi que este teléfono.',
+                style: TextStyle(fontSize: 13)),
+          const SizedBox(height: 6),
+          Center(child: QrImageView(data: s.url, size: 220)),
+          Center(child: SelectableText(s.url, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
+          if (s.qrWifi != null)
+            TextButton(onPressed: () => setState(() => _paso = 1), child: const Text('Volver al paso 1')),
+        ],
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(12),
