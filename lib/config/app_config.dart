@@ -68,6 +68,8 @@ class AppConfig {
   static String copiaCuidadoEndpoint(String rutPaciente) => '$backendBaseUrl/api/copia/cuidado/$rutPaciente';
   /// Notas de consultas sin conexión: se envían al volver la red
   static const String notasOfflineEndpoint = '$backendBaseUrl/api/copia/notas-offline';
+  /// Accesos de profesionales en consultas sin conexión (historial de accesos)
+  static const String accesosOfflineEndpoint = '$backendBaseUrl/api/copia/accesos-offline';
 
   // --- Endpoints de PDF clínico (Documentospdf/pdfPacienteRouter.py,
   //     backend de ICA, prefix /api/paciente/pdf) ---
@@ -152,6 +154,7 @@ class AppConfig {
   static const String prefsCopiaLlaveKey = 'misalud_copia_llave';       // llave de la copia cifrada de la ficha
   static const String copiaArchivoNombre = 'copia_ficha.enc';           // la copia cifrada (en el sandbox de la app)
   static const String prefsNotasOfflineKey = 'misalud_notas_offline';   // notas de consultas sin conexión aún no enviadas
+  static const String prefsAccesosOfflineKey = 'misalud_accesos_offline'; // accesos de consultas sin conexión aún no enviados
 
   // --- Notificaciones / Alarmas ---
   static const String notifChannelId = 'misalud_alarmas_medicamentos';

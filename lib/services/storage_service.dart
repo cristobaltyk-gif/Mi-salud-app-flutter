@@ -181,6 +181,19 @@ class StorageService {
   static Future<void> guardarNotasOffline(List<Map<String, dynamic>> notas) =>
       _secure.write(key: AppConfig.prefsNotasOfflineKey, value: jsonEncode(notas));
 
+  static Future<List<Map<String, dynamic>>> obtenerAccesosOffline() async {
+    final raw = await _secure.read(key: AppConfig.prefsAccesosOfflineKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> guardarAccesosOffline(List<Map<String, dynamic>> accesos) =>
+      _secure.write(key: AppConfig.prefsAccesosOfflineKey, value: jsonEncode(accesos));
+
   /// Guarda la lista de recordatorios como JSON al hacer login o
   /// al sincronizar. AlarmService los lee desde aquí para programar
   /// alarmas locales sin necesitar token ni conexión.

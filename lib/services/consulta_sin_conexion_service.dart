@@ -67,6 +67,8 @@ class ConsultaSinConexionService {
   static String? _rutPaciente;
   static DateTime? _aceptadaAt;
   static final List<AccesoProfesional> accesos = [];
+  static final Map<String, String> _accesoPorRut = {}; // RUT del profesional → id del acceso registrado
+  static DateTime? _vence;
   static final StreamController<void> _cambios = StreamController<void>.broadcast();
 
   /// Avisa a la pantalla cuando entra un profesional, llega una nota o termina.
@@ -152,6 +154,8 @@ class ConsultaSinConexionService {
     _servidor!.listen(_atender, onError: (_) {});
 
     final vence = DateTime.now().add(duracion);
+    _vence = vence;
+    _accesoPorRut.clear();
     _reloj = Timer(duracion, terminar);
     _cambios.add(null);
     return SesionConsulta(
@@ -166,6 +170,13 @@ class ConsultaSinConexionService {
   static Future<void> terminar() async {
     _reloj?.cancel();
     _reloj = null;
+    // Los accesos abiertos se cierran ahora (si terminó antes del plazo)
+    for (final id in _accesoPorRut.values) {
+      try {
+        await NotasOfflineService.cerrarAcceso(id);
+      } catch (_) {}
+    }
+    _accesoPorRut.clear();
     final s = _servidor;
     _servidor = null;
     _llave = null;
@@ -206,6 +217,15 @@ class ConsultaSinConexionService {
           return _responder(res, 400, {'detail': 'Ingresa tu nombre completo y un RUT válido'});
         }
         accesos.add(AccesoProfesional(nombre, rut, DateTime.now()));
+        // Queda registrado para el historial de accesos (se envía al volver la red)
+        if (!_accesoPorRut.containsKey(rut)) {
+          _accesoPorRut[rut] = await NotasOfflineService.registrarAcceso(
+            rutPaciente: _rutPaciente!,
+            medicoRut: rut,
+            medicoNombre: nombre,
+            fin: _vence ?? DateTime.now().add(const Duration(minutes: 30)),
+          );
+        }
         _cambios.add(null);
         return _responder(res, 200, {'ficha': _ficha});
       }
