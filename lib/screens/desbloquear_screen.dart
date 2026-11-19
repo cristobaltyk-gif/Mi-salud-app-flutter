@@ -6,14 +6,18 @@
 ///  - bloqueo:  la app estuvo 5 minutos o más en segundo plano → huella →
 ///              vuelve a donde estaba (si además venció la sesión, la renueva).
 /// "Usar mi contraseña" lleva al inicio de sesión de siempre.
+/// v1.1: sin red, la huella abre directo la ficha guardada en el teléfono
+/// (copia cifrada), sin pedir nada más.
 library;
 
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/biometria_service.dart';
+import '../services/copia_cifrada_service.dart';
 import '../services/http_sesion.dart' show SesionVencida;
 import '../services/storage_service.dart';
 import 'dashboard_screen.dart';
+import 'ficha_screen.dart' show ConsultasScreen;
 import 'login_screen.dart';
 
 class DesbloquearScreen extends StatefulWidget {
@@ -78,9 +82,32 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
       }
       setState(() => _error = e.mensaje);
     } catch (_) {
-      setState(() => _error = 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+      // Sin red: la huella ya confirmó quién es; abre la ficha guardada en el teléfono
+      if (await _abrirCopiaGuardada()) return;
+      if (mounted) setState(() => _error = 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
     } finally {
       if (mounted) setState(() => _ocupado = false);
+    }
+  }
+
+  Future<bool> _abrirCopiaGuardada() async {
+    try {
+      if (!await CopiaCifradaService.hayCopia()) return false;
+      final resumen = await CopiaCifradaService.leer(pedirHuella: false);
+      if (!mounted) return true;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ConsultasScreen(
+            resumen: resumen,
+            onExplicar: (ctx) => ScaffoldMessenger.of(ctx).showSnackBar(
+              const SnackBar(content: Text('Esto necesita conexión')),
+            ),
+          ),
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

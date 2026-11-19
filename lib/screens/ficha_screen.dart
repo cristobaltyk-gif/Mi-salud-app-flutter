@@ -5,11 +5,18 @@
 /// v1.2: "Agendar hora" y las visitas a domicilio se movieron a la pestaña
 /// Recordatorios: son citas, no ficha clínica (la atención aparece aquí
 /// recién cuando el profesional la registra).
+/// v1.3: copia cifrada en el teléfono, automática — con red se lee del servidor
+/// y la copia se deja al día (cada 24 h); sin red se lee la copia guardada,
+/// sin avisos ni botones.
 library;
 
+import 'dart:async';
+import 'dart:io' show SocketException;
 import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
+import '../services/copia_cifrada_service.dart';
 import '../services/ficha_service.dart';
+import '../services/http_sesion.dart' as http;
 import '../widgets/etiqueta_especialidad.dart';
 import 'evento_detalle_screen.dart';
 
@@ -29,7 +36,30 @@ class _FichaScreenState extends State<FichaScreen> {
   }
 
   void _cargar() {
-    setState(() { _futureResumen = FichaService.obtenerResumen(); });
+    setState(() { _futureResumen = _obtenerResumen(); });
+  }
+
+  /// Con red: del servidor, y la copia cifrada del teléfono queda al día.
+  /// Sin red: de la copia guardada en el teléfono (si la hay).
+  Future<FichaResumen> _obtenerResumen() async {
+    try {
+      final resumen = await FichaService.obtenerResumen();
+      unawaited(CopiaCifradaService.actualizarSiHaceFalta());
+      return resumen;
+    } on SocketException {
+      return _desdeCopiaOReintentar();
+    } on TimeoutException {
+      return _desdeCopiaOReintentar();
+    } on http.ClientException {
+      return _desdeCopiaOReintentar();
+    }
+  }
+
+  Future<FichaResumen> _desdeCopiaOReintentar() async {
+    if (await CopiaCifradaService.hayCopia()) {
+      return CopiaCifradaService.leer(pedirHuella: false);
+    }
+    throw FichaException('Sin conexión');
   }
 
   @override
