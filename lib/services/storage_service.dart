@@ -106,6 +106,7 @@ class StorageService {
     await _secure.delete(key: AppConfig.prefsRecordatoriosKey);
     await _secure.delete(key: AppConfig.prefsLlaveKey);
     await _secure.delete(key: AppConfig.prefsBiometriaKey);
+    await _secure.delete(key: 'misalud_mis_cuidados');
     await borrarCopia(); // sin su llave la copia cifrada no sirve; el archivo también se borra
 
     final prefs = await SharedPreferences.getInstance();
@@ -115,22 +116,70 @@ class StorageService {
   // ── Copia cifrada de la ficha (lectura sin internet) ──
   // El archivo cifrado vive en el sandbox de la app; su llave, en el
   // almacenamiento seguro (Keystore/Keychain). Una sin la otra no sirve.
-  static Future<void> guardarLlaveCopia(String llaveBase64) =>
-      _secure.write(key: AppConfig.prefsCopiaLlaveKey, value: llaveBase64);
+  // `rut` vacío/null = la ficha propia; con rut = una persona que el usuario cuida.
+  static String _llaveCopiaKey(String? rut) =>
+      (rut == null || rut.isEmpty) ? AppConfig.prefsCopiaLlaveKey : '${AppConfig.prefsCopiaLlaveKey}_$rut';
 
-  static Future<String?> obtenerLlaveCopia() => _secure.read(key: AppConfig.prefsCopiaLlaveKey);
+  static Future<void> guardarLlaveCopia(String llaveBase64, {String? rut}) =>
+      _secure.write(key: _llaveCopiaKey(rut), value: llaveBase64);
 
-  static Future<File> archivoCopia() async {
+  static Future<String?> obtenerLlaveCopia({String? rut}) => _secure.read(key: _llaveCopiaKey(rut));
+
+  static Future<File> archivoCopia({String? rut}) async {
     final dir = await getApplicationSupportDirectory();
-    return File('${dir.path}/${AppConfig.copiaArchivoNombre}');
+    final nombre = (rut == null || rut.isEmpty)
+        ? AppConfig.copiaArchivoNombre
+        : 'copia_cuidado_${rut.replaceAll(RegExp(r'[^0-9kK]'), '')}.enc';
+    return File('${dir.path}/$nombre');
   }
 
-  /// Borra la copia cifrada y su llave de este teléfono.
-  static Future<void> borrarCopia() async {
-    await _secure.delete(key: AppConfig.prefsCopiaLlaveKey);
-    final archivo = await archivoCopia();
+  /// Borra de este teléfono la copia de una persona cuidada (vínculo revocado).
+  static Future<void> borrarCopiaCuidado(String rut) async {
+    await _secure.delete(key: _llaveCopiaKey(rut));
+    final archivo = await archivoCopia(rut: rut);
     if (await archivo.exists()) await archivo.delete();
   }
+
+  /// Borra TODAS las copias cifradas (la propia y las de personas cuidadas) y
+  /// sus llaves. Las notas sin conexión aún no enviadas NO se borran: son
+  /// registros clínicos y se envían en el próximo ingreso con red.
+  static Future<void> borrarCopia() async {
+    final todas = await _secure.readAll();
+    for (final k in todas.keys) {
+      if (k == AppConfig.prefsCopiaLlaveKey || k.startsWith('${AppConfig.prefsCopiaLlaveKey}_')) {
+        await _secure.delete(key: k);
+      }
+    }
+    final dir = await getApplicationSupportDirectory();
+    if (await dir.exists()) {
+      await for (final f in dir.list()) {
+        final nombre = f.uri.pathSegments.isEmpty ? '' : f.uri.pathSegments.last;
+        if (f is File && (nombre == AppConfig.copiaArchivoNombre || nombre.startsWith('copia_cuidado_'))) {
+          await f.delete();
+        }
+      }
+    }
+  }
+
+  // ── Lista de personas que el usuario cuida (para usarla sin internet) ──
+  static Future<void> guardarMisCuidados(String json) =>
+      _secure.write(key: 'misalud_mis_cuidados', value: json);
+
+  static Future<String?> obtenerMisCuidados() => _secure.read(key: 'misalud_mis_cuidados');
+
+  // ── Notas de consultas sin conexión (cifradas en Keystore/Keychain) ──
+  static Future<List<Map<String, dynamic>>> obtenerNotasOffline() async {
+    final raw = await _secure.read(key: AppConfig.prefsNotasOfflineKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> guardarNotasOffline(List<Map<String, dynamic>> notas) =>
+      _secure.write(key: AppConfig.prefsNotasOfflineKey, value: jsonEncode(notas));
 
   /// Guarda la lista de recordatorios como JSON al hacer login o
   /// al sincronizar. AlarmService los lee desde aquí para programar

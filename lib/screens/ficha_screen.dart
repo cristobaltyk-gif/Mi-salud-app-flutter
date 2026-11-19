@@ -8,6 +8,8 @@
 /// v1.3: copia cifrada en el teléfono, automática — con red se lee del servidor
 /// y la copia se deja al día (cada 24 h); sin red se lee la copia guardada,
 /// sin avisos ni botones.
+/// v1.4: con red también se envían las notas de consultas sin conexión y se
+/// dejan al día las copias de las personas que el usuario cuida.
 library;
 
 import 'dart:async';
@@ -16,6 +18,7 @@ import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
 import '../services/copia_cifrada_service.dart';
 import '../services/ficha_service.dart';
+import '../services/notas_offline_service.dart';
 import '../services/http_sesion.dart' as http;
 import '../widgets/etiqueta_especialidad.dart';
 import 'evento_detalle_screen.dart';
@@ -45,6 +48,8 @@ class _FichaScreenState extends State<FichaScreen> {
     try {
       final resumen = await FichaService.obtenerResumen();
       unawaited(CopiaCifradaService.actualizarSiHaceFalta());
+      unawaited(NotasOfflineService.enviarPendientes());
+      unawaited(CopiaCifradaService.actualizarCuidados());
       return resumen;
     } on SocketException {
       return _desdeCopiaOReintentar();
@@ -59,7 +64,8 @@ class _FichaScreenState extends State<FichaScreen> {
     if (await CopiaCifradaService.hayCopia()) {
       return CopiaCifradaService.leer(pedirHuella: false);
     }
-    throw FichaException('Sin conexión');
+    throw FichaException('Sin conexión a internet y aún no hay una copia de tu ficha en este teléfono. '
+        'Ábrela una vez con internet para guardarla.');
   }
 
   @override

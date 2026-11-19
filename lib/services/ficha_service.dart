@@ -30,6 +30,11 @@
 ///
 /// v1.4: obtenerResumen() y obtenerFichaCuidado() aceptan `offset` — el
 /// backend entrega las atenciones de a 20 ("Ver más" pide la siguiente).
+///
+/// v1.5: obtenerFichaCuidado() funciona sin internet: con red guarda (cada
+/// 24 h, sin esperar) una copia cifrada de la ficha de la persona cuidada;
+/// sin red abre esa copia. También envía las notas de consultas sin conexión
+/// que estén pendientes.
 library;
 
 import 'dart:async';
@@ -40,6 +45,8 @@ import 'package:path_provider/path_provider.dart';
 import '../config/app_config.dart';
 import '../models/evento_clinico.dart';
 import '../models/ficha_cuidado.dart';
+import 'copia_cifrada_service.dart';
+import 'notas_offline_service.dart';
 import 'storage_service.dart';
 
 class FichaException implements Exception {
@@ -88,15 +95,28 @@ class FichaService {
 
   static Future<FichaCuidado> obtenerFichaCuidado(String rutPaciente, {int offset = 0}) async {
     final headers = await _authHeaders();
-    final res = await http.get(
-      Uri.parse('${AppConfig.fichaCuidadoEndpoint(rutPaciente)}?offset=$offset'),
-      headers: headers,
-    );
+    final http.Response res;
+    try {
+      res = await http.get(
+        Uri.parse('${AppConfig.fichaCuidadoEndpoint(rutPaciente)}?offset=$offset'),
+        headers: headers,
+      );
+    } on http.ClientException {
+      // Sin red: la copia cifrada guardada en el teléfono (solo la primera página)
+      if (offset == 0 && await CopiaCifradaService.hayCopia(rutCuidado: rutPaciente)) {
+        return CopiaCifradaService.leerCuidado(rutPaciente);
+      }
+      rethrow;
+    }
 
     if (res.statusCode != 200) {
       throw FichaException(_detailDe(res));
     }
 
+    if (offset == 0) {
+      unawaited(CopiaCifradaService.actualizarSiHaceFalta(rutCuidado: rutPaciente));
+      unawaited(NotasOfflineService.enviarPendientes());
+    }
     return FichaCuidado.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
   }
 

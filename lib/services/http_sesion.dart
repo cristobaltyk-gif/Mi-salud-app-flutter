@@ -1,4 +1,4 @@
-/// lib/services/http_sesion.dart — v1.0
+/// lib/services/http_sesion.dart — v1.2
 ///
 /// Sesión vencida → pantalla de inicio de sesión (antes: "error" y
 /// "Reintentar" para siempre, sin volver a pedir la contraseña).
@@ -18,12 +18,19 @@
 ///    v1.1: si el teléfono tiene la huella activa, en vez del inicio de
 ///    sesión abre DesbloquearScreen (huella → sesión nueva sin contraseña).
 ///
+/// 4. v1.2 — Sin internet: cualquier petición que no llega al servidor
+///    (sin red, sin señal, servidor inalcanzable) lanza SinRedException,
+///    con un mensaje claro en vez del error técnico ("SocketException…").
+///    Es un http.ClientException, así que los que ya atrapaban ese error
+///    (la ficha, que cae a la copia guardada) siguen funcionando igual.
+///
 /// 3. SesionVencida.tokenVencido(token): lee la fecha de vencimiento del
 ///    JWT sin llamar al servidor (al abrir la app y al volver a ella).
 library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show SocketException, HandshakeException;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../screens/login_screen.dart';
@@ -36,8 +43,28 @@ export 'package:http/http.dart' hide get, post, put, patch, delete;
 bool _conSesion(Map<String, String>? headers) =>
     headers?.keys.any((k) => k.toLowerCase() == 'authorization') ?? false;
 
+/// Sin conexión: el servicio necesita internet. La ficha guardada en el
+/// teléfono sigue disponible.
+class SinRedException extends http.ClientException {
+  SinRedException()
+      : super('Sin conexión a internet. Este servicio necesita red; '
+            'tu ficha guardada en el teléfono sigue disponible.');
+  @override
+  String toString() => message;
+}
+
 Future<http.Response> _revisar(Future<http.Response> peticion, Map<String, String>? headers) async {
-  final res = await peticion;
+  final http.Response res;
+  try {
+    res = await peticion;
+  } on SocketException {
+    throw SinRedException();
+  } on HandshakeException {
+    throw SinRedException();
+  } on http.ClientException catch (e) {
+    if (e is SinRedException) rethrow;
+    throw SinRedException();
+  }
   if (res.statusCode == 401 && _conSesion(headers)) {
     unawaited(SesionVencida.cerrar());
   }

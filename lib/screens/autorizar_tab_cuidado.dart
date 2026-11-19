@@ -4,14 +4,20 @@
 /// tarjeta apretada arriba del listado principal; ahora tiene su
 /// propio espacio y archivo, solo visible cuando el nivel de acceso es
 /// completo (ver _tabsPara en ficha_cuidado_screen.dart).
+///
+/// v1.1: botón "Consulta sin conexión" (Android): compartir la ficha con un
+/// profesional sin internet, por red local y QR (consulta_sin_conexion_screen).
 library;
 
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'compartir_ficha_cuidado_screen.dart';
+import 'consulta_sin_conexion_screen.dart';
 
 class TabAutorizarCuidado extends StatelessWidget {
   final String rutPaciente;
-  const TabAutorizarCuidado({super.key, required this.rutPaciente});
+  final bool esPropia;
+  const TabAutorizarCuidado({super.key, required this.rutPaciente, this.esPropia = false});
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +63,39 @@ class TabAutorizarCuidado extends StatelessWidget {
             child: Text('Generar acceso'),
           ),
         ),
+        if (Platform.isAndroid) ...[
+          const SizedBox(height: 28),
+          const Divider(),
+          const SizedBox(height: 16),
+          Center(
+            child: Text('¿Sin internet?',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.purple[800])),
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              'Comparte la ficha con el profesional desde este teléfono, por una red local y QR',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.purple[300]),
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF4C1D95)),
+            icon: const Icon(Icons.wifi_tethering),
+            label: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Text('Consulta sin conexión'),
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ConsultaSinConexionScreen(rutPaciente: rutPaciente, esPropia: esPropia),
+                ),
+              );
+            },
+          ),
+        ],
       ],
     );
   }

@@ -63,7 +63,7 @@ class _AutorizarTabUnificadaState extends State<AutorizarTabUnificada> {
         if (rut == null) {
           return const Center(child: Text('No se pudo determinar tu RUT.'));
         }
-        return TabAutorizarCuidado(rutPaciente: rut);
+        return TabAutorizarCuidado(rutPaciente: rut, esPropia: true);
       },
     );
   }

@@ -18,6 +18,17 @@
          puede degradar la notificación silenciosamente sin ningún
          error visible en el código. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    <!-- Consulta sin conexión: el teléfono crea su propia red Wi-Fi local
+         (MainActivity.kt, LocalOnlyHotspot) para que el profesional abra la
+         ficha en su equipo. Android 13+ pide NEARBY_WIFI_DEVICES; antes,
+         ubicación. No se usa para saber dónde está la persona. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="32"/>
 
     <application
         android:label="HypokratIA"

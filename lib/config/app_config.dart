@@ -64,6 +64,10 @@ class AppConfig {
 
   /// Copia cifrada de la ficha para leerla sin internet (copia_cifrada_router.py)
   static const String copiaFichaEndpoint = '$backendBaseUrl/api/copia/ficha';
+  /// Copia cifrada de una persona que el usuario cuida (según su nivel de acceso)
+  static String copiaCuidadoEndpoint(String rutPaciente) => '$backendBaseUrl/api/copia/cuidado/$rutPaciente';
+  /// Notas de consultas sin conexión: se envían al volver la red
+  static const String notasOfflineEndpoint = '$backendBaseUrl/api/copia/notas-offline';
 
   // --- Endpoints de PDF clínico (Documentospdf/pdfPacienteRouter.py,
   //     backend de ICA, prefix /api/paciente/pdf) ---
@@ -147,6 +151,7 @@ class AppConfig {
   static const String prefsBiometriaKey = 'misalud_biometria';         // 'si' | 'no' (ya se le preguntó)
   static const String prefsCopiaLlaveKey = 'misalud_copia_llave';       // llave de la copia cifrada de la ficha
   static const String copiaArchivoNombre = 'copia_ficha.enc';           // la copia cifrada (en el sandbox de la app)
+  static const String prefsNotasOfflineKey = 'misalud_notas_offline';   // notas de consultas sin conexión aún no enviadas
 
   // --- Notificaciones / Alarmas ---
   static const String notifChannelId = 'misalud_alarmas_medicamentos';

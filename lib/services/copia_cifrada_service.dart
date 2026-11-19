@@ -1,4 +1,8 @@
-/// lib/services/copia_cifrada_service.dart — v1.0
+/// lib/services/copia_cifrada_service.dart — v1.1
+///
+/// v1.1: también guarda copias de las personas que el usuario cuida
+/// (`rutCuidado`), con lo que su nivel de acceso le deja ver. leerJson()
+/// entrega la ficha descifrada tal cual (la usa la consulta sin conexión).
 ///
 /// Copia CIFRADA de la ficha en el teléfono, para leerla sin internet
 /// ("billetera fría"). Pareja de misalud-backend routers/copia_cifrada_router.py.
@@ -24,7 +28,9 @@ import 'package:cryptography/cryptography.dart';
 import 'http_sesion.dart' as http;
 import '../config/app_config.dart';
 import '../models/evento_clinico.dart';
+import '../models/ficha_cuidado.dart';
 import 'biometria_service.dart';
+import 'cuidador_service.dart';
 import 'storage_service.dart';
 
 class CopiaException implements Exception {
@@ -38,17 +44,17 @@ class CopiaCifradaService {
   static const Duration _vigencia = Duration(hours: 24);
   static const String _prefijoAad = 'misalud-copia|1|';
   static const int _largoMac = 16;
-  static bool _actualizando = false;
+  static final Set<String> _actualizando = {};
 
   /// Hay una copia cifrada con su llave en este teléfono.
-  static Future<bool> hayCopia() async {
-    final llave = await StorageService.obtenerLlaveCopia();
+  static Future<bool> hayCopia({String? rutCuidado}) async {
+    final llave = await StorageService.obtenerLlaveCopia(rut: rutCuidado);
     if (llave == null || llave.isEmpty) return false;
-    return (await StorageService.archivoCopia()).exists();
+    return (await StorageService.archivoCopia(rut: rutCuidado)).exists();
   }
 
   /// Descarga la copia cifrada (necesita internet y sesión) y la guarda.
-  static Future<void> descargar() async {
+  static Future<void> descargar({String? rutCuidado}) async {
     final token = await StorageService.obtenerToken();
     if (token == null || token.isEmpty) {
       throw CopiaException('No hay sesión activa');
@@ -60,9 +66,16 @@ class CopiaCifradaService {
     }
 
     final res = await http.get(
-      Uri.parse(AppConfig.copiaFichaEndpoint),
+      Uri.parse(rutCuidado == null
+          ? AppConfig.copiaFichaEndpoint
+          : AppConfig.copiaCuidadoEndpoint(rutCuidado)),
       headers: {'Authorization': 'Bearer $token'},
     );
+    if (res.statusCode == 403 && rutCuidado != null) {
+      // Ya no hay vínculo con esa persona: su copia se borra de este teléfono
+      await StorageService.borrarCopiaCuidado(rutCuidado);
+      throw CopiaException('Ya no tienes acceso a la ficha de esta persona');
+    }
     if (res.statusCode != 200) {
       throw CopiaException('No se pudo descargar la copia (${res.statusCode})');
     }
@@ -76,7 +89,7 @@ class CopiaCifradaService {
       throw CopiaException('La copia recibida está incompleta');
     }
 
-    final archivo = await StorageService.archivoCopia();
+    final archivo = await StorageService.archivoCopia(rut: rutCuidado);
     final temporal = File('${archivo.path}.tmp');
     await temporal.writeAsString(
       jsonEncode({
@@ -90,17 +103,18 @@ class CopiaCifradaService {
       flush: true,
     );
     await temporal.rename(archivo.path);
-    await StorageService.guardarLlaveCopia(llave);
+    await StorageService.guardarLlaveCopia(llave, rut: rutCuidado);
   }
 
   /// Con la ficha abierta en línea: baja una copia nueva si no hay o ya tiene
   /// más de 24 horas. Se llama sin esperar (no bloquea la pantalla).
-  static Future<void> actualizarSiHaceFalta() async {
-    if (_actualizando) return;
-    _actualizando = true;
+  static Future<void> actualizarSiHaceFalta({String? rutCuidado}) async {
+    final clave = rutCuidado ?? '';
+    if (_actualizando.contains(clave)) return;
+    _actualizando.add(clave);
     try {
-      if (await hayCopia()) {
-        final archivo = await StorageService.archivoCopia();
+      if (await hayCopia(rutCuidado: rutCuidado)) {
+        final archivo = await StorageService.archivoCopia(rut: rutCuidado);
         final meta = jsonDecode(await archivo.readAsString()) as Map<String, dynamic>;
         final generado = DateTime.tryParse((meta['generado_at'] as String?) ?? '');
         if (generado != null &&
@@ -108,31 +122,69 @@ class CopiaCifradaService {
           return;
         }
       }
-      await descargar();
+      await descargar(rutCuidado: rutCuidado);
     } catch (_) {
       // Sin internet o sin bloqueo de pantalla: la copia anterior se conserva.
     } finally {
-      _actualizando = false;
+      _actualizando.remove(clave);
     }
   }
 
-  /// Descifra la copia y devuelve la ficha. Con pedirHuella (lo normal) pide
+  /// Con red: deja al día (cada 24 h) las copias de todas las personas que el
+  /// usuario cuida, aunque no haya abierto su ficha, y borra las de quienes
+  /// ya no cuida. Nunca interrumpe nada.
+  static Future<void> actualizarCuidados() async {
+    try {
+      final cuidados = await CuidadorService.misCuidados();
+      for (final c in cuidados) {
+        await actualizarSiHaceFalta(rutCuidado: c.rutPaciente);
+      }
+      final vigentes = cuidados.map((c) => c.rutPaciente).toSet();
+      final dir = (await StorageService.archivoCopia()).parent;
+      if (await dir.exists()) {
+        await for (final f in dir.list()) {
+          final nombre = f.uri.pathSegments.isEmpty ? '' : f.uri.pathSegments.last;
+          if (!nombre.startsWith('copia_cuidado_') || !nombre.endsWith('.enc')) continue;
+          final digitos = nombre.substring('copia_cuidado_'.length, nombre.length - 4);
+          final rut = vigentes.firstWhere(
+            (r) => r.replaceAll(RegExp(r'[^0-9kK]'), '') == digitos,
+            orElse: () => '',
+          );
+          if (rut.isEmpty) await f.delete(); // ya no la cuida (su llave queda sin archivo)
+        }
+      }
+    } catch (_) {
+      // Sin internet: las copias anteriores se conservan.
+    }
+  }
+
+  /// Descifra la copia propia y devuelve la ficha.
+  static Future<FichaResumen> leer({bool pedirHuella = true}) async =>
+      FichaResumen.fromJson(await leerJson(pedirHuella: pedirHuella));
+
+  /// Descifra la copia de una persona cuidada (mismo formato que en línea).
+  static Future<FichaCuidado> leerCuidado(String rutCuidado, {bool pedirHuella = false}) async =>
+      FichaCuidado.fromJson(await leerJson(rutCuidado: rutCuidado, pedirHuella: pedirHuella));
+
+  /// Descifra una copia y devuelve la ficha tal cual. Con pedirHuella pide
   /// huella o el PIN del teléfono antes; false solo si la persona ya se
   /// identificó recién (sesión abierta o huella de entrada).
-  static Future<FichaResumen> leer({bool pedirHuella = true}) async {
+  static Future<Map<String, dynamic>> leerJson({String? rutCuidado, bool pedirHuella = true}) async {
     if (pedirHuella) {
       final ok = await BiometriaService.autenticar(
-        motivo: 'Confirma que eres tú para abrir tu ficha',
+        motivo: 'Confirma que eres tú para abrir la ficha',
       );
       if (!ok) {
         throw CopiaException(BiometriaService.ultimoError ?? 'No se confirmó tu identidad.');
       }
     }
 
-    final llave = await StorageService.obtenerLlaveCopia();
-    final archivo = await StorageService.archivoCopia();
+    final llave = await StorageService.obtenerLlaveCopia(rut: rutCuidado);
+    final archivo = await StorageService.archivoCopia(rut: rutCuidado);
     if (llave == null || llave.isEmpty || !await archivo.exists()) {
-      throw CopiaException('No hay una copia de tu ficha guardada en este teléfono.');
+      throw CopiaException(rutCuidado == null
+          ? 'No hay una copia de tu ficha guardada en este teléfono.'
+          : 'No hay una copia de la ficha de esta persona en este teléfono.');
     }
 
     try {
@@ -157,8 +209,7 @@ class CopiaCifradaService {
         secretKey: SecretKey(base64Decode(llave)),
         aad: utf8.encode(aad),
       );
-      final ficha = jsonDecode(utf8.decode(claro)) as Map<String, dynamic>;
-      return FichaResumen.fromJson(ficha);
+      return jsonDecode(utf8.decode(claro)) as Map<String, dynamic>;
     } on CopiaException {
       rethrow;
     } on SecretBoxAuthenticationError {

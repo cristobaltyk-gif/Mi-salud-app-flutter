@@ -165,15 +165,26 @@ class CuidadorService {
   }
 
   /// GET /api/cuidador/mis-cuidados — pacientes que este usuario cuida.
+  /// Sin internet devuelve la última lista guardada en el teléfono, para que
+  /// las fichas de las personas cuidadas se puedan abrir desde su copia.
   static Future<List<PacienteCuidado>> misCuidados() async {
     final headers = await _authHeaders();
-    final res = await http.get(
-      Uri.parse(AppConfig.cuidadorMisCuidadosEndpoint),
-      headers: headers,
-    );
+    final http.Response res;
+    try {
+      res = await http.get(
+        Uri.parse(AppConfig.cuidadorMisCuidadosEndpoint),
+        headers: headers,
+      );
+    } on http.ClientException {
+      final guardada = await StorageService.obtenerMisCuidados();
+      if (guardada == null) rethrow;
+      final lista = (jsonDecode(guardada) as Map<String, dynamic>)['pacientes'] as List<dynamic>;
+      return lista.map((p) => PacienteCuidado.fromJson(p as Map<String, dynamic>)).toList();
+    }
     if (res.statusCode != 200) {
       throw CuidadorException(_detailDe(res));
     }
+    await StorageService.guardarMisCuidados(res.body);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final lista = body['pacientes'] as List<dynamic>;
     return lista.map((p) => PacienteCuidado.fromJson(p as Map<String, dynamic>)).toList();
