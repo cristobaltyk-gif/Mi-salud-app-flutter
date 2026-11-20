@@ -7,13 +7,12 @@
 ///
 /// v1.2: un solo botón "Autorizar médico". La app detecta la conexión: con
 /// internet abre el acceso por enlace de siempre; sin internet, la consulta
-/// sin conexión (consulta_sin_conexion_screen, Android).
+/// sin conexión con el Lector HypokratIA (lector_screen.dart).
 library;
 
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'compartir_ficha_cuidado_screen.dart';
-import 'consulta_sin_conexion_screen.dart';
+import 'lector_screen.dart';
 import '../services/http_sesion.dart' as http;
 
 class TabAutorizarCuidado extends StatelessWidget {
@@ -25,7 +24,6 @@ class TabAutorizarCuidado extends StatelessWidget {
   /// internet, la consulta sin conexión (Android). La app decide sola.
   Future<void> _autorizar(BuildContext context) async {
     final navegador = Navigator.of(context);
-    final avisos = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -37,13 +35,10 @@ class TabAutorizarCuidado extends StatelessWidget {
       navegador.push(MaterialPageRoute(
         builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: rutPaciente),
       ));
-    } else if (Platform.isAndroid) {
-      navegador.push(MaterialPageRoute(
-        builder: (_) => ConsultaSinConexionScreen(rutPaciente: rutPaciente, esPropia: esPropia),
-      ));
     } else {
-      avisos.showSnackBar(const SnackBar(
-        content: Text('Sin conexión a internet. Para autorizar a un médico necesitas red.'),
+      // Sin internet: Lector HypokratIA (Bluetooth o red local con el PC del médico)
+      navegador.push(MaterialPageRoute(
+        builder: (_) => LectorScreen(rutPaciente: rutPaciente, esPropia: esPropia),
       ));
     }
   }

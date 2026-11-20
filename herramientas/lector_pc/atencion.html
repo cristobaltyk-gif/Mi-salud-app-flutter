@@ -1,0 +1,1207 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lector HypokratIA · Atención Clínica</title><style>/* ============================================================
+   dashboard-atencion.css — ICA Clínica · Diseño médico premium
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── TOKENS ── */
+:root {
+  --da-sidebar-bg:    #0d1b2a;
+  --da-sidebar-w:     272px;
+  --da-bg:            #f1f4f8;
+  --da-accent:        #3b82f6;
+  --da-accent-dim:    rgba(59, 130, 246, 0.1);
+  --da-accent-hover:  #60a5fa;
+  --da-danger:        #ef4444;
+  --da-success:       #10b981;
+  --da-claude:        #7c3aed;
+  --da-claude-dim:    rgba(124, 58, 237, 0.1);
+  --da-text-primary:  #0f172a;
+  --da-text-muted:    #64748b;
+  --da-text-light:    #94a3b8;
+  --da-panel-bg:      #ffffff;
+  --da-border:        #e2e8f0;
+  --da-radius:        12px;
+  --da-radius-sm:     8px;
+  --da-shadow:        0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  --da-font:          'DM Sans', sans-serif;
+  --da-mono:          'DM Mono', monospace;
+}
+
+/* ── RESET ── */
+.da-root * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── LAYOUT ── */
+.da-root {
+  display: flex;
+  min-height: 100vh;
+  background: var(--da-bg);
+  font-family: var(--da-font);
+  color: var(--da-text-primary);
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.da-sidebar {
+  width: var(--da-sidebar-w);
+  min-height: 100vh;
+  background: var(--da-sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 18px;
+  position: sticky;
+  top: 0;
+  gap: 24px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+/* Brand */
+.da-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.da-brand-icon {
+  width: 34px;
+  height: 34px;
+  background: var(--da-accent-dim);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--da-accent);
+  flex-shrink: 0;
+}
+
+.da-brand-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+}
+
+/* Patient */
+.da-patient-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--da-radius-sm);
+  padding: 12px;
+}
+
+.da-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--da-accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.da-patient-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.3;
+}
+
+.da-patient-rut {
+  font-size: 11px;
+  color: var(--da-text-light);
+  font-family: var(--da-mono);
+  margin-top: 2px;
+}
+
+/* Meta */
+.da-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.da-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.da-meta-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.28);
+  flex-shrink: 0;
+}
+
+.da-meta-value {
+  font-size: 12px;
+  color: #cbd5e1;
+  text-align: right;
+}
+
+/* Tools */
+.da-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 20px;
+}
+
+.da-tools-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  margin-bottom: 4px;
+}
+
+.da-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 13px;
+  border-radius: var(--da-radius-sm);
+  font-family: var(--da-font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  color: #94a3b8;
+  transition: all 0.16s ease;
+  position: relative;
+}
+
+.da-tool-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.09);
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,0.15);
+}
+
+.da-tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.da-tool-btn--recording {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+.da-tool-btn--claude {
+  background: var(--da-claude-dim) !important;
+  border-color: rgba(124, 58, 237, 0.25) !important;
+  color: #c4b5fd !important;
+}
+
+.da-tool-btn--claude:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.18) !important;
+  color: #ddd6fe !important;
+}
+
+.da-tool-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.da-recording-dot {
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+  margin-left: auto;
+  animation: da-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes da-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* Sidebar actions */
+.da-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 20px;
+  margin-top: auto;
+}
+
+.da-btn-save,
+.da-btn-modify,
+.da-btn-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--da-radius-sm);
+  font-family: var(--da-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.16s ease;
+}
+
+.da-btn-save {
+  background: var(--da-accent);
+  color: #fff;
+}
+
+.da-btn-save:hover {
+  background: var(--da-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.da-btn-modify {
+  background: rgba(255,255,255,0.07);
+  color: #94a3b8;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.da-btn-modify:hover {
+  background: rgba(255,255,255,0.11);
+  color: #e2e8f0;
+}
+
+.da-btn-cancel {
+  background: transparent;
+  color: rgba(255,255,255,0.25);
+  font-weight: 400;
+  font-size: 12.5px;
+}
+
+.da-btn-cancel:hover {
+  color: rgba(255,255,255,0.5);
+}
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+.da-main {
+  flex: 1;
+  padding: 32px 36px;
+  overflow-y: auto;
+}
+
+.da-main-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.da-title {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--da-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.da-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--da-success);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+/* Grid */
+.da-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Panel */
+.da-panel {
+  background: var(--da-panel-bg);
+  border-radius: var(--da-radius);
+  border: 1px solid var(--da-border);
+  box-shadow: var(--da-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.da-panel:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.da-panel:focus-within {
+  border-color: var(--da-accent);
+  box-shadow: 0 0 0 3px var(--da-accent-dim), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.da-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--da-border);
+  background: #fafbfc;
+}
+
+.da-panel-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--da-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.da-print-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--da-border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-family: var(--da-font);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--da-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.da-print-btn:hover {
+  background: var(--da-accent-dim);
+  border-color: var(--da-accent);
+  color: var(--da-accent);
+}
+
+/* Textarea — crece con el contenido, nunca oculta texto */
+.da-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--da-font);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--da-text-primary);
+  background: transparent;
+  overflow-y: auto;
+  min-height: 80px;
+}
+
+.da-textarea::placeholder {
+  color: #c8cfd8;
+  font-size: 13px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .da-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .da-root {
+    flex-direction: column;
+  }
+
+  .da-sidebar {
+    width: 100%;
+    min-height: auto;
+    position: static;
+    padding: 20px;
+  }
+
+  .da-sidebar-actions {
+    flex-direction: row;
+    margin-top: 0;
+  }
+
+  .da-main {
+    padding: 24px 16px;
+  }
+}
+/* ── ODONTOGRAMA — agregar a dashboard-atencion.css ── */
+
+.da-odontograma {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 8px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.da-odontograma-mitad {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.da-odontograma-fila {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+
+.da-odontograma-linea-media {
+  height: 1px;
+  background: #d0d0d0;
+  margin: 4px 12px;
+}
+
+.da-diente {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  width: 30px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #9a9a9a;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.da-diente:hover {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.da-diente:active {
+  transform: scale(0.94);
+}
+
+.da-diente--activo {
+  color: #4f46e5;
+  background: #e0e7ff;
+}
+
+.da-diente-num {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.da-diente:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 1px;
+}
+
+.da-textarea--compacta {
+  min-height: 32px;
+}
+/* ── ODONTOGRAMA — agregar a dashboard-atencion.css ── */
+
+.da-odontograma {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 8px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.da-odontograma-mitad {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.da-odontograma-fila {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+
+.da-odontograma-linea-media {
+  height: 1px;
+  background: #d0d0d0;
+  margin: 4px 12px;
+}
+
+.da-diente {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  width: 30px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #9a9a9a;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.da-diente:hover {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.da-diente:active {
+  transform: scale(0.94);
+}
+
+.da-diente--activo {
+  color: #4f46e5;
+  background: #e0e7ff;
+}
+
+.da-diente-num {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.da-diente:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 1px;
+}
+
+.da-textarea--compacta {
+  min-height: 32px;
+}
+
+.da-odontograma-protocolos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.da-odontograma-protocolo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.da-odontograma-protocolo-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+  background: #eef2ff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  width: fit-content;
+}
+/* ══════════════════════════════════════════════════════════════════════
+   EDITOR DE MEDICAMENTOS ESTRUCTURADOS — v2, mayor especificidad
+   Reemplaza el bloque anterior por este en dashboard-atencion.css.
+   Se usa .da-panel .da-medicamentos-editor como prefijo y box-sizing +
+   altura/line-height explícitos para ganarle a cualquier regla global
+   de inputs que exista en el resto del sitio.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.da-panel .da-medicamentos-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.da-panel .da-medicamentos-vacio {
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 4px 0 8px;
+}
+
+.da-panel .da-medicamento-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.da-panel .da-medicamento-row input.da-med-input {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  line-height: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.da-panel .da-medicamento-row input.da-med-input:focus {
+  border-color: #1B3B8C;
+}
+
+.da-panel .da-medicamento-row input.da-med-input--nombre {
+  flex: 1.6 1 160px;
+  min-width: 150px;
+  width: auto;
+}
+
+.da-panel .da-medicamento-row input.da-med-input--dosis {
+  flex: 1.2 1 120px;
+  min-width: 110px;
+  width: auto;
+}
+
+.da-panel .da-medicamento-row input.da-med-input--numero {
+  flex: 0 0 56px;
+  width: 56px;
+  min-width: 56px;
+  text-align: center;
+  padding: 0 4px;
+}
+
+/* Chrome/Safari: oculta las flechitas del input number */
+.da-panel .da-med-input--numero::-webkit-outer-spin-button,
+.da-panel .da-med-input--numero::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.da-panel .da-med-input--numero[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.da-panel .da-med-frecuencia,
+.da-panel .da-med-duracion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #64748b;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.da-panel .da-med-eliminar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border: none;
+  background: none;
+  color: #94a3b8;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.da-panel .da-med-eliminar:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.da-panel .da-med-agregar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 9px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: none;
+  color: #1B3B8C;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.da-panel .da-med-agregar:hover {
+  background: #f0fdf9;
+  border-color: #0f766e;
+}
+
+.da-panel .da-med-preview {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+}
+
+.da-panel .da-med-preview-label {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+}
+
+.da-panel .da-med-preview-texto {
+  margin: 0;
+  font-size: 13px;
+  color: #0f172a;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Mobile: apilar nombre/dosis en su propia línea completa */
+@media (max-width: 480px) {
+  .da-panel .da-medicamento-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .da-panel .da-medicamento-row input.da-med-input--nombre,
+  .da-panel .da-medicamento-row input.da-med-input--dosis {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+  .da-panel .da-med-frecuencia,
+  .da-panel .da-med-duracion {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .da-panel .da-med-eliminar {
+    align-self: flex-end;
+    margin-left: 0;
+    margin-top: -4px;
+  }
+   }
+     
+
+/* ============================================================
+   Botón único de dictado (PC y móvil) + vista móvil estilo app
+   (components/atencion/ControlesAtencion.jsx)
+   ============================================================ */
+.da-link-reordenar {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #a5b4fc;
+  font-family: var(--da-font);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  opacity: .85;
+}
+.da-link-reordenar:hover:not(:disabled) { opacity: 1; text-decoration: underline; }
+.da-link-reordenar:disabled { opacity: .35; cursor: default; }
+
+/* Solo móvil: ocultos en el PC */
+.da-barra-movil, .da-bm-fondo { display: none; }
+
+@media (max-width: 820px) {
+  /* Arriba: barra delgada con el paciente; al tocarla se despliegan sus datos */
+  .da-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: 8px 12px;
+    gap: 12px;
+    max-height: 75vh;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  .da-sidebar > .da-brand,
+  .da-sidebar > .da-tools,
+  .da-sidebar > .da-sidebar-actions,
+  .da-sidebar:not(.da-sidebar--abierta) > :not(.da-patient-card) { display: none; }
+  .da-patient-card {
+    padding: 8px 10px;
+    cursor: pointer;
+    position: relative;
+    padding-right: 34px;
+  }
+  .da-patient-card::after {
+    content: "▾";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 14px;
+    transition: transform .2s;
+  }
+  .da-sidebar--abierta .da-patient-card::after { transform: translateY(-50%) rotate(180deg); }
+  .da-avatar { width: 34px !important; height: 34px !important; font-size: 14px !important; }
+
+  /* El registro ocupa la pantalla; espacio para la barra de abajo */
+  .da-main { padding: 14px 10px calc(92px + env(safe-area-inset-bottom)) !important; }
+  .da-main-header { margin-bottom: 12px; }
+  .da-title { font-size: 20px !important; }
+
+  /* Abajo: barra fija estilo app */
+  .da-barra-movil {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;
+    background: #fff;
+    border-top: 1px solid var(--da-border);
+    box-shadow: 0 -4px 16px rgba(15,23,42,.08);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    gap: 4px;
+  }
+  .da-root .da-bm-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 2px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--da-text-muted);
+    font-family: var(--da-font);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .da-root .da-bm-btn:disabled { opacity: .45; }
+  .da-bm-icono { display: flex; }
+  .da-bm-icono svg { width: 20px; height: 20px; }
+  .da-root .da-bm-dictar { color: var(--da-accent); }
+  .da-root .da-bm-dictar--grabando { background: #fee2e2; color: var(--da-danger); animation: da-bm-pulso 1.4s infinite; }
+  .da-root .da-bm-dictar--ordenando { background: #ede9fe; color: var(--da-claude); opacity: 1; }
+  .da-root .da-bm-guardar { background: var(--da-accent); color: #fff; }
+  @keyframes da-bm-pulso { 50% { background: #fecaca; } }
+
+  /* Menú "Más": hoja desde abajo */
+  .da-bm-fondo {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(15,23,42,.45);
+    align-items: flex-end;
+  }
+  .da-bm-hoja {
+    width: 100%;
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .da-root .da-bm-opcion {
+    width: 100%;
+    text-align: left;
+    padding: 15px 14px;
+    border: none;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: var(--da-text-primary);
+    font-family: var(--da-font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .da-root .da-bm-opcion--peligro { color: var(--da-danger); }
+  .da-root .da-bm-opcion--cerrar { background: transparent; text-align: center; color: var(--da-text-muted); }
+}
+
+/* v2 — arreglos de tarjetas (PC y móvil) */
+.da-panel .da-panel-header .da-print-btn {
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+  min-height: 0;
+}
+.da-panel .da-panel-title { flex: 1 1 auto; min-width: 0; }
+.da-panel .da-medicamentos-editor { padding: 12px 16px 14px; }
+
+@media (max-width: 820px) {
+  .da-grid { gap: 12px !important; }
+  .da-panel-header { padding: 10px 14px; }
+  .da-textarea { font-size: 15px; padding: 12px 14px; }
+  /* Guardar: botón destacado pero sin bloque pesado */
+  .da-root .da-bm-guardar {
+    flex: 1.15;
+    margin: 4px 2px;
+    min-height: 48px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(59,130,246,.3);
+  }
+  .da-barra-movil { padding-left: 8px; padding-right: 8px; }
+}
+
+/* login.css define estilos globales para todo <button> (ancho 100 %, fondo
+   azul, sombra al pasar): en la atención cada botón usa los suyos */
+.da-root .da-link-reordenar,
+.da-root .da-bm-btn,
+.da-root .da-print-btn { width: auto; }
+.da-root .da-link-reordenar:hover,
+.da-root .da-bm-btn:hover,
+.da-root .da-bm-opcion:hover,
+.da-root .da-print-btn:hover { transform: none; box-shadow: none; }
+.da-root .da-bm-guardar:hover { box-shadow: 0 4px 12px rgba(59,130,246,.3); }
+
+/* ── CIE-10 bajo el diagnóstico (components/atencion/Cie10Selector.jsx) ── */
+.cie10 { padding: 4px 16px 14px; font-size: 13px; }
+.cie10-etiquetas { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cie10-titulo { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #64748b; }
+.cie10-vacio { color: #94a3b8; font-size: 12px; }
+.cie10-etiqueta {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a;
+  border-radius: 999px; padding: 3px 4px 3px 10px; line-height: 1.3;
+}
+.cie10-etiqueta strong { font-weight: 700; }
+.cie10 .cie10-etiqueta button {
+  width: 20px !important; height: 20px; min-width: 0; padding: 0 !important; margin: 0 !important;
+  border: none !important; border-radius: 50% !important; background: transparent !important;
+  color: #64748b !important; font-size: 11px !important; cursor: pointer; box-shadow: none !important;
+}
+.cie10 .cie10-etiqueta button:hover { background: #dbeafe !important; color: #1e3a8a !important; }
+.cie10 .cie10-agregar, .cie10 .cie10-cerrar {
+  width: auto !important; padding: 3px 10px !important; margin: 0 !important; font-size: 12px !important;
+  border: 1px dashed #93c5fd !important; border-radius: 999px !important; background: #fff !important;
+  color: #2563eb !important; cursor: pointer; box-shadow: none !important; font-weight: 600;
+}
+.cie10-buscador { position: relative; display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.cie10-buscador input {
+  flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px;
+  font-size: 13px; background: #fff; color: #0f172a;
+}
+.cie10-resultados {
+  flex-basis: 100%; margin: 2px 0 0; padding: 4px;
+  list-style: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(15,23,42,.12); max-height: 260px; overflow-y: auto;
+}
+.cie10 .cie10-resultados button {
+  display: block; width: 100% !important; text-align: left; padding: 7px 8px !important; margin: 0 !important;
+  border: none !important; border-radius: 6px !important; background: transparent !important;
+  color: #0f172a !important; font-size: 13px !important; font-weight: 400; cursor: pointer; box-shadow: none !important;
+}
+.cie10 .cie10-resultados button:hover { background: #f1f5f9 !important; }
+.cie10-info { padding: 7px 8px; color: #94a3b8; }
+.hk-capa{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.hk-capa[hidden]{display:none}
+.hk-caja{width:100%;max-width:420px;display:flex;flex-direction:column;gap:8px}
+.hk-ancha{max-width:760px;max-height:85vh}
+.hk-scroll{overflow:auto;max-height:70vh}
+.hk-in{width:100%;box-sizing:border-box}
+.hk-btn{margin-top:8px}
+.hk-txt{font-size:13px;opacity:.75;margin:0 0 6px}
+.hk-err{color:#b91c1c;font-size:13px;min-height:16px;margin:4px 0 0}
+.hk-msg{margin:0 0 12px;font-size:14px;min-height:18px}
+.hk-msg.ok{color:#15803d}.hk-msg.err{color:#b91c1c}
+.hk-ev{border-top:1px solid rgba(0,0,0,.08);padding:10px 0}
+.hk-ev h4{margin:0 0 4px;font-size:14px}
+.hk-ev pre{white-space:pre-wrap;font:inherit;margin:2px 0}
+
+.hk-codigo{font-size:44px;font-weight:800;letter-spacing:10px;text-align:center;margin:8px 0;color:#0f766e}
+.hk-fila{display:flex;gap:10px;margin-top:10px}.hk-fila>*{flex:1}
+.hk-grande{font-size:17px;font-weight:700;margin:0}
+</style></head><body><div class="da-root">
+  <aside class="da-sidebar">
+    <div class="da-brand">
+      <span class="da-brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+      <span class="da-brand-label">Atención Clínica</span>
+    </div>
+    <div class="da-patient-card">
+      <div class="da-avatar" id="avatar">P</div>
+      <div><p class="da-patient-name" id="pNombre"></p><p class="da-patient-rut" id="pRut"></p></div>
+    </div>
+    <div class="da-meta-list">
+      <div class="da-meta-item"><span class="da-meta-label">Edad</span><span class="da-meta-value" id="pEdad">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label">Sexo</span><span class="da-meta-value" id="pSexo">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label">Previsión</span><span class="da-meta-value" id="pPrev">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label">Fecha</span><span class="da-meta-value" id="pFecha"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label">Hora</span><span class="da-meta-value" id="pHora"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label">Profesional</span><span class="da-meta-value" id="pProf"></span></div>
+    </div>
+    <div class="da-tools">
+      <p class="da-tools-label">Herramientas</p>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>Historial clínico</button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Antecedentes</button>
+    </div>
+    <div class="da-sidebar-actions">
+      <button class="da-btn-cancel" onclick="limpiar()">Cancelar</button>
+      <button class="da-btn-save" onclick="guardar()">Guardar</button>
+    </div>
+  </aside>
+  <main class="da-main">
+    <div class="da-main-header"><h1 class="da-title">Registro clínico</h1><span class="da-badge">Sesión activa</span></div>
+    <p id="msg" class="hk-msg"></p>
+    <div class="da-grid">
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Atención</span></div>
+        <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Diagnóstico</span></div>
+        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Receta</span></div>
+        <div class="da-medicamentos-editor">
+          <p class="da-medicamentos-vacio" id="medVacio">Sin medicamentos agregados. Agrega uno con el botón.</p>
+          <div id="meds"></div>
+          <button type="button" class="da-med-agregar" onclick="agregarMed()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar medicamento</button>
+          <div class="da-med-preview" id="preview" hidden><p class="da-med-preview-label">Vista previa de la receta</p><p class="da-med-preview-texto" id="previewTxt"></p></div>
+        </div></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Exámenes</span></div>
+        <textarea class="da-textarea" id="examenes" rows="2" placeholder="Imágenes o laboratorio con región y lateralidad…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Indicaciones</span></div>
+        <textarea class="da-textarea" id="indicaciones" rows="3" placeholder="Indicaciones post-consulta…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Orden kinésica</span></div>
+        <textarea class="da-textarea" id="orden_kinesiologia" rows="3" placeholder="Objetivos, técnicas, frecuencia…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Indicación quirúrgica</span></div>
+        <textarea class="da-textarea" id="indicacion_quirurgica" rows="3" placeholder="Indicación quirúrgica si aplica…"></textarea></section>
+    </div>
+  </main>
+</div>
+<div class="hk-capa" id="ident">
+  <div class="da-panel hk-caja">
+    <div class="da-panel-header"><span class="da-panel-title">Identificación del profesional</span></div>
+    <p class="hk-txt">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
+    <label class="da-meta-label">Nombre completo</label><input class="da-med-input hk-in" id="nom" autocomplete="name">
+    <label class="da-meta-label">RUT</label><input class="da-med-input hk-in" id="rut" placeholder="12345678-9">
+    <p id="e1" class="hk-err"></p>
+    <button class="da-btn-save hk-btn" onclick="entrar()">Ingresar</button>
+  </div>
+</div>
+<div class="hk-capa" id="modal" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="da-panel hk-caja hk-ancha">
+    <div class="da-panel-header"><span class="da-panel-title" id="mTit"></span><button class="da-print-btn" onclick="document.getElementById('modal').hidden=true">Cerrar</button></div>
+    <div id="mCuerpo" class="hk-scroll"></div>
+  </div>
+</div>
+
+<div class="hk-capa" id="espera">
+  <div class="da-panel hk-caja">
+    <div class="da-panel-header"><span class="da-panel-title">Lector HypokratIA</span></div>
+    <p class="hk-grande">Esperando paciente…</p>
+    <p class="hk-txt">Pida al paciente que toque <b>"Autorizar médico"</b> en su teléfono, cerca de este computador. No se necesita internet.</p>
+  </div>
+</div>
+<div class="hk-capa" id="solicitud" hidden>
+  <div class="da-panel hk-caja">
+    <div class="da-panel-header"><span class="da-panel-title">Solicitud de acceso</span></div>
+    <p class="hk-grande"><span id="solNombre"></span> quiere compartir su ficha</p>
+    <p class="hk-txt">Verifique que el teléfono del paciente muestre este mismo código:</p>
+    <p class="hk-codigo" id="solCodigo"></p>
+    <div class="hk-fila"><button class="da-btn-cancel" onclick="responder(false)">Rechazar</button>
+    <button class="da-btn-save" onclick="responder(true)">ACEPTAR</button></div>
+  </div>
+</div>
+<script>const k=new URLSearchParams(location.search).get('k');
+let yo=null,ficha={},meds=[];
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||'Error');return j}
+function edad(f){if(!f)return '—';const [a,m,d]=String(f).slice(0,10).split('-').map(Number);const h=new Date();
+ return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' años'}
+function reloj(){const h=new Date();$('pFecha').textContent=h.toLocaleDateString('es-CL');$('pHora').textContent=h.toTimeString().slice(0,5)}
+async function entrar(){$('e1').textContent='';yo={nombre:$('nom').value.trim(),rut:$('rut').value.trim()};
+ try{const j=await post('/api/identificar',yo);ficha=j.ficha||{};const p=ficha.paciente||{};
+  const nombre=[p.nombre,p.apellido_paterno,p.apellido_materno].filter(Boolean).join(' ');
+  $('pNombre').textContent=nombre;$('pRut').textContent=p.rut||'';$('avatar').textContent=(nombre||'P').charAt(0).toUpperCase();
+  $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—';
+  $('pProf').textContent=yo.nombre;reloj();setInterval(reloj,30000);$('ident').hidden=true}catch(x){$('e1').textContent=x.message}}
+function abrir(que){const c=$('mCuerpo');let h='';
+ if(que==='historial'){$('mTit').textContent='Historial clínico';const ev=ficha.eventos||[];if(!ev.length)h='<p class="hk-txt">Sin atenciones registradas.</p>';
+  for(const e of ev){const t=e.contenido||{};h+='<div class="hk-ev"><h4>'+esc(e.fecha)+' · '+esc(e.especialidad||e.tipo||'')+' · '+esc(e.medico||'')+'</h4>';
+   for(const [n,v] of [['Diagnóstico',e.diagnostico],['Atención',t.atencion],['Receta',t.receta],['Exámenes',t.examenes],['Indicaciones',t.indicaciones],['Orden kinésica',t.orden_kinesiologia],['Indicación quirúrgica',t.indicacion_quirurgica],['Evolución',t.evolucion]])
+    if(v)h+='<div><b>'+n+':</b><pre>'+esc(v)+'</pre></div>';h+='</div>'}}
+ else{$('mTit').textContent='Antecedentes';const a=ficha.antecedentes||{};const ks=Object.keys(a).filter(x=>(a[x]||[]).length);
+  if(!ks.length)h='<p class="hk-txt">Sin antecedentes registrados.</p>';
+  for(const x of ks){h+='<div class="hk-ev"><h4>'+esc(x.replace(/_/g,' '))+'</h4><ul>';for(const i of a[x])h+='<li>'+esc(i.descripcion)+'</li>';h+='</ul></div>'}}
+ c.innerHTML=h;$('modal').hidden=false}
+function sanear(){return meds.filter(m=>m.medicamento&&m.medicamento.trim()).map(m=>({medicamento:m.medicamento.trim(),dosis:(m.dosis||'').trim(),
+ frecuencia_horas:m.frecuencia_horas===''||m.frecuencia_horas==null?null:parseInt(m.frecuencia_horas,10),
+ duracion_dias:m.cronico||m.duracion_dias===''||m.duracion_dias==null?null:parseInt(m.duracion_dias,10),cronico:!!m.cronico}))}
+function linea(m){const r=[];if(m.dosis)r.push(m.dosis);if(m.frecuencia_horas!=null)r.push('cada '+m.frecuencia_horas+' horas');
+ if(m.duracion_dias!=null)r.push('por '+m.duracion_dias+' días');if(m.cronico)r.push('uso crónico');const t=r.join(' ');return t?m.medicamento+' — '+t:m.medicamento}
+function recetaTxt(){return sanear().map(linea).join('\n')}
+function pintarMeds(){$('medVacio').hidden=meds.length>0;let h='';
+ meds.forEach((m,i)=>{h+='<div class="da-medicamento-row">'+
+  '<input class="da-med-input da-med-input--nombre" placeholder="Medicamento (ej. Ibuprofeno 400mg)" value="'+esc(m.medicamento)+'" oninput="setMed('+i+',\'medicamento\',this.value)">'+
+  '<input class="da-med-input da-med-input--dosis" placeholder="Dosis (ej. 1 comprimido)" value="'+esc(m.dosis)+'" oninput="setMed('+i+',\'dosis\',this.value)">'+
+  '<div class="da-med-frecuencia"><span>cada</span><input type="number" min="0" class="da-med-input da-med-input--numero" placeholder="8" value="'+esc(m.frecuencia_horas)+'" oninput="setMed('+i+',\'frecuencia_horas\',this.value)"><span>horas</span></div>'+
+  (m.cronico?'':'<div class="da-med-duracion"><span>por</span><input type="number" min="0" class="da-med-input da-med-input--numero" placeholder="7" value="'+esc(m.duracion_dias)+'" oninput="setMed('+i+',\'duracion_dias\',this.value)"><span>días</span></div>')+
+  '<label class="da-med-duracion" style="cursor:pointer;user-select:none"><input type="checkbox" style="width:15px;height:15px;min-height:0;margin:0;padding:0;flex:0 0 auto" '+(m.cronico?'checked':'')+' onchange="setCronico('+i+',this.checked)"><span>uso crónico</span></label>'+
+  '<button type="button" class="da-med-eliminar" onclick="quitarMed('+i+')" title="Eliminar medicamento"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'});
+ $('meds').innerHTML=h;vista()}
+function vista(){const t=recetaTxt();$('preview').hidden=!t;$('previewTxt').textContent=t}
+function setMed(i,c,v){meds[i][c]=v;vista()}
+function setCronico(i,v){meds[i].cronico=v;if(v)meds[i].duracion_dias='';pintarMeds()}
+function agregarMed(){meds.push({medicamento:'',dosis:'',frecuencia_horas:'',duracion_dias:'',cronico:false});pintarMeds()}
+function quitarMed(i){meds.splice(i,1);pintarMeds()}
+const CAMPOS=['atencion','diagnostico','indicaciones','examenes','orden_kinesiologia','indicacion_quirurgica'];
+function limpiar(){for(const c of CAMPOS)$(c).value='';meds=[];pintarMeds();$('msg').textContent=''}
+async function guardar(){const m=$('msg');m.className='hk-msg';m.textContent='';
+ const contenido={};for(const c of CAMPOS)contenido[c]=$(c).value;contenido.receta=recetaTxt();contenido.medicamentos=JSON.stringify(sanear());
+ try{await post('/api/nota',{...yo,contenido});m.className='hk-msg ok';m.textContent='Atención enviada al teléfono del paciente. Se registrará en su ficha al volver la conexión.';limpiar();
+  m.className='hk-msg ok';m.textContent='Atención enviada al teléfono del paciente. Se registrará en su ficha al volver la conexión.'}
+ catch(x){m.className='hk-msg err';m.textContent=x.message}}
+document.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'}));
+pintarMeds();
+
+// ── Lector HypokratIA (programa en el PC) ───────────────────────────────
+// La ficha llega del teléfono del paciente por Bluetooth o por la red local
+// (cifrada, con el código de 4 números que ambos muestran). Aquí solo se
+// muestra; nada se guarda en el disco del PC.
+$('ident').hidden=true;
+let estadoPrevio='';
+async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{method:'POST'})}
+async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
+function reiniciar(){yo=null;ficha={};limpiar();for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';
+ for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';$('avatar').textContent='P';$('nom').value='';$('rut').value=''}
+function mostrarEstado(j){
+ $('espera').hidden=j.estado!=='espera';
+ $('solicitud').hidden=j.estado!=='solicitud';
+ if(j.estado==='solicitud'){$('solNombre').textContent=j.paciente||'Un paciente';$('solCodigo').textContent=j.codigo||''}
+ if(j.estado==='aceptada'||j.estado==='activa'){if(!yo)$('ident').hidden=false}
+ else $('ident').hidden=true;
+ if(j.estado==='espera')reiniciar()}
+async function sondeo(){try{const r=await fetch('/api/estado');const j=await r.json();
+ if(j.estado!==estadoPrevio){estadoPrevio=j.estado;mostrarEstado(j)}}catch(e){}setTimeout(sondeo,1000)}
+(function(){const h=document.querySelector('.da-main-header');const b=document.createElement('button');
+ b.className='da-btn-cancel';b.textContent='Terminar consulta';b.style.marginLeft='auto';b.onclick=terminarConsulta;h.appendChild(b)})();
+sondeo();
+</script></body></html>
