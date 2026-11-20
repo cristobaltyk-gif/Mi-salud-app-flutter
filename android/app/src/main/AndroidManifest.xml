@@ -29,11 +29,12 @@
         android:usesPermissionFlags="neverForLocation"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
         android:maxSdkVersion="32"/>
-    <!-- Lector HypokratIA (Bluetooth): buscar y conectarse al lector de la
-         consulta. Android 12+ pide estos dos; antes, los antiguos. -->
+    <!-- Lector HypokratIA (Bluetooth): el teléfono se anuncia y el PC de la
+         consulta se conecta. Android 12+ pide estos; antes, los antiguos. -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
 

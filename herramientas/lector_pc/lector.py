@@ -6,7 +6,8 @@ del paciente SIN INTERNET y la muestra en el navegador del médico con la misma
 pantalla de "Atención Clínica" de la Ficha.
 
 Cómo llega el teléfono (busca las dos a la vez):
-  · Bluetooth (BLE): el PC se anuncia como "HypokratIA".
+  · Bluetooth (BLE): el teléfono se anuncia como "HypokratIA" y el PC lo
+    busca y se conecta solo (sin emparejar).
   · Red local (Wi-Fi o cable, sin internet): responde a la búsqueda del
     teléfono y recibe la conexión.
 
@@ -42,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "1.0"
+VERSION = "1.1"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -250,67 +251,60 @@ async def atender_tcp(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
 
 
 # ══════════════════════════════════════════════════════════════
-# Bluetooth (BLE): el PC se anuncia como "HypokratIA"
+# Bluetooth (BLE): el TELÉFONO se anuncia ("HypokratIA") y el PC lo busca.
+# (Muchos Bluetooth de PC no pueden anunciarse; todos pueden buscar.)
+# Sin emparejar nada: el PC se conecta, se suscribe y el teléfono saluda.
 # ══════════════════════════════════════════════════════════════
-async def iniciar_bluetooth(loop: asyncio.AbstractEventLoop) -> None:
+async def bluetooth_buscar() -> None:
     try:
-        from bless import (BlessServer, GATTAttributePermissions,
-                           GATTCharacteristicProperties)
+        from bleak import BleakClient, BleakScanner
     except Exception as e:
         log(f"Bluetooth no disponible ({type(e).__name__}: {e}); solo red local.")
         return
+    log("Bluetooth listo: buscando teléfonos con HypokratIA cerca")
+    recientes: Dict[str, float] = {}   # teléfono → hasta cuándo no reconectar
+    loop = asyncio.get_running_loop()
+    while True:
+        if ACTUAL is not None:
+            await asyncio.sleep(1)
+            continue
+        try:
+            dispositivo = await BleakScanner.find_device_by_filter(
+                lambda d, ad: SERVICIO_BLE in [u.lower() for u in (ad.service_uuids or [])]
+                and recientes.get(d.address, 0) < loop.time(),
+                timeout=4.0)
+        except Exception as e:
+            log(f"No se pudo buscar por Bluetooth ({type(e).__name__}: {e}); se reintenta.")
+            await asyncio.sleep(5)
+            continue
+        if dispositivo is None:
+            continue
+        s: Optional[Sesion] = None
+        try:
+            async with BleakClient(dispositivo, timeout=15.0) as cliente:
+                async def enviar(datos: bytes) -> None:
+                    trozo = max(20, min(500, (getattr(cliente, "mtu_size", 23) or 23) - 3))
+                    for i in range(0, len(datos), trozo):
+                        await cliente.write_gatt_char(CARACT_RX, datos[i:i + trozo], response=True)
 
-    server = BlessServer(name="HypokratIA", loop=loop)
-    estado: Dict[str, Any] = {"sesion": None, "ens": None}
-
-    async def enviar_ble(datos: bytes) -> None:
-        for i in range(0, len(datos), 180):
-            server.get_characteristic(CARACT_TX).value = bytearray(datos[i:i + 180])
-            server.update_value(SERVICIO_BLE, CARACT_TX)
-            await asyncio.sleep(0.012)
-
-    def al_mensaje(raw: bytes) -> None:
-        s = estado["sesion"]
-        if s is not None:
-            asyncio.run_coroutine_threadsafe(s.recibir(raw), loop)
-
-    def escritura(caracteristica, valor, **_):
-        if str(caracteristica.uuid).lower() != CARACT_RX:
-            return
-        datos = bytes(valor)
-        # Un "hola" nuevo (largo + {"tipo":"hola") empieza otra consulta
-        if datos[4:5] == b"{" and b'"hola"' in datos[:64] and (
-                estado["sesion"] is None or estado["sesion"] is not ACTUAL):
-            s = nueva_sesion(enviar_ble, "Bluetooth")
-            if s is None:
-                return
-            estado["sesion"] = s
-            estado["ens"] = Ensamblador(al_mensaje)
-        if estado["ens"] is not None:
-            try:
-                estado["ens"].agregar(datos)
-            except ValueError:
-                estado["ens"] = None
-
-    def lectura(caracteristica, **_):
-        return caracteristica.value
-
-    server.read_request_func = lectura
-    server.write_request_func = escritura
-    await server.add_new_service(SERVICIO_BLE)
-    await server.add_new_characteristic(
-        SERVICIO_BLE, CARACT_RX,
-        GATTCharacteristicProperties.write | GATTCharacteristicProperties.write_without_response,
-        None, GATTAttributePermissions.writeable)
-    await server.add_new_characteristic(
-        SERVICIO_BLE, CARACT_TX,
-        GATTCharacteristicProperties.notify | GATTCharacteristicProperties.read,
-        None, GATTAttributePermissions.readable)
-    try:
-        await server.start()
-        log("Bluetooth listo: anunciado como 'HypokratIA'")
-    except Exception as e:
-        log("No se pudo iniciar Bluetooth:", e, "— se usa solo la red local.")
+                s = nueva_sesion(enviar, "Bluetooth")
+                if s is None:
+                    continue
+                cola: asyncio.Queue = asyncio.Queue()
+                ens = Ensamblador(cola.put_nowait)
+                await cliente.start_notify(CARACT_TX, lambda _c, d: ens.agregar(bytes(d)))
+                log("teléfono conectado por Bluetooth")
+                while cliente.is_connected and ACTUAL is s:
+                    try:
+                        raw = await asyncio.wait_for(cola.get(), 1.0)
+                    except asyncio.TimeoutError:
+                        continue
+                    await s.recibir(raw)
+        except Exception as e:
+            log(f"Bluetooth: conexión terminada ({type(e).__name__}: {e})")
+        finally:
+            terminar_sesion(s)
+            recientes[dispositivo.address] = loop.time() + 15
 
 
 # ══════════════════════════════════════════════════════════════
@@ -435,7 +429,7 @@ async def main() -> None:
                                         allow_broadcast=True)
     await asyncio.start_server(atender_tcp, "0.0.0.0", PUERTO_DATOS)
     log(f"red local lista (búsqueda {PUERTO_BUSQUEDA}/udp, datos {PUERTO_DATOS}/tcp)")
-    await iniciar_bluetooth(loop)
+    asyncio.create_task(bluetooth_buscar())
     log(f"Lector HypokratIA {VERSION} listo en '{NOMBRE_EQUIPO}'. Página: http://127.0.0.1:{PUERTO_WEB}/")
     abrir_navegador()
     await asyncio.Event().wait()

@@ -1,4 +1,7 @@
-/// lib/screens/lector_screen.dart — v1.0
+/// lib/screens/lector_screen.dart — v1.1
+///
+/// v1.1: el teléfono se anuncia y el PC del médico lo encuentra solo; ya no
+/// hay lista para elegir.
 ///
 /// "Autorizar médico" SIN INTERNET con el Lector HypokratIA (programa en el
 /// PC del médico; después, la cajita). Pasos para la persona:
@@ -29,11 +32,10 @@ class LectorScreen extends StatefulWidget {
 class _LectorScreenState extends State<LectorScreen> {
   static const _morado = Color(0xFF4C1D95);
   bool _acepta = false;
-  String _paso = 'aceptar'; // aceptar | buscando | elegir | sesion
+  String _paso = 'aceptar'; // aceptar | buscando | nadie | sesion
   String? _error;
   Map<String, dynamic>? _ficha;
   DateTime? _aceptadaAt;
-  List<LectorEncontrado> _lectores = [];
   SesionLector? _sesion;
   StreamSubscription<void>? _sub;
 
@@ -65,26 +67,19 @@ class _LectorScreenState extends State<LectorScreen> {
   }
 
   Future<void> _buscar() async {
-    setState(() { _paso = 'buscando'; _error = null; });
-    final lista = await LectorService.buscar();
-    if (!mounted) return;
-    if (lista.length == 1) {
-      await _conectar(lista.first);
-    } else {
-      setState(() { _lectores = lista; _paso = 'elegir'; });
-    }
-  }
-
-  Future<void> _conectar(LectorEncontrado l) async {
     final s = SesionLector(rutPaciente: widget.rutPaciente, ficha: _ficha!, aceptadaAt: _aceptadaAt!);
     _sub?.cancel();
-    _sub = s.cambios.listen((_) { if (mounted) setState(() {}); });
-    setState(() { _sesion = s; _paso = 'sesion'; _error = null; });
+    _sub = s.cambios.listen((_) {
+      if (mounted && s.estado != 'conectando') setState(() => _paso = 'sesion');
+    });
+    setState(() { _sesion = s; _paso = 'buscando'; _error = null; });
     try {
-      await s.conectar(l);
+      final llego = await s.conectar();
+      if (!mounted) return;
+      if (!llego) setState(() => _paso = 'nadie');
     } catch (e) {
       await s.terminar(avisar: false);
-      if (mounted) setState(() { _paso = 'elegir'; _lectores = [l]; _error = e.toString(); });
+      if (mounted) setState(() { _paso = 'nadie'; _error = e.toString(); });
     }
   }
 
@@ -99,7 +94,7 @@ class _LectorScreenState extends State<LectorScreen> {
             switch (_paso) {
               'aceptar' => _vistaAceptar(),
               'buscando' => _vistaBuscando(),
-              'elegir' => _vistaElegir(),
+              'nadie' => _vistaNadie(),
               _ => _vistaSesion(),
             },
             if (_error != null) ...[
@@ -155,31 +150,22 @@ class _LectorScreenState extends State<LectorScreen> {
       ]);
 
   Widget _vistaBuscando() => Column(children: [
-        _titulo('Buscando el lector del médico…'),
+        _titulo('Esperando al computador del médico…'),
         const CircularProgressIndicator(),
         const SizedBox(height: 14),
-        const Text('Mantén el teléfono cerca del computador.', textAlign: TextAlign.center),
+        const Text('Mantén el teléfono cerca del computador, con el Bluetooth encendido.',
+            textAlign: TextAlign.center),
       ]);
 
-  Widget _vistaElegir() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _titulo(_lectores.isEmpty ? 'No se encontró un lector cerca' : 'Elige el computador del médico'),
-        if (_lectores.isEmpty)
-          const Text(
-            'Verifica que el programa Lector HypokratIA esté abierto en el computador y que el Bluetooth del '
-            'teléfono esté encendido.',
-            textAlign: TextAlign.center,
-          ),
-        for (final l in _lectores)
-          Card(
-            child: ListTile(
-              leading: Icon(l.medio == 'Bluetooth' ? Icons.bluetooth : Icons.lan, color: _morado),
-              title: Text(l.nombre),
-              subtitle: Text(l.medio),
-              onTap: () => _conectar(l),
-            ),
-          ),
+  Widget _vistaNadie() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _titulo('No se encontró el computador del médico'),
+        const Text(
+          'Verifica que el programa Lector HypokratIA esté abierto en el computador y que el Bluetooth del '
+          'teléfono esté encendido.',
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 10),
-        OutlinedButton(onPressed: _buscar, child: const Text('Buscar de nuevo')),
+        OutlinedButton(onPressed: _buscar, child: const Text('Intentar de nuevo')),
         TextButton(
           onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (_) => ConsultaSinConexionScreen(rutPaciente: widget.rutPaciente, esPropia: widget.esPropia),

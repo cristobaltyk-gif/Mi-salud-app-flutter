@@ -1,10 +1,12 @@
-/// lib/services/lector_service.dart — v1.0
+/// lib/services/lector_service.dart — v1.1
 ///
 /// LECTOR HYPOKRATIA: consulta sin internet con el PC del médico.
 /// Hoy el lector es un programa en el PC (herramientas/lector_pc/lector.py);
 /// mañana será la cajita. El teléfono no cambia.
 ///
-/// 1. buscar(): Bluetooth y red local (Wi-Fi/cable sin internet) a la vez.
+/// 1. esperarConexion(): el teléfono se ANUNCIA por Bluetooth y el PC lo
+///    encuentra y se conecta solo (sin emparejar; muchos PC no pueden
+///    anunciarse, pero todos pueden buscar). A la vez prueba la red local.
 /// 2. SesionLector: intercambio de llaves X25519 → todo cifrado AES-256-GCM.
 ///    Teléfono y PC muestran el MISMO código de 4 números; el médico acepta.
 /// 3. Se envía la ficha (la copia cifrada del teléfono, descifrada aquí).
@@ -21,7 +23,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:ble_peripheral/ble_peripheral.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'notas_offline_service.dart';
 
@@ -38,18 +40,6 @@ class LectorException implements Exception {
   LectorException(this.mensaje);
   @override
   String toString() => mensaje;
-}
-
-class LectorEncontrado {
-  final String nombre;
-  final String medio; // 'Bluetooth' | 'Red local'
-  final BluetoothDevice? dispositivo;
-  final InternetAddress? host;
-  final int? puerto;
-  LectorEncontrado.ble(this.nombre, this.dispositivo)
-      : medio = 'Bluetooth', host = null, puerto = null;
-  LectorEncontrado.red(this.nombre, this.host, this.puerto)
-      : medio = 'Red local', dispositivo = null;
 }
 
 // ── Canales: Bluetooth o red, ambos como un flujo de bytes ──────────────────
@@ -74,122 +64,144 @@ class _CanalRed implements _Canal {
   Future<void> cerrar() async => _s.destroy();
 }
 
-class _CanalBle implements _Canal {
-  final BluetoothDevice _d;
-  final BluetoothCharacteristic _rx;
-  final StreamController<List<int>> _ctrl = StreamController<List<int>>();
-  StreamSubscription<List<int>>? _sub;
-  int _trozo = 180;
-
-  _CanalBle(this._d, this._rx);
-
-  static Future<_CanalBle> abrir(BluetoothDevice d) async {
-    await d.connect(timeout: const Duration(seconds: 12), autoConnect: false);
-    var mtu = 23;
-    if (Platform.isAndroid) {
-      try {
-        mtu = await d.requestMtu(512);
-      } catch (_) {}
-    } else {
-      mtu = d.mtuNow;
-    }
-    final servicios = await d.discoverServices();
-    final s = servicios.firstWhere(
-      (x) => x.uuid.str128.toLowerCase() == _servicioBle,
-      orElse: () => throw LectorException('El lector no responde como HypokratIA'),
-    );
-    BluetoothCharacteristic c(String id) =>
-        s.characteristics.firstWhere((x) => x.uuid.str128.toLowerCase() == id);
-    final canal = _CanalBle(d, c(_caractRx));
-    canal._trozo = max(20, min(500, mtu - 3));
-    final tx = c(_caractTx);
-    canal._sub = tx.onValueReceived.listen(canal._ctrl.add);
-    await tx.setNotifyValue(true);
-    return canal;
-  }
+/// Bluetooth con el teléfono como PERIFÉRICO: el PC escribe en RX y el
+/// teléfono responde por notificaciones en TX.
+class _CanalBlePeriferico implements _Canal {
+  final String dispositivo; // id del PC conectado
+  final StreamController<List<int>> _ctrl;
+  int trozo;
+  _CanalBlePeriferico(this.dispositivo, this._ctrl, this.trozo);
 
   @override
   Stream<List<int>> get entrada => _ctrl.stream;
 
   @override
   Future<void> enviar(List<int> datos) async {
-    for (var i = 0; i < datos.length; i += _trozo) {
-      await _rx.write(datos.sublist(i, min(i + _trozo, datos.length)), withoutResponse: false);
+    for (var i = 0; i < datos.length; i += trozo) {
+      await BlePeripheral.updateCharacteristic(
+        characteristicId: _caractTx,
+        value: Uint8List.fromList(datos.sublist(i, min(i + trozo, datos.length))),
+        deviceId: dispositivo,
+      );
+      await Future.delayed(const Duration(milliseconds: 8));
     }
   }
 
   @override
   Future<void> cerrar() async {
-    await _sub?.cancel();
-    await _ctrl.close();
+    LectorService._canalBle = null;
     try {
-      await _d.disconnect();
+      await BlePeripheral.stopAdvertising();
     } catch (_) {}
+    if (!_ctrl.isClosed) await _ctrl.close();
   }
 }
 
-// ── Búsqueda ────────────────────────────────────────────────────────────────
 class LectorService {
-  /// Busca lectores cerca, por Bluetooth y por red local, durante ~5 segundos.
-  static Future<List<LectorEncontrado>> buscar() async {
-    final encontrados = <LectorEncontrado>[];
-    await Future.wait([
-      _buscarBle(encontrados).catchError((_) {}),
-      _buscarRed(encontrados).catchError((_) {}),
-    ]);
-    return encontrados;
-  }
+  static bool _listo = false;
+  static _CanalBlePeriferico? _canalBle;
+  static StreamController<List<int>>? _entradaBle;
+  static int _mtu = 23;
 
-  static Future<void> _buscarBle(List<LectorEncontrado> lista) async {
-    if (Platform.isAndroid) {
-      await [Permission.bluetoothScan, Permission.bluetoothConnect].request();
-      if (await FlutterBluePlus.adapterState.first != BluetoothAdapterState.on) {
-        try {
-          await FlutterBluePlus.turnOn();
-        } catch (_) {}
-      }
-    }
-    if (!await FlutterBluePlus.isSupported) return;
-    final vistos = <String>{};
-    final sub = FlutterBluePlus.onScanResults.listen((resultados) {
-      for (final r in resultados) {
-        final id = r.device.remoteId.str;
-        if (vistos.add(id)) {
-          final nombre = r.advertisementData.advName.isNotEmpty ? r.advertisementData.advName : 'HypokratIA';
-          lista.add(LectorEncontrado.ble(nombre, r.device));
-        }
-      }
+  /// Prepara el Bluetooth del teléfono (una vez).
+  static Future<void> _prepararBle() async {
+    if (_listo) return;
+    await BlePeripheral.initialize();
+    BlePeripheral.setMtuChangeCallback((_, mtu) {
+      _mtu = mtu;
+      _canalBle?.trozo = max(20, min(500, mtu - 3));
     });
-    try {
-      await FlutterBluePlus.startScan(withServices: [Guid(_servicioBle)], timeout: const Duration(seconds: 5));
-      await FlutterBluePlus.isScanning.where((s) => s == false).first;
-    } finally {
-      await sub.cancel();
-    }
+    BlePeripheral.setWriteRequestCallback((id, caract, offset, valor) {
+      final e = _entradaBle;
+      if (caract.toLowerCase() == _caractRx && valor != null && e != null && !e.isClosed) e.add(valor);
+      return null;
+    });
+    BlePeripheral.setConnectionStateChangeCallback((id, conectado) {
+      final e = _entradaBle;
+      if (!conectado && _canalBle?.dispositivo == id && e != null && !e.isClosed) e.close();
+    });
+    await BlePeripheral.addService(BleService(
+      uuid: _servicioBle,
+      primary: true,
+      characteristics: [
+        BleCharacteristic(
+          uuid: _caractRx,
+          properties: [CharacteristicProperties.write.index, CharacteristicProperties.writeWithoutResponse.index],
+          permissions: [AttributePermissions.writeable.index],
+        ),
+        BleCharacteristic(
+          uuid: _caractTx,
+          properties: [CharacteristicProperties.notify.index, CharacteristicProperties.read.index],
+          permissions: [AttributePermissions.readable.index],
+        ),
+      ],
+    ));
+    _listo = true;
   }
 
-  static Future<void> _buscarRed(List<LectorEncontrado> lista) async {
+  /// Se anuncia por Bluetooth y, a la vez, busca un lector en la red local.
+  /// Devuelve el primer canal que se conecte (o null si nadie llega a tiempo).
+  static Future<_Canal?> esperarConexion({Duration limite = const Duration(seconds: 60)}) async {
+    final listo = Completer<_Canal?>();
+    // ── Bluetooth: el PC encuentra al teléfono ──
+    try {
+      if (Platform.isAndroid) {
+        await [Permission.bluetoothAdvertise, Permission.bluetoothConnect, Permission.bluetoothScan].request();
+      }
+      await BlePeripheral.askBlePermission();
+      await _prepararBle();
+      _entradaBle = StreamController<List<int>>();
+      BlePeripheral.setCharacteristicSubscriptionChangeCallback((id, caract, suscrito, _) {
+        if (suscrito && caract.toLowerCase() == _caractTx && !listo.isCompleted) {
+          _canalBle = _CanalBlePeriferico(id, _entradaBle!, max(20, min(500, _mtu - 3)));
+          listo.complete(_canalBle);
+        }
+      });
+      await BlePeripheral.startAdvertising(services: [_servicioBle], localName: 'HypokratIA');
+    } catch (_) {
+      // sin Bluetooth: queda la red local
+    }
+    // ── Red local (si el teléfono está en la misma red que el PC) ──
+    unawaited(_buscarRed().then((s) {
+      if (s != null && !listo.isCompleted) listo.complete(_CanalRed(s));
+    }).catchError((_) {}));
+
+    final canal = await listo.future.timeout(limite, onTimeout: () => null);
+    if (canal is! _CanalBlePeriferico) {
+      try {
+        await BlePeripheral.stopAdvertising();
+      } catch (_) {}
+    }
+    return canal;
+  }
+
+  /// Pregunta por la red local; si un lector responde, se conecta.
+  static Future<Socket?> _buscarRed() async {
     final s = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
     s.broadcastEnabled = true;
-    final vistos = <String>{};
-    s.listen((e) {
-      if (e != RawSocketEvent.read) return;
+    final encontrado = Completer<Socket?>();
+    s.listen((e) async {
+      if (e != RawSocketEvent.read || encontrado.isCompleted) return;
       final d = s.receive();
       if (d == null) return;
       final partes = utf8.decode(d.data, allowMalformed: true).trim().split(' ');
-      if (partes.length >= 2 && partes[0] == 'HIPOKRATIA_LECTOR' && vistos.add(d.address.address)) {
-        final nombre = partes.length > 2 ? partes.sublist(2).join(' ') : 'Computador';
-        lista.add(LectorEncontrado.red(nombre, d.address, int.tryParse(partes[1]) ?? 47801));
+      if (partes.length >= 2 && partes[0] == 'HIPOKRATIA_LECTOR' && !encontrado.isCompleted) {
+        try {
+          final sock = await Socket.connect(d.address, int.tryParse(partes[1]) ?? 47801,
+              timeout: const Duration(seconds: 6));
+          if (!encontrado.isCompleted) encontrado.complete(sock);
+        } catch (_) {}
       }
     });
     final pregunta = utf8.encode('HIPOKRATIA_LECTOR?');
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 20 && !encontrado.isCompleted; i++) {
       try {
         s.send(pregunta, InternetAddress('255.255.255.255'), _puertoBusqueda);
       } catch (_) {}
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future.delayed(const Duration(seconds: 3));
     }
     s.close();
+    return encontrado.isCompleted ? encontrado.future : null;
   }
 }
 
@@ -222,15 +234,11 @@ class SesionLector {
     return [p['nombre'], p['apellido_paterno']].where((x) => (x ?? '').toString().isNotEmpty).join(' ');
   }
 
-  /// Conecta, intercambia llaves y deja el código listo para comparar.
-  Future<void> conectar(LectorEncontrado lector) async {
-    try {
-      _canal = lector.dispositivo != null
-          ? await _CanalBle.abrir(lector.dispositivo!)
-          : _CanalRed(await Socket.connect(lector.host, lector.puerto!, timeout: const Duration(seconds: 6)));
-    } catch (e) {
-      throw LectorException('No se pudo conectar con el lector (${lector.medio}).');
-    }
+  /// Espera a que el PC del médico se conecte, intercambia llaves y deja el
+  /// código listo para comparar. false = ningún lector llegó a tiempo.
+  Future<bool> conectar() async {
+    _canal = await LectorService.esperarConexion();
+    if (_canal == null) return false;
     _canal!.entrada.listen(_recibirBytes, onDone: _cerrado, onError: (_) => _cerrado());
 
     final x25519 = X25519();
@@ -269,11 +277,12 @@ class SesionLector {
       estado = 'rechazada';
       _cambios.add(null);
       await terminar(avisar: false);
-      return;
+      return true;
     }
     await _enviar({'tipo': 'ficha', 'ficha': ficha});
     estado = 'activa';
     _cambios.add(null);
+    return true;
   }
 
   Future<void> terminar({bool avisar = true}) async {
