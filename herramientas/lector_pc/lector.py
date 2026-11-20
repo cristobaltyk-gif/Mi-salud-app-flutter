@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "1.1"
+VERSION = "1.2"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -117,6 +117,7 @@ class Sesion:
         self.paciente = ""
         self.ficha: Optional[Dict[str, Any]] = None
         self.esperas: Dict[int, asyncio.Future] = {}
+        self.nota_guardada = False   # una atención por consulta (igual que la Ficha)
         self.sec = 0
 
     # ── cifrado ──
@@ -390,6 +391,8 @@ async def w_identificar(req):
 
 async def w_nota(req):
     s = _sesion_activa()
+    if s.nota_guardada:
+        return _error("La atención de esta consulta ya fue guardada", 409)
     b = await req.json()
     nombre, rut = str(b.get("nombre") or "").strip(), str(b.get("rut") or "").strip()
     if len(nombre) < 3 or not rut_valido(rut):
@@ -401,6 +404,7 @@ async def w_nota(req):
         return _error("El teléfono del paciente no respondió; la nota NO se guardó", 504)
     if not r.get("ok", True):
         return _error(r.get("detail") or "El teléfono no pudo guardar la nota")
+    s.nota_guardada = True
     return web.json_response({"ok": True})
 
 

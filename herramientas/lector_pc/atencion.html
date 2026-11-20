@@ -1037,9 +1037,46 @@
 .hk-ev h4{margin:0 0 4px;font-size:14px}
 .hk-ev pre{white-space:pre-wrap;font:inherit;margin:2px 0}
 
-.hk-codigo{font-size:44px;font-weight:800;letter-spacing:10px;text-align:center;margin:8px 0;color:#0f766e}
-.hk-fila{display:flex;gap:10px;margin-top:10px}.hk-fila>*{flex:1}
-.hk-grande{font-size:17px;font-weight:700;margin:0}
+.hk-capa,.hk-cajon,.hk-tarjeta{font-family:'DM Sans','Segoe UI',system-ui,-apple-system,sans-serif}
+.hk-capa{background:rgba(15,23,42,.45);backdrop-filter:blur(2px)}
+.hk-tarjeta{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,.25);padding:28px 28px 24px;width:100%;max-width:400px;display:flex;flex-direction:column}
+.hk-tarjeta-icono{width:44px;height:44px;border-radius:12px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.hk-tarjeta-icono.hk-ok{background:#ecfdf5;color:#059669}
+.hk-tarjeta-titulo{margin:0 0 6px;font-size:18px;font-weight:700;color:#0f172a}
+.hk-tarjeta-sub{margin:0 0 18px;font-size:13px;line-height:1.55;color:#64748b}
+.hk-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin:10px 0 6px}
+.hk-input{font:inherit;font-size:14px;color:#0f172a;border:1px solid #e2e8f0;border-radius:10px;padding:11px 12px;outline:none;background:#f8fafc}
+.hk-input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.hk-boton{font:inherit;font-size:14px;font-weight:600;color:#fff;background:#0f172a;border:0;border-radius:10px;padding:12px 16px;margin-top:14px;cursor:pointer}
+.hk-boton:hover{background:#1e293b}
+.hk-boton.hk-sec{background:#f1f5f9;color:#334155}
+.hk-velo{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;backdrop-filter:blur(2px)}
+.hk-velo[hidden],.hk-cajon[hidden]{display:none}
+.hk-cajon{position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:#fff;z-index:1001;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,.15)}
+.hk-cajon-cab{padding:20px 20px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.hk-cajon-cuerpo{flex:1;overflow-y:auto;padding:0 0 24px}
+.hk-x{background:none;border:0;cursor:pointer;color:#94a3b8;padding:4px}
+.hk-t1{margin:0;font-size:16px;font-weight:700;color:#0f172a}.hk-t2{margin:0;font-size:12px;color:#94a3b8}
+.hk-vacio{padding:40px;text-align:center;color:#94a3b8;font-size:13px}
+.hk-fila-ev{padding:14px 20px;border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hk-fila-ev:hover{background:#f8fafc}
+.hk-chip{font-size:12px;font-weight:600;color:#0f172a;background:#f1f5f9;border-radius:4px;padding:2px 7px}
+.hk-chip.hk-osc{font-weight:700;background:#0f172a;color:#fff;padding:3px 8px}
+.hk-dx{margin:4px 0 0;font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hk-prof{margin:2px 0 0;font-size:11px;color:#94a3b8}
+.hk-volver{display:flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;color:#475569;font-size:13px;font-weight:600;padding:0;font-family:inherit}
+.hk-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc}
+.hk-nav button{display:flex;align-items:center;gap:4px;background:none;border:0;font:inherit;font-size:12px;font-weight:600;color:#475569;cursor:pointer;padding:0}
+.hk-nav button:disabled{color:#cbd5e1;cursor:not-allowed}
+.hk-campo{padding:14px 0;border-bottom:1px solid #f1f5f9}.hk-campo:last-child{border-bottom:0}
+.hk-campo-l{margin:0 0 5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8}
+.hk-campo-v{margin:0;font-size:13px;color:#0f172a;line-height:1.7;white-space:pre-wrap}
+.hk-cat{padding:16px 20px 0}.hk-cat-l{margin:0 0 8px;font-size:12px;font-weight:700;color:#475569}
+.hk-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#0f172a}
+.da-btn-save:disabled{opacity:.5;cursor:not-allowed}
+
+.hk-codigo{font-size:42px;font-weight:700;letter-spacing:12px;text-align:center;margin:4px 0 6px;color:#0f172a;font-family:'DM Mono',ui-monospace,Consolas,monospace}
+.hk-fila{display:flex;gap:10px}.hk-fila>*{flex:1}
 </style></head><body><div class="da-root">
   <aside class="da-sidebar">
     <div class="da-brand">
@@ -1065,7 +1102,7 @@
     </div>
     <div class="da-sidebar-actions">
       <button class="da-btn-cancel" onclick="limpiar()">Cancelar</button>
-      <button class="da-btn-save" onclick="guardar()">Guardar</button>
+      <button class="da-btn-save" id="btnGuardar" onclick="guardar()">Guardar</button>
     </div>
   </aside>
   <main class="da-main">
@@ -1095,37 +1132,48 @@
   </main>
 </div>
 <div class="hk-capa" id="ident">
-  <div class="da-panel hk-caja">
-    <div class="da-panel-header"><span class="da-panel-title">Identificación del profesional</span></div>
-    <p class="hk-txt">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
-    <label class="da-meta-label">Nombre completo</label><input class="da-med-input hk-in" id="nom" autocomplete="name">
-    <label class="da-meta-label">RUT</label><input class="da-med-input hk-in" id="rut" placeholder="12345678-9">
+  <div class="hk-tarjeta">
+    <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <p class="hk-tarjeta-titulo">Identificación del profesional</p>
+    <p class="hk-tarjeta-sub">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
+    <label class="hk-label">Nombre completo</label><input class="hk-input" id="nom" autocomplete="name" placeholder="Dr. Juan Pérez">
+    <label class="hk-label">RUT</label><input class="hk-input" id="rut" placeholder="12345678-9" onkeydown="if(event.key==='Enter')entrar()">
     <p id="e1" class="hk-err"></p>
-    <button class="da-btn-save hk-btn" onclick="entrar()">Ingresar</button>
+    <button class="hk-boton" onclick="entrar()">Ingresar</button>
   </div>
 </div>
-<div class="hk-capa" id="modal" hidden onclick="if(event.target===this)this.hidden=true">
-  <div class="da-panel hk-caja hk-ancha">
-    <div class="da-panel-header"><span class="da-panel-title" id="mTit"></span><button class="da-print-btn" onclick="document.getElementById('modal').hidden=true">Cerrar</button></div>
-    <div id="mCuerpo" class="hk-scroll"></div>
+<div class="hk-capa" id="guardada" hidden>
+  <div class="hk-tarjeta">
+    <div class="hk-tarjeta-icono hk-ok"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <p class="hk-tarjeta-titulo">Atención guardada</p>
+    <p class="hk-tarjeta-sub" id="guardadaTxt">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
+    <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()">Terminar consulta</button>
   </div>
 </div>
+<div class="hk-velo" id="velo" hidden onclick="cerrarCajon()"></div>
+<aside class="hk-cajon" id="cajon" hidden>
+  <div class="hk-cajon-cab">
+    <div id="cajonTitulo"></div>
+    <button class="hk-x" onclick="cerrarCajon()" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="hk-cajon-cuerpo" id="cajonCuerpo"></div>
+</aside>
 
 <div class="hk-capa" id="espera">
-  <div class="da-panel hk-caja">
-    <div class="da-panel-header"><span class="da-panel-title">Lector HypokratIA</span></div>
-    <p class="hk-grande">Esperando paciente…</p>
-    <p class="hk-txt">Pida al paciente que toque <b>"Autorizar médico"</b> en su teléfono, cerca de este computador. No se necesita internet.</p>
+  <div class="hk-tarjeta">
+    <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <p class="hk-tarjeta-titulo">Esperando paciente…</p>
+    <p class="hk-tarjeta-sub">Pida al paciente que toque <b>"Autorizar médico"</b> en su teléfono, cerca de este computador. No se necesita internet.</p>
   </div>
 </div>
 <div class="hk-capa" id="solicitud" hidden>
-  <div class="da-panel hk-caja">
-    <div class="da-panel-header"><span class="da-panel-title">Solicitud de acceso</span></div>
-    <p class="hk-grande"><span id="solNombre"></span> quiere compartir su ficha</p>
-    <p class="hk-txt">Verifique que el teléfono del paciente muestre este mismo código:</p>
+  <div class="hk-tarjeta">
+    <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <p class="hk-tarjeta-titulo"><span id="solNombre"></span> quiere compartir su ficha</p>
+    <p class="hk-tarjeta-sub">Verifique que el teléfono del paciente muestre este mismo código:</p>
     <p class="hk-codigo" id="solCodigo"></p>
-    <div class="hk-fila"><button class="da-btn-cancel" onclick="responder(false)">Rechazar</button>
-    <button class="da-btn-save" onclick="responder(true)">ACEPTAR</button></div>
+    <div class="hk-fila"><button class="hk-boton hk-sec" onclick="responder(false)">Rechazar</button>
+    <button class="hk-boton" onclick="responder(true)">Aceptar</button></div>
   </div>
 </div>
 <script>const k=new URLSearchParams(location.search).get('k');
@@ -1143,15 +1191,33 @@ async function entrar(){$('e1').textContent='';yo={nombre:$('nom').value.trim(),
   $('pNombre').textContent=nombre;$('pRut').textContent=p.rut||'';$('avatar').textContent=(nombre||'P').charAt(0).toUpperCase();
   $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—';
   $('pProf').textContent=yo.nombre;reloj();setInterval(reloj,30000);$('ident').hidden=true}catch(x){$('e1').textContent=x.message}}
-function abrir(que){const c=$('mCuerpo');let h='';
- if(que==='historial'){$('mTit').textContent='Historial clínico';const ev=ficha.eventos||[];if(!ev.length)h='<p class="hk-txt">Sin atenciones registradas.</p>';
-  for(const e of ev){const t=e.contenido||{};h+='<div class="hk-ev"><h4>'+esc(e.fecha)+' · '+esc(e.especialidad||e.tipo||'')+' · '+esc(e.medico||'')+'</h4>';
-   for(const [n,v] of [['Diagnóstico',e.diagnostico],['Atención',t.atencion],['Receta',t.receta],['Exámenes',t.examenes],['Indicaciones',t.indicaciones],['Orden kinésica',t.orden_kinesiologia],['Indicación quirúrgica',t.indicacion_quirurgica],['Evolución',t.evolucion]])
-    if(v)h+='<div><b>'+n+':</b><pre>'+esc(v)+'</pre></div>';h+='</div>'}}
- else{$('mTit').textContent='Antecedentes';const a=ficha.antecedentes||{};const ks=Object.keys(a).filter(x=>(a[x]||[]).length);
-  if(!ks.length)h='<p class="hk-txt">Sin antecedentes registrados.</p>';
-  for(const x of ks){h+='<div class="hk-ev"><h4>'+esc(x.replace(/_/g,' '))+'</h4><ul>';for(const i of a[x])h+='<li>'+esc(i.descripcion)+'</li>';h+='</ul></div>'}}
- c.innerHTML=h;$('modal').hidden=false}
+const CAMPOS_EV=[['atencion','Motivo de consulta'],['diagnostico','Diagnóstico'],['receta','Receta'],['examenes','Exámenes'],['indicaciones','Indicaciones'],['orden_kinesiologia','Orden kinésica'],['indicacion_quirurgica','Indicación quirúrgica']];
+const CATEGORIAS={enfermedad_cronica:['Enfermedades crónicas','🩺'],cirugia:['Cirugías','🔬'],alergia:['Alergias','⚠️'],medicamento_habitual:['Medicamentos habituales','💊'],antecedente_familiar:['Antecedentes familiares','👨‍👩‍👧'],otro:['Otros antecedentes','📋']};
+const flechaIzq='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
+const flechaDer='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+function valorEv(e,k){if(k==='diagnostico')return e.diagnostico||(e.contenido||{}).diagnostico||'';return (e.contenido||{})[k]||e[k]||''}
+function cerrarCajon(){$('cajon').hidden=true;$('velo').hidden=true}
+function abrirCajon(){$('cajon').hidden=false;$('velo').hidden=false}
+function listaHistorial(){const ev=ficha.eventos||[];
+ $('cajonTitulo').innerHTML='<p class="hk-t1">Historial clínico</p><p class="hk-t2">'+ev.length+' atenciones</p>';
+ if(!ev.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">Sin atenciones previas registradas</div>';return}
+ $('cajonCuerpo').innerHTML=ev.map((e,i)=>'<div class="hk-fila-ev" onclick="detalleHistorial('+i+')"><div style="flex:1;min-width:0">'+
+  '<div style="display:flex;align-items:center;gap:8px"><span class="hk-chip">'+esc(e.fecha)+'</span><span class="hk-t2">'+esc(e.hora||'')+'</span></div>'+
+  '<p class="hk-dx">'+esc(valorEv(e,'diagnostico')||'Sin diagnóstico')+'</p>'+(e.medico?'<p class="hk-prof">'+esc(e.medico)+'</p>':'')+
+  '</div><span style="color:#cbd5e1">'+flechaDer+'</span></div>').join('')}
+function detalleHistorial(i){const ev=ficha.eventos||[];const e=ev[i];
+ $('cajonTitulo').innerHTML='<button class="hk-volver" onclick="listaHistorial()">'+flechaIzq.replace('14','16').replace('14','16')+'Historial</button>';
+ let h='<div class="hk-nav"><button '+(i===0?'disabled':'')+' onclick="detalleHistorial('+(i-1)+')">'+flechaIzq+'Anterior</button><span class="hk-t2">'+(i+1)+' / '+ev.length+'</span><button '+(i===ev.length-1?'disabled':'')+' onclick="detalleHistorial('+(i+1)+')">Siguiente'+flechaDer+'</button></div>';
+ h+='<div style="padding:16px 20px 12px;border-bottom:1px solid #f1f5f9"><div style="display:flex;gap:8px;margin-bottom:6px"><span class="hk-chip hk-osc">'+esc(e.fecha)+'</span>'+(e.hora?'<span class="hk-chip">'+esc(e.hora)+'</span>':'')+'</div>'+(e.medico?'<p class="hk-prof" style="font-size:12px">'+esc(e.medico)+(e.especialidad?' · '+esc(e.especialidad):'')+'</p>':'')+'</div><div style="padding:0 20px">';
+ for(const [k,l] of CAMPOS_EV){const v=String(valorEv(e,k)||'').trim();if(v)h+='<div class="hk-campo"><p class="hk-campo-l">'+l+'</p><p class="hk-campo-v">'+esc(v)+'</p></div>'}
+ $('cajonCuerpo').innerHTML=h+'</div>'}
+function verAntecedentes(){const a=ficha.antecedentes||{};const ks=Object.keys(a).filter(x=>(a[x]||[]).length);
+ const n=ks.reduce((t,x)=>t+a[x].length,0);
+ $('cajonTitulo').innerHTML='<p class="hk-t1">Antecedentes</p><p class="hk-t2">'+n+' registrados</p>';
+ if(!ks.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">Sin antecedentes registrados</div>';return}
+ $('cajonCuerpo').innerHTML=ks.map(x=>{const [l,em]=CATEGORIAS[x]||[x.replace(/_/g,' '),'📋'];
+  return '<div class="hk-cat"><p class="hk-cat-l">'+em+' '+esc(l)+'</p>'+a[x].map(i=>'<div class="hk-item">'+esc(i.descripcion)+'</div>').join('')+'</div>'}).join('')}
+function abrir(que){if(que==='historial')listaHistorial();else verAntecedentes();abrirCajon()}
 function sanear(){return meds.filter(m=>m.medicamento&&m.medicamento.trim()).map(m=>({medicamento:m.medicamento.trim(),dosis:(m.dosis||'').trim(),
  frecuencia_horas:m.frecuencia_horas===''||m.frecuencia_horas==null?null:parseInt(m.frecuencia_horas,10),
  duracion_dias:m.cronico||m.duracion_dias===''||m.duracion_dias==null?null:parseInt(m.duracion_dias,10),cronico:!!m.cronico}))}
@@ -1174,30 +1240,28 @@ function agregarMed(){meds.push({medicamento:'',dosis:'',frecuencia_horas:'',dur
 function quitarMed(i){meds.splice(i,1);pintarMeds()}
 const CAMPOS=['atencion','diagnostico','indicaciones','examenes','orden_kinesiologia','indicacion_quirurgica'];
 function limpiar(){for(const c of CAMPOS)$(c).value='';meds=[];pintarMeds();$('msg').textContent=''}
-async function guardar(){const m=$('msg');m.className='hk-msg';m.textContent='';
+let guardado=false;
+async function guardar(){if(guardado)return;const m=$('msg');m.className='hk-msg';m.textContent='';
  const contenido={};for(const c of CAMPOS)contenido[c]=$(c).value;contenido.receta=recetaTxt();contenido.medicamentos=JSON.stringify(sanear());
- try{await post('/api/nota',{...yo,contenido});m.className='hk-msg ok';m.textContent='Atención enviada al teléfono del paciente. Se registrará en su ficha al volver la conexión.';limpiar();
-  m.className='hk-msg ok';m.textContent='Atención enviada al teléfono del paciente. Se registrará en su ficha al volver la conexión.'}
- catch(x){m.className='hk-msg err';m.textContent=x.message}}
+ try{$('btnGuardar').disabled=true;await post('/api/nota',{...yo,contenido});guardado=true;$('guardada').hidden=false}
+ catch(x){$('btnGuardar').disabled=false;m.className='hk-msg err';m.textContent=x.message}}
+function terminarDesdeGuardada(){if(typeof terminarConsulta==='function')terminarConsulta();else{$('guardadaTxt').textContent='Consulta terminada. Puede cerrar esta ventana.';$('guardadaBtn').hidden=true}}
 document.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'}));
 pintarMeds();
 
-// ── Lector HypokratIA (programa en el PC) ───────────────────────────────
-// La ficha llega del teléfono del paciente por Bluetooth o por la red local
-// (cifrada, con el código de 4 números que ambos muestran). Aquí solo se
-// muestra; nada se guarda en el disco del PC.
+// ── Lector HypokratIA (programa en el PC) ──
 $('ident').hidden=true;
 let estadoPrevio='';
 async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{method:'POST'})}
 async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
-function reiniciar(){yo=null;ficha={};limpiar();for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';
- for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';$('avatar').textContent='P';$('nom').value='';$('rut').value=''}
+function reiniciar(){yo=null;ficha={};guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
+ for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';
+ $('avatar').textContent='P';$('nom').value='';$('rut').value=''}
 function mostrarEstado(j){
  $('espera').hidden=j.estado!=='espera';
  $('solicitud').hidden=j.estado!=='solicitud';
  if(j.estado==='solicitud'){$('solNombre').textContent=j.paciente||'Un paciente';$('solCodigo').textContent=j.codigo||''}
- if(j.estado==='aceptada'||j.estado==='activa'){if(!yo)$('ident').hidden=false}
- else $('ident').hidden=true;
+ if(j.estado==='aceptada'||j.estado==='activa'){if(!yo)$('ident').hidden=false}else $('ident').hidden=true;
  if(j.estado==='espera')reiniciar()}
 async function sondeo(){try{const r=await fetch('/api/estado');const j=await r.json();
  if(j.estado!==estadoPrevio){estadoPrevio=j.estado;mostrarEstado(j)}}catch(e){}setTimeout(sondeo,1000)}

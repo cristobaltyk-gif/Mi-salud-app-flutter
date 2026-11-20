@@ -360,6 +360,11 @@ class SesionLector {
         await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': true});
         break;
       case 'nota':
+        if (notas > 0) {
+          // Una atención por consulta, igual que en la Ficha
+          await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': false, 'detail': 'La atención de esta consulta ya fue guardada'});
+          break;
+        }
         try {
           final c = (m['contenido'] as Map?) ?? {};
           await NotasOfflineService.guardar(

@@ -230,6 +230,9 @@ class ConsultaSinConexionService {
         return _responder(res, 200, {'ficha': _ficha});
       }
       if (req.method == 'POST' && ruta == '/api/nota') {
+        if (notasRecibidas > 0) {
+          return _responder(res, 409, {'detail': 'La atención de esta consulta ya fue guardada'});
+        }
         final b = await _cuerpo(req);
         final nombre = (b['nombre'] as String? ?? '').trim();
         final rut = (b['rut'] as String? ?? '').trim();
