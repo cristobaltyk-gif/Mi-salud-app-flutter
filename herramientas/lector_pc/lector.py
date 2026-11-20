@@ -256,8 +256,8 @@ async def iniciar_bluetooth(loop: asyncio.AbstractEventLoop) -> None:
     try:
         from bless import (BlessServer, GATTAttributePermissions,
                            GATTCharacteristicProperties)
-    except ImportError:
-        log("Bluetooth no disponible (falta 'bless'); solo red local.")
+    except Exception as e:
+        log(f"Bluetooth no disponible ({type(e).__name__}: {e}); solo red local.")
         return
 
     server = BlessServer(name="HypokratIA", loop=loop)

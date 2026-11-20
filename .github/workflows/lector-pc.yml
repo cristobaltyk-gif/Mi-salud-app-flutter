@@ -30,7 +30,7 @@ jobs:
         run: >
           pyinstaller --onefile --name LectorHypokratIA
           --add-data "atencion.html;."
-          --collect-all bless --collect-all winrt --hidden-import bleak_winrt
+          --collect-all bless --collect-all bleak --collect-all winrt
           lector.py
       - name: Publicar en Releases
         uses: softprops/action-gh-release@v2
