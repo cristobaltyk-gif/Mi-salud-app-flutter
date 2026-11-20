@@ -316,8 +316,9 @@ async def iniciar_bluetooth(loop: asyncio.AbstractEventLoop) -> None:
 # ══════════════════════════════════════════════════════════════
 # Página para el médico (solo desde este PC)
 # ══════════════════════════════════════════════════════════════
-PAGINA = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "atencion.html"),
-              encoding="utf-8").read()
+# Junto al programa, o dentro del .exe (PyInstaller la desempaca en _MEIPASS)
+_CARPETA = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+PAGINA = open(os.path.join(_CARPETA, "atencion.html"), encoding="utf-8").read()
 _navegador_abierto = False
 
 

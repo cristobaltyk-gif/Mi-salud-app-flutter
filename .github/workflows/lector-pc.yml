@@ -1,0 +1,44 @@
+# Arma LectorHypokratIA.exe (Windows) cada vez que cambia herramientas/lector_pc
+# y lo publica en Releases → "Lector HypokratIA (PC)". Se baja y se ejecuta.
+name: Lector HypokratIA (PC)
+
+on:
+  push:
+    branches: [main]
+    paths: ["herramientas/lector_pc/**", ".github/workflows/lector-pc.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: herramientas/lector_pc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Armar el .exe
+        run: >
+          pyinstaller --onefile --name LectorHypokratIA
+          --add-data "atencion.html;."
+          --collect-all bless --collect-all winrt --hidden-import bleak_winrt
+          lector.py
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lector-pc
+          name: Lector HypokratIA (PC)
+          body: |
+            Programa para el PC de la consulta. Bajar **LectorHypokratIA.exe** y ejecutarlo.
+            Windows puede avisar "Windows protegió su PC": tocar **Más información → Ejecutar de todas formas**.
+          files: herramientas/lector_pc/dist/LectorHypokratIA.exe
+          make_latest: true
