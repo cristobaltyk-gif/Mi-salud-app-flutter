@@ -15,6 +15,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import '../services/storage_service.dart';
@@ -175,15 +176,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   List<Widget> _camposCodigo() => [
-        const Text(
-          'Revisa tu correo',
+        Text(
+          tr('Revisa tu correo'),
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F235A)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
         Text(
-          'Estás entrando desde un teléfono nuevo. Te enviamos un código de 6 dígitos a '
-          '${_emailCodigo ?? 'tu correo'}. Vale 10 minutos.',
+          tr('Estás entrando desde un teléfono nuevo. Te enviamos un código de 6 dígitos a ') +
+          (_emailCodigo ?? tr('tu correo')) + tr('. Vale 10 minutos.'),
           style: const TextStyle(fontSize: 14, color: Color(0xFF334155)),
           textAlign: TextAlign.center,
         ),
@@ -224,16 +225,16 @@ class _LoginScreenState extends State<LoginScreen> {
             child: _cargando
                 ? const SizedBox(height: 20, width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Entrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                : Text(tr('Entrar'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(height: 8),
         TextButton(
           onPressed: _cargando ? null : () => setState(() { _desafio = null; _error = null; }),
-          child: const Text('No me llegó: volver a intentar'),
+          child: Text(tr('No me llegó: volver a intentar')),
         ),
-        const Text(
-          'Revisa también la carpeta de spam. Este teléfono quedará como de confianza.',
+        Text(
+          tr('Revisa también la carpeta de spam. Este teléfono quedará como de confianza.'),
           style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           textAlign: TextAlign.center,
         ),
@@ -275,13 +276,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'HypokratIA',
+                  Text(
+                    tr('HypokratIA'),
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Software Médico',
+                    tr('Software Médico'),
                     style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7)),
                   ),
                   const SizedBox(height: 40),
@@ -298,8 +299,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: _desafio != null ? _camposCodigo() : [
-                        const Text(
-                          'Ingresa a tu cuenta',
+                        Text(
+                          tr('Ingresa a tu cuenta'),
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F235A)),
                           textAlign: TextAlign.center,
                         ),
@@ -328,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.next,
                           onChanged: _onRutChanged,
                           decoration: InputDecoration(
-                            labelText: 'RUT',
+                            labelText: tr('RUT'),
                             hintText: '12345678-9',
                             prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF0F9B8E)),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -346,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _intentarLogin(),
                           decoration: InputDecoration(
-                            labelText: 'Contraseña',
+                            labelText: tr('Contraseña'),
                             prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF0F9B8E)),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             focusedBorder: OutlineInputBorder(
@@ -395,7 +396,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: _cargando
                                 ? const SizedBox(height: 20, width: 20,
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Text('Ingresar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                : Text(tr('Ingresar'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                           ),
                         ),
                         if (_huella && _desafio == null) ...[
@@ -405,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: OutlinedButton.icon(
                               onPressed: _cargando ? null : _entrarConHuella,
                               icon: const Icon(Icons.fingerprint, size: 26),
-                              label: const Text('Entrar con huella', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                              label: Text(tr('Entrar con huella'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: const Color(0xFF1A3B8C),
                                 side: const BorderSide(color: Color(0xFF1A3B8C), width: 1.5),
@@ -425,7 +426,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     },
                     child: Text(
-                      '¿Primera vez? Activa tu cuenta',
+                      tr('¿Primera vez? Activa tu cuenta'),
                       style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
                     ),
                   ),

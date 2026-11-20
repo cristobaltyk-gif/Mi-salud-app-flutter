@@ -38,6 +38,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../config/app_config.dart';
 import '../models/acceso_medico.dart';
@@ -243,7 +244,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                 ),
               ),
             AppBar(
-              title: const Text('Autorizar acceso a médico'),
+              title: Text(tr('Autorizar acceso a médico')),
               backgroundColor: const Color(0xFF0F766E),
               foregroundColor: Colors.white,
             ),
@@ -258,7 +259,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('🔐 ¿Cómo funciona?',
+                          Text(tr('🔐 ¿Cómo funciona?'),
                               style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4C1D95))),
                           const SizedBox(height: 6),
                           Text(
@@ -313,11 +314,11 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             children: [
-                              const Text('Muestra este QR al médico', style: TextStyle(fontWeight: FontWeight.w600)),
+                              Text(tr('Muestra este QR al médico'), style: TextStyle(fontWeight: FontWeight.w600)),
                               const SizedBox(height: 16),
                               QrImageView(data: linkUrl!, size: 200),
                               const SizedBox(height: 16),
-                              Text('El médico escanea con la cámara de su teléfono',
+                              Text(tr('El médico escanea con la cámara de su teléfono'),
                                   style: TextStyle(fontSize: 12, color: Colors.grey[500])),
                               const SizedBox(height: 16),
                               Row(
@@ -325,7 +326,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                                   Expanded(
                                     child: OutlinedButton(
                                       onPressed: _generarQR,
-                                      child: const Text('🔄 Nuevo QR'),
+                                      child: Text(tr('🔄 Nuevo QR')),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -334,7 +335,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                                         ? null
                                         : () => _revocar(_linkActivoId!),
                                     style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                    child: const Text('Revocar'),
+                                    child: Text(tr('Revocar')),
                                   ),
                                 ],
                               ),
@@ -351,13 +352,13 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Email del médico', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                            Text(tr('Email del médico'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                             const SizedBox(height: 8),
                             TextField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                hintText: 'medico@ejemplo.cl',
+                              decoration: InputDecoration(
+                                hintText: tr('medico@ejemplo.cl'),
                                 border: OutlineInputBorder(),
                               ),
                               onSubmitted: (_) => _enviarEmail(),
@@ -400,7 +401,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
 
                   if (!_loading && pendientes.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    const Text('Accesos activos', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(tr('Accesos activos'), style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     ...pendientes.map((l) => _TarjetaAcceso(
                           link: l,
@@ -411,7 +412,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
 
                   if (!_loading && historial.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    const Text('Historial', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(tr('Historial'), style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     ...historial.map((l) => _TarjetaHistorial(
                           link: l,
@@ -526,7 +527,7 @@ class _TarjetaAcceso extends StatelessWidget {
             TextButton(
               onPressed: onRevocar,
               style: TextButton.styleFrom(foregroundColor: Colors.red, padding: EdgeInsets.zero),
-              child: const Text('Revocar acceso', style: TextStyle(fontSize: 12)),
+              child: Text(tr('Revocar acceso'), style: TextStyle(fontSize: 12)),
             ),
           ],
         ),

@@ -37,6 +37,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../widgets/tarjetas.dart';
@@ -74,7 +75,7 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cuidadores'),
+        title: Text(tr('Cuidadores')),
         backgroundColor: const Color(0xFF1B3B8C),
         foregroundColor: Colors.white,
       ),
@@ -137,15 +138,15 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Revocar acceso'),
+        title: Text(tr('Revocar acceso')),
         content: Text(
           inv.estado == 'pendiente'
               ? '¿Cancelar la invitación a ${inv.nombreCompleto}?'
               : '¿Quitarle acceso a ${inv.nombreCompleto}? Ya no podrá ver tus notificaciones.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Revocar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Revocar'))),
         ],
       ),
     );
@@ -188,7 +189,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirNuevaInvitacion,
         icon: const Icon(Icons.qr_code),
-        label: const Text('Agregar cuidador'),
+        label: Text(tr('Agregar cuidador')),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _cargar(),
@@ -209,7 +210,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
                   child: Center(child: Column(children: [
                     Icon(Icons.people_outline, size: 56, color: Colors.grey[400]),
                     const SizedBox(height: 12),
-                    Text('Aún no has invitado a ningún cuidador',
+                    Text(tr('Aún no has invitado a ningún cuidador'),
                         style: TextStyle(color: Colors.grey[600])),
                   ])),
                 ),
@@ -227,7 +228,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
                       '${inv.relacion != null && inv.relacion!.isNotEmpty ? ' · ${inv.relacion}' : ''}',
                   colorDetalle: _colorEstado(inv.estado),
                   derecha: puedeRevocar
-                      ? IconButton(icon: const Icon(Icons.close), tooltip: 'Quitar', onPressed: () => _revocar(inv))
+                      ? IconButton(icon: const Icon(Icons.close), tooltip: tr('Quitar'), onPressed: () => _revocar(inv))
                       : null,
                 );
               },
@@ -339,7 +340,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Código generado', style: Theme.of(context).textTheme.titleLarge),
+          Text(tr('Código generado'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 16),
           Center(
             child: Container(
@@ -353,8 +354,8 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
           ),
           const SizedBox(height: 16),
           Text(
-            '✓ Invitación enviada. Tu cuidador debe aceptarla desde su cuenta, en '
-            '"Cuidadores → Yo cuido". Si está contigo, también puede escanear este código. Vence el '
+            tr('✓ Invitación enviada. Tu cuidador debe aceptarla desde su cuenta, en '
+            '"Cuidadores → Yo cuido". Si está contigo, también puede escanear este código. Vence el ') +
             '${inv.expiraInvitacion.day}/${inv.expiraInvitacion.month}/${inv.expiraInvitacion.year}.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[700]),
@@ -366,7 +367,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
             child: Text(inv.textoConsentimiento, style: const TextStyle(fontSize: 13, height: 1.4)),
           ),
           const SizedBox(height: 24),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Listo')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('Listo'))),
         ],
       ),
     );
@@ -379,21 +380,21 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Invitar a un cuidador', style: Theme.of(context).textTheme.titleLarge),
+          Text(tr('Invitar a un cuidador'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 16),
           TextField(controller: _nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder())),
+              decoration: InputDecoration(labelText: tr('Nombre'), border: OutlineInputBorder())),
           const SizedBox(height: 12),
           TextField(controller: _apellidosController,
-              decoration: const InputDecoration(labelText: 'Apellidos', border: OutlineInputBorder())),
+              decoration: InputDecoration(labelText: tr('Apellidos'), border: OutlineInputBorder())),
           const SizedBox(height: 12),
           TextField(controller: _rutController,
-              decoration: const InputDecoration(labelText: 'RUT del cuidador',
+              decoration: InputDecoration(labelText: tr('RUT del cuidador'),
                   hintText: '12345678-9', border: OutlineInputBorder())),
           const SizedBox(height: 12),
           TextField(controller: _relacionController,
-              decoration: const InputDecoration(labelText: 'Relación (opcional)',
-                  hintText: 'Hijo, esposa, cuidador...', border: OutlineInputBorder())),
+              decoration: InputDecoration(labelText: tr('Relación (opcional)'),
+                  hintText: tr('Hijo, esposa, cuidador...'), border: OutlineInputBorder())),
           const SizedBox(height: 16),
           if (_cargandoNiveles)
             const Center(child: CircularProgressIndicator())
@@ -415,7 +416,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
             child: _enviando
                 ? const SizedBox(height: 20, width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Generar código QR'),
+                : Text(tr('Generar código QR')),
           ),
         ],
       ),
@@ -482,8 +483,8 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
           content: Text('Podrás recibir ${inv['que_podras_ver']}.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Rechazar', style: TextStyle(color: Colors.red))),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Aceptar')),
+                child: Text(tr('Rechazar'), style: TextStyle(color: Colors.red))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Aceptar'))),
           ],
         ),
       );
@@ -517,13 +518,13 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
               onPressed: _ocupado == inv['id'] ? null : () => _responder(inv, true),
-              child: const Text('✓ Aceptar'),
+              child: Text(tr('✓ Aceptar')),
             ),
             const SizedBox(width: 8),
             OutlinedButton(
               style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
               onPressed: _ocupado == inv['id'] ? null : () => _responder(inv, false),
-              child: const Text('Rechazar'),
+              child: Text(tr('Rechazar')),
             ),
           ]),
         ],
@@ -543,7 +544,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _escanear,
         icon: const Icon(Icons.qr_code_scanner),
-        label: const Text('Escanear código'),
+        label: Text(tr('Escanear código')),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _cargar(),
@@ -566,7 +567,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
                     Icon(Icons.qr_code_scanner, size: 56, color: Colors.grey[400]),
                     const SizedBox(height: 12),
                     Text(
-                      'No cuidas a nadie todavía.\nCuando alguien te invite, la invitación aparecerá aquí.',
+                      tr('No cuidas a nadie todavía.\nCuando alguien te invite, la invitación aparecerá aquí.'),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey[600]),
                     ),
@@ -637,7 +638,7 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Escanear código')),
+      appBar: AppBar(title: Text(tr('Escanear código'))),
       body: Stack(
         children: [
           MobileScanner(onDetect: _onDetect),
@@ -656,8 +657,8 @@ class _EscanearQRScreenState extends State<_EscanearQRScreen> {
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Apunta al código QR del paciente',
+                child: Text(
+                  tr('Apunta al código QR del paciente'),
                   style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),

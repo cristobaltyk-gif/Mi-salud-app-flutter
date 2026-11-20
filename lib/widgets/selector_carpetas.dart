@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/carpeta_activa.dart';
 
 class SelectorCarpetas extends StatelessWidget {
@@ -60,7 +61,7 @@ class SelectorCarpetas extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      carpeta.nombreMostrar,
+                      carpeta.nombreMostrar == 'Tú' ? tr('Tú') : carpeta.nombreMostrar,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: activo ? FontWeight.w700 : FontWeight.w500,

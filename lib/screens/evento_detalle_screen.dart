@@ -13,6 +13,7 @@
 library;
 
 import 'dart:typed_data';
+import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import '../models/evento_clinico.dart';
@@ -64,7 +65,7 @@ class EventoDetalleScreen extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => _abrirExplicacion(context),
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('Explícame esta consulta en simple'),
+            label: Text(tr('Explícame esta consulta en simple')),
           ),
           const SizedBox(height: 16),
           if (contenido.diagnostico.isNotEmpty)
@@ -111,7 +112,7 @@ class EventoDetalleScreen extends StatelessWidget {
           if (!contenido.tieneContenido)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: Text('Esta consulta no tiene detalle adicional registrado',
+              child: Center(child: Text(tr('Esta consulta no tiene detalle adicional registrado'),
                   style: TextStyle(color: Colors.grey[600]))),
             ),
         ],
@@ -190,7 +191,7 @@ class _SeccionDetalleState extends State<_SeccionDetalle> {
                     icon: _descargando
                         ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.download_outlined, size: 16),
-                    label: const Text('PDF'),
+                    label: Text(tr('PDF')),
                   ),
               ],
             ),
@@ -271,7 +272,7 @@ class _GaleriaFotosState extends State<_GaleriaFotos> {
               ],
               TextButton(
                 onPressed: () => setState(() => _ampliada = null),
-                child: const Text('Cerrar foto'),
+                child: Text(tr('Cerrar foto')),
               ),
             ],
           ],
@@ -326,7 +327,7 @@ class _ExplicacionEventoSheetState extends State<_ExplicacionEventoSheet> {
               Row(children: [
                 const Icon(Icons.auto_awesome, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
-                Text('Esta consulta, en simple', style: Theme.of(context).textTheme.titleMedium),
+                Text(tr('Esta consulta, en simple'), style: Theme.of(context).textTheme.titleMedium),
               ]),
               const SizedBox(height: 16),
               Expanded(

@@ -15,6 +15,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/carpeta_activa.dart';
 import '../services/storage_service.dart';
 import '../widgets/aviso_sin_permiso.dart';
@@ -61,7 +62,7 @@ class _AutorizarTabUnificadaState extends State<AutorizarTabUnificada> {
         }
         final rut = snapshot.data;
         if (rut == null) {
-          return const Center(child: Text('No se pudo determinar tu RUT.'));
+          return Center(child: Text(tr('No se pudo determinar tu RUT.')));
         }
         return TabAutorizarCuidado(rutPaciente: rut, esPropia: true);
       },

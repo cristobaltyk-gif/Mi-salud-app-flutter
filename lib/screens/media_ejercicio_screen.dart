@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:video_player/video_player.dart';
 import '../config/app_config.dart';
 
@@ -38,7 +39,7 @@ class MediaEjercicioScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tu ejercicio'),
+        title: Text(tr('Tu ejercicio')),
         backgroundColor: const Color(0xFF0F766E),
         foregroundColor: Colors.white,
       ),

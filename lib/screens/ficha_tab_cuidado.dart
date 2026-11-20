@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/ficha_cuidado.dart';
 import '../widgets/estado_vacio.dart';
 import 'historial_consultas_cuidado_screen.dart';
@@ -36,7 +37,7 @@ class TabFichaCuidado extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Acceso autorizado: indicaciones',
+            tr('Acceso autorizado: indicaciones'),
             style: TextStyle(fontSize: 12, color: Colors.grey[500]),
           ),
           const SizedBox(height: 12),
@@ -66,7 +67,7 @@ class TabFichaCuidado extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Acceso autorizado: completo',
+            tr('Acceso autorizado: completo'),
             style: TextStyle(fontSize: 12, color: Colors.grey[500]),
           ),
           const SizedBox(height: 12),
@@ -83,11 +84,11 @@ class TabFichaCuidado extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Text('🏥', style: TextStyle(fontSize: 15)),
                         SizedBox(width: 8),
-                        Text('Antecedentes médicos',
+                        Text(tr('Antecedentes médicos'),
                             style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13)),
                       ],
                     ),
@@ -130,7 +131,7 @@ class TabFichaCuidado extends StatelessWidget {
       );
     }
 
-    return const Center(child: Text('Nivel de acceso no reconocido'));
+    return Center(child: Text(tr('Nivel de acceso no reconocido')));
   }
 }
 
@@ -181,7 +182,7 @@ class _TarjetaHistorialLink extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Historial de consultas',
+                    Text(tr('Historial de consultas'),
                         style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF134E4A))),
                     const SizedBox(height: 2),
                     Text(subtitulo, style: TextStyle(fontSize: 12, color: Colors.grey[600])),

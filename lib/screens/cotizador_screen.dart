@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/cotizacion.dart';
 import '../models/evento_clinico.dart';
 import '../services/ficha_service.dart';
@@ -57,7 +58,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                '💊 Cotizador de medicamentos',
+                tr('💊 Cotizador de medicamentos'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF134E4A),
@@ -65,7 +66,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Compara precios de tus recetas entre farmacias',
+                tr('Compara precios de tus recetas entre farmacias'),
                 style: TextStyle(color: const Color(0xFF0F766E), fontSize: 14),
               ),
               const SizedBox(height: 20),
@@ -174,7 +175,7 @@ class _ErrorConReintentar extends StatelessWidget {
             const SizedBox(height: 12),
             Text(mensaje, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onReintentar, child: const Text('Reintentar')),
+            FilledButton(onPressed: onReintentar, child: Text(tr('Reintentar'))),
           ],
         ),
       ),

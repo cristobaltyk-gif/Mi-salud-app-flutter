@@ -48,6 +48,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/ficha_cuidado.dart';
 import '../services/ficha_service.dart';
 import '../widgets/barra_inferior_tabs.dart';
@@ -122,7 +123,7 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
                 children: [
                   const _BannerModoCuidador(nombrePaciente: null),
                   AppBar(
-                    title: const Text('Ficha del paciente'),
+                    title: Text(tr('Ficha del paciente')),
                     backgroundColor: const Color(0xFF0F766E),
                     foregroundColor: Colors.white,
                   ),
@@ -137,7 +138,7 @@ class _FichaCuidadoScreenState extends State<FichaCuidadoScreen> {
                             const SizedBox(height: 12),
                             Text('${snapshot.error}', textAlign: TextAlign.center),
                             const SizedBox(height: 16),
-                            FilledButton(onPressed: _cargar, child: const Text('Reintentar')),
+                            FilledButton(onPressed: _cargar, child: Text(tr('Reintentar'))),
                           ],
                         ),
                       ),

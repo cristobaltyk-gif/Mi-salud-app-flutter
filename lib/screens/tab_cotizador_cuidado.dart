@@ -14,6 +14,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/cotizacion.dart';
 import '../models/ficha_cuidado.dart';
 import '../services/cotizador_service.dart';
@@ -34,7 +35,7 @@ class TabCotizadorCuidado extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          '💊 Cotizador de medicamentos',
+          tr('💊 Cotizador de medicamentos'),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF134E4A),

@@ -14,6 +14,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import '../services/biometria_service.dart';
 import '../services/copia_cifrada_service.dart';
@@ -86,7 +87,7 @@ class _LectorScreenState extends State<LectorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Autorizar médico'), backgroundColor: _morado, foregroundColor: Colors.white),
+      appBar: AppBar(title: Text(tr('Autorizar médico')), backgroundColor: _morado, foregroundColor: Colors.white),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -140,12 +141,12 @@ class _LectorScreenState extends State<LectorScreen> {
           activeColor: _morado,
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Acepto'),
+          title: Text(tr('Acepto')),
         ),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: _morado),
           onPressed: _acepta ? _comenzar : null,
-          child: const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Confirmar con huella y buscar')),
+          child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Confirmar con huella y buscar'))),
         ),
       ]);
 
@@ -153,15 +154,15 @@ class _LectorScreenState extends State<LectorScreen> {
         _titulo('Esperando al computador del médico…'),
         const CircularProgressIndicator(),
         const SizedBox(height: 14),
-        const Text('Mantén el teléfono cerca del computador, con el Bluetooth encendido.',
+        Text(tr('Mantén el teléfono cerca del computador, con el Bluetooth encendido.'),
             textAlign: TextAlign.center),
       ]);
 
   Widget _vistaNadie() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _titulo('No se encontró el computador del médico'),
-        const Text(
-          'Verifica que el programa Lector HypokratIA esté abierto en el computador y que el Bluetooth del '
-          'teléfono esté encendido.',
+        Text(
+          tr('Verifica que el programa Lector HypokratIA esté abierto en el computador y que el Bluetooth del '
+          'teléfono esté encendido.'),
           textAlign: TextAlign.center,
         ),
         if (LectorService.ultimoErrorBle != null) ...[
@@ -170,12 +171,12 @@ class _LectorScreenState extends State<LectorScreen> {
               textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Color(0xFFB91C1C))),
         ],
         const SizedBox(height: 10),
-        OutlinedButton(onPressed: _buscar, child: const Text('Intentar de nuevo')),
+        OutlinedButton(onPressed: _buscar, child: Text(tr('Intentar de nuevo'))),
         TextButton(
           onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (_) => ConsultaSinConexionScreen(rutPaciente: widget.rutPaciente, esPropia: widget.esPropia),
           )),
-          child: const Text('Usar la red del teléfono (QR)'),
+          child: Text(tr('Usar la red del teléfono (QR)')),
         ),
       ]);
 
@@ -187,13 +188,13 @@ class _LectorScreenState extends State<LectorScreen> {
         const Center(child: CircularProgressIndicator()),
       ] else if (s.estado == 'codigo') ...[
         _titulo('Verifica el código', Icons.verified_user),
-        const Text('El computador del médico debe mostrar este mismo código:', textAlign: TextAlign.center),
+        Text(tr('El computador del médico debe mostrar este mismo código:'), textAlign: TextAlign.center),
         const SizedBox(height: 8),
         Text(s.codigo,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800, letterSpacing: 10, color: _morado)),
         const SizedBox(height: 8),
-        const Text('Esperando que el médico toque ACEPTAR…', textAlign: TextAlign.center),
+        Text(tr('Esperando que el médico toque ACEPTAR…'), textAlign: TextAlign.center),
       ] else if (s.estado == 'activa') ...[
         _titulo('Consulta en curso', Icons.medical_services),
         Text('Computador: ${s.equipo}', textAlign: TextAlign.center),
@@ -213,7 +214,7 @@ class _LectorScreenState extends State<LectorScreen> {
         OutlinedButton(
           style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFB91C1C)),
           onPressed: () => s.terminar(),
-          child: const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Terminar')),
+          child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Terminar'))),
         ),
       ] else ...[
         _titulo(s.estado == 'rechazada' ? 'El médico no aceptó' : 'Consulta terminada', Icons.check_circle),
@@ -227,7 +228,7 @@ class _LectorScreenState extends State<LectorScreen> {
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: _morado),
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Listo'),
+          child: Text(tr('Listo')),
         ),
       ],
     ]);

@@ -13,6 +13,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/agenda_service.dart';
 import '../widgets/etiqueta_especialidad.dart';
@@ -196,7 +197,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                     child: Text('🏠 Visita en $_direccion',
                         style: TextStyle(fontSize: 12.5, color: Colors.grey[800])),
                   ),
-                  TextButton(onPressed: _editarDireccion, child: const Text('Cambiar')),
+                  TextButton(onPressed: _editarDireccion, child: Text(tr('Cambiar'))),
                 ],
               ),
             ),
@@ -218,7 +219,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                           Text('${snapshot.error}', textAlign: TextAlign.center),
                           const SizedBox(height: 12),
                           // Reintentar desde el principio (dirección incluida)
-                          OutlinedButton(onPressed: _iniciar, child: const Text('Reintentar')),
+                          OutlinedButton(onPressed: _iniciar, child: Text(tr('Reintentar'))),
                         ],
                       ),
                     ),
@@ -368,7 +369,7 @@ class _TarjetaCentro extends StatelessWidget {
                 child: FilledButton(
                   style: FilledButton.styleFrom(backgroundColor: _verde),
                   onPressed: () => _abrir(context, Uri.parse(centro.urlOnline!)),
-                  child: const Text('Iniciar consulta online'),
+                  child: Text(tr('Iniciar consulta online')),
                 ),
               ),
             ],
@@ -506,7 +507,7 @@ class _CentroDesplegableState extends State<_CentroDesplegable> {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         onPressed: () => widget.onAgendar(p),
-        child: const Text('Agendar', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+        child: Text(tr('Agendar'), style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
       ),
     );
   }

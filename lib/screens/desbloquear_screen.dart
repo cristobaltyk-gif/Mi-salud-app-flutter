@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../services/auth_service.dart';
 import '../services/biometria_service.dart';
 import '../services/copia_cifrada_service.dart';
@@ -100,7 +101,7 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
           builder: (_) => ConsultasScreen(
             resumen: resumen,
             onExplicar: (ctx) => ScaffoldMessenger.of(ctx).showSnackBar(
-              const SnackBar(content: Text('Esto necesita conexión')),
+              SnackBar(content: Text(tr('Esto necesita conexión'))),
             ),
           ),
         ),
@@ -170,7 +171,7 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
                           ? const SizedBox(width: 20, height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1A3B8C)))
                           : const Icon(Icons.fingerprint, size: 28),
-                      label: const Text('Entrar con huella', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      label: Text(tr('Entrar con huella'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFF1A3B8C),
@@ -186,7 +187,7 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
                   const SizedBox(height: 18),
                   TextButton(
                     onPressed: _ocupado ? null : () => _usarContrasena(),
-                    child: const Text('Usar mi contraseña', style: TextStyle(color: Colors.white, fontSize: 14)),
+                    child: Text(tr('Usar mi contraseña'), style: TextStyle(color: Colors.white, fontSize: 14)),
                   ),
                 ],
               ),

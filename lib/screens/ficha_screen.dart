@@ -15,6 +15,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'dart:io' show SocketException;
 import 'package:flutter/material.dart';
 import '../models/evento_clinico.dart';
@@ -102,7 +103,7 @@ class _FichaScreenState extends State<FichaScreen> {
                     ),
               ),
               const SizedBox(height: 4),
-              Text('¿Cómo te sientes hoy?',
+              Text(tr('¿Cómo te sientes hoy?'),
                   style: TextStyle(color: const Color(0xFF0F766E), fontSize: 14)),
               const SizedBox(height: 16),
               _SeccionAntecedentesCriticos(antecedentes: resumen.antecedentes),
@@ -161,11 +162,11 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Text('🏥', style: TextStyle(fontSize: 16)),
                 SizedBox(width: 8),
-                Text('Información médica importante',
+                Text(tr('Información médica importante'),
                     style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E), fontSize: 13)),
               ],
             ),
@@ -210,7 +211,7 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
                     builder: (_) => AntecedentesScreen(antecedentes: antecedentes),
                   ),
                 ),
-                child: const Text('Ver todos mis antecedentes →'),
+                child: Text(tr('Ver todos mis antecedentes →')),
               ),
             ),
           ],
@@ -450,7 +451,7 @@ class _ErrorConReintentar extends StatelessWidget {
             const SizedBox(height: 12),
             Text(mensaje, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onReintentar, child: const Text('Reintentar')),
+            FilledButton(onPressed: onReintentar, child: Text(tr('Reintentar'))),
           ],
         ),
       ),
@@ -559,7 +560,7 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi ficha clínica'),
+        title: Text(tr('Mi ficha clínica')),
         backgroundColor: const Color(0xFF0F766E),
         foregroundColor: Colors.white,
       ),
@@ -585,7 +586,7 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
                   FilledButton.icon(
                     onPressed: () => widget.onExplicar(context),
                     icon: const Icon(Icons.auto_awesome),
-                    label: const Text('Explícame mi historial en simple'),
+                    label: Text(tr('Explícame mi historial en simple')),
                   ),
                 ],
               ),
@@ -599,7 +600,7 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('Aún no tienes consultas registradas',
+                child: Text(tr('Aún no tienes consultas registradas'),
                     style: TextStyle(color: Colors.grey[600])),
               ),
             )
@@ -635,7 +636,7 @@ class AntecedentesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis antecedentes')),
+      appBar: AppBar(title: Text(tr('Mis antecedentes'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: _categorias.map((cat) {

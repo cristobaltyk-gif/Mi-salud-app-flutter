@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/cotizacion.dart';
 import '../services/cotizador_service.dart';
 
@@ -70,7 +71,7 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
         future: _futureResultado,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Column(
@@ -78,7 +79,7 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Cotizando en farmacias, un momento...'),
+                    Text(tr('Cotizando en farmacias, un momento...')),
                   ],
                 ),
               ),
@@ -96,7 +97,7 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
                     const SizedBox(height: 12),
                     Text('${snapshot.error}', textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    FilledButton(onPressed: _cotizar, child: const Text('Reintentar')),
+                    FilledButton(onPressed: _cotizar, child: Text(tr('Reintentar'))),
                   ],
                 ),
               ),
@@ -107,7 +108,7 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
           final masBarata = resultado.farmaciaMasBarata;
 
           if (resultado.farmacias.isEmpty) {
-            return const Center(child: Text('No hay farmacias disponibles.'));
+            return Center(child: Text(tr('No hay farmacias disponibles.')));
           }
 
           return ListView(
@@ -118,7 +119,7 @@ class _CotizacionDetalleScreenState extends State<CotizacionDetalleScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Precios referenciales, sujetos a cambio en cada farmacia.',
+                tr('Precios referenciales, sujetos a cambio en cada farmacia.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[500], fontSize: 11.5),
               ),
@@ -186,7 +187,7 @@ class _FarmaciaCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('Total', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+                    Text(tr('Total'), style: TextStyle(color: Colors.grey[600], fontSize: 11)),
                     Text(
                       _formatearCLP(farmacia.total),
                       style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),

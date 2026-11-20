@@ -21,6 +21,7 @@
 library;
 
 import 'dart:convert';
+import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -138,7 +139,7 @@ class _ReservaWebScreenState extends State<ReservaWebScreen> {
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: () { setState(() => _error = null); _web.loadRequest(widget.url); },
-                      child: const Text('Reintentar'),
+                      child: Text(tr('Reintentar')),
                     ),
                   ],
                 ),

@@ -59,6 +59,7 @@ import 'services/http_sesion.dart' show SesionVencida;
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/desbloquear_screen.dart';
+import 'i18n/idioma.dart';
 /// Ejecuta una tarea de inicio sin que pueda bloquear la apertura de la app.
 Future<void> _pasoInicio(String nombre, Future<void> Function() tarea) async {
   try {
@@ -87,6 +88,7 @@ void main() async {
         ),
       );
 
+  await _pasoInicio('idioma', Idioma.cargar);
   await _pasoInicio('formato de fechas', () => initializeDateFormatting('es'));
   await _pasoInicio('alarmas', AlarmService.inicializar);
   // Reprograma alarmas desde storage local — no necesita token ni
@@ -157,7 +159,10 @@ class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    // Al cambiar el idioma se redibuja toda la app.
+    return ValueListenableBuilder<String>(
+      valueListenable: Idioma.actual,
+      builder: (context, idioma, _) => MaterialApp(
       navigatorKey: navigatorKey,
       title: 'MiSalud',
       debugShowCheckedModeBanner: false,
@@ -167,6 +172,7 @@ class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
         fontFamily: 'Roboto',
       ),
       home: const _DecidirInicio(),
+      ),
     );
   }
 }

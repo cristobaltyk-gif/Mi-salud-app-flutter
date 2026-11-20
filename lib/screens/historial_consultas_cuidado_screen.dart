@@ -23,6 +23,7 @@
 library;
 
 import 'dart:typed_data';
+import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import '../models/ficha_cuidado.dart';
@@ -91,7 +92,7 @@ class _HistorialConsultasCuidadoScreenState extends State<HistorialConsultasCuid
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Historial de consultas',
+            Text(tr('Historial de consultas'),
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             Text(nombrePaciente, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
           ],
@@ -101,7 +102,7 @@ class _HistorialConsultasCuidadoScreenState extends State<HistorialConsultasCuid
       ),
       body: eventos.isEmpty
           ? Center(
-              child: Text('Sin consultas registradas', style: TextStyle(color: Colors.grey[500])),
+              child: Text(tr('Sin consultas registradas'), style: TextStyle(color: Colors.grey[500])),
             )
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -268,7 +269,7 @@ class _EventoCardState extends State<_EventoCard> {
                   ),
                 OutlinedButton(
                   onPressed: _abrirExplicar,
-                  child: const Text('✨ Explicar'),
+                  child: Text(tr('✨ Explicar')),
                 ),
               ],
             ),
@@ -434,7 +435,7 @@ class _ExplicacionEventoCuidadoSheetState extends State<_ExplicacionEventoCuidad
                 children: [
                   const Icon(Icons.auto_awesome, color: Color(0xFF0F766E)),
                   const SizedBox(width: 8),
-                  Text('Esta consulta, en simple', style: Theme.of(context).textTheme.titleMedium),
+                  Text(tr('Esta consulta, en simple'), style: Theme.of(context).textTheme.titleMedium),
                 ],
               ),
               const SizedBox(height: 16),

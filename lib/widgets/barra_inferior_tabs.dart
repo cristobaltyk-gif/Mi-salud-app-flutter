@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 
 class TabInfo {
   final IconData icono;
@@ -76,7 +77,7 @@ class BarraInferiorTabs extends StatelessWidget {
                       const SizedBox(height: 4),
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text(tab.label,
+                        child: Text(tr(tab.label),
                             maxLines: 1,
                             style: TextStyle(
                               fontSize: 11,

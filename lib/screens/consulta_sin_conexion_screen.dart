@@ -14,6 +14,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/biometria_service.dart';
@@ -109,7 +110,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Consulta sin conexión'),
+        title: Text(tr('Consulta sin conexión')),
         backgroundColor: _morado,
         foregroundColor: Colors.white,
       ),
@@ -123,7 +124,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
       children: [
         const Icon(Icons.wifi_tethering, color: _morado, size: 48),
         const SizedBox(height: 12),
-        const Text('Compartir la ficha sin internet',
+        Text(tr('Compartir la ficha sin internet'),
             textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         const SizedBox(height: 16),
         Container(
@@ -152,7 +153,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
           activeColor: _morado,
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Acepto'),
+          title: Text(tr('Acepto')),
         ),
         const SizedBox(height: 8),
         FilledButton(
@@ -162,7 +163,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: _cargando
                 ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Confirmar con huella y comenzar'),
+                : Text(tr('Confirmar con huella y comenzar')),
           ),
         ),
         if (_error != null) ...[
@@ -171,9 +172,9 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
         ],
         const SizedBox(height: 18),
         Text(
-          'El teléfono crea una red Wi-Fi propia (no da internet). El profesional se conecta, abre la ficha '
+          tr('El teléfono crea una red Wi-Fi propia (no da internet). El profesional se conecta, abre la ficha '
           'en su navegador y escribe su nota. No se descarga ningún archivo a su equipo. '
-          'Dura 30 minutos o hasta que toques "Terminar".',
+          'Dura 30 minutos o hasta que toques "Terminar".'),
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
       ],
@@ -192,7 +193,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
         ),
         const SizedBox(height: 14),
         if (s.qrWifi != null && _paso == 1) ...[
-          const Text('Paso 1 de 2 · Conectar el computador a este teléfono',
+          Text(tr('Paso 1 de 2 · Conectar el computador a este teléfono'),
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           const SizedBox(height: 6),
           Center(child: QrImageView(data: s.qrWifi!, size: 220)),
@@ -204,19 +205,19 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: _morado),
             onPressed: () => setState(() => _paso = 2),
-            child: const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Conectado · Siguiente')),
+            child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Conectado · Siguiente'))),
           ),
         ] else ...[
           Text(s.qrWifi != null ? 'Paso 2 de 2 · Abrir la ficha' : 'Abrir la ficha',
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           if (s.qrWifi == null)
-            const Text('El computador debe estar en la misma red Wi-Fi que este teléfono.',
+            Text(tr('El computador debe estar en la misma red Wi-Fi que este teléfono.'),
                 style: TextStyle(fontSize: 13)),
           const SizedBox(height: 6),
           Center(child: QrImageView(data: s.url, size: 220)),
           Center(child: SelectableText(s.url, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13))),
           if (s.qrWifi != null)
-            TextButton(onPressed: () => setState(() => _paso = 1), child: const Text('Volver al paso 1')),
+            TextButton(onPressed: () => setState(() => _paso = 1), child: Text(tr('Volver al paso 1'))),
         ],
         const SizedBox(height: 18),
         Container(
@@ -237,7 +238,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
         OutlinedButton(
           style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFB91C1C)),
           onPressed: _terminar,
-          child: const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Terminar')),
+          child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Terminar'))),
         ),
       ],
     );

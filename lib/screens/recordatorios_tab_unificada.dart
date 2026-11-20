@@ -23,6 +23,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:intl/intl.dart';
 import '../models/carpeta_activa.dart';
 import '../models/ficha_cuidado.dart';
@@ -117,7 +118,7 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
                     FilledButton(
                       style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
                       onPressed: _cargar,
-                      child: const Text('Reintentar'),
+                      child: Text(tr('Reintentar')),
                     ),
                   ],
                 ),
@@ -313,7 +314,7 @@ class _TarjetaRecordatorio extends StatelessWidget {
                       color: const Color(0xFFEA580C),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('¡YA!', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: Text(tr('¡YA!'), style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
               ],
             ),

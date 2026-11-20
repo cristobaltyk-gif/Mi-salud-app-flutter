@@ -13,6 +13,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../services/auth_service.dart';
 
 class ActivarCuentaScreen extends StatefulWidget {
@@ -76,7 +77,7 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Activar mi cuenta')),
+      appBar: AppBar(title: Text(tr('Activar mi cuenta'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -85,16 +86,16 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
             children: [
               if (!_enviado) ...[
                 Text(
-                  'Si tu médico ya creó tu ficha en MiSalud, ingresa tu RUT '
-                  'y te enviaremos un link de activación a tu correo registrado.',
+                  tr('Si tu médico ya creó tu ficha en MiSalud, ingresa tu RUT '
+                  'y te enviaremos un link de activación a tu correo registrado.'),
                   style: TextStyle(color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 24),
                 TextField(
                   controller: _rutController,
                   onSubmitted: (_) => _solicitarActivacion(),
-                  decoration: const InputDecoration(
-                    labelText: 'RUT',
+                  decoration: InputDecoration(
+                    labelText: tr('RUT'),
                     hintText: '12345678-9',
                     prefixIcon: Icon(Icons.badge_outlined),
                     border: OutlineInputBorder(),
@@ -130,7 +131,7 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Enviar link de activación'),
+                      : Text(tr('Enviar link de activación')),
                 ),
               ] else ...[
                 Icon(Icons.mark_email_read_outlined, size: 56, color: Colors.teal[700]),
@@ -142,15 +143,15 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Abre el link desde tu teléfono para confirmar tus datos y crear '
-                  'tu contraseña. Luego vuelve aquí e inicia sesión.',
+                  tr('Abre el link desde tu teléfono para confirmar tus datos y crear '
+                  'tu contraseña. Luego vuelve aquí e inicia sesión.'),
                   style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Volver a iniciar sesión'),
+                  child: Text(tr('Volver a iniciar sesión')),
                 ),
               ],
             ],

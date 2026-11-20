@@ -15,6 +15,7 @@
 library;
 
 import '../widgets/tarjetas.dart';
+import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import '../models/carpeta_activa.dart';
 import '../services/agenda_service.dart';
@@ -71,14 +72,14 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cancelar hora'),
+        title: Text(tr('Cancelar hora')),
         content: Text('¿Cancelar la hora del ${cita.fechaCorta} a las ${cita.hora} con ${cita.profesional}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Volver')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Volver'))),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cancelar hora'),
+            child: Text(tr('Cancelar hora')),
           ),
         ],
       ),
@@ -120,7 +121,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
                 child: OutlinedButton.icon(
                   onPressed: () => _cambiar(cita),
                   icon: const Icon(Icons.edit_calendar_outlined, size: 18),
-                  label: const Text('Cambiar hora'),
+                  label: Text(tr('Cambiar hora')),
                 ),
               ),
             if (cita.puedeCambiar && cita.puedeCancelar) const SizedBox(width: 8),
@@ -130,7 +131,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
                   style: OutlinedButton.styleFrom(foregroundColor: Colors.red[700]),
                   onPressed: () => _cancelar(cita),
                   icon: const Icon(Icons.event_busy_outlined, size: 18),
-                  label: const Text('Cancelar'),
+                  label: Text(tr('Cancelar')),
                 ),
               ),
           ],
@@ -167,7 +168,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
           const SizedBox(height: 24),
           Text(paraOtro ? 'Horas agendadas de ${widget.carpeta.nombreMostrar}' : 'Tus horas agendadas',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-          Text('Puedes cambiarlas o cancelarlas hasta 24 horas antes.',
+          Text(tr('Puedes cambiarlas o cancelarlas hasta 24 horas antes.'),
               style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
           const SizedBox(height: 10),
           FutureBuilder<List<Cita>>(
@@ -184,7 +185,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
                   children: [
                     Text(snap.error.toString().replaceFirst('Exception: ', ''),
                         textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[700])),
-                    TextButton(onPressed: _cargar, child: const Text('Reintentar')),
+                    TextButton(onPressed: _cargar, child: Text(tr('Reintentar'))),
                   ],
                 );
               }
@@ -192,7 +193,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
               if (citas.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text('No hay horas agendadas.',
+                  child: Text(tr('No hay horas agendadas.'),
                       textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600])),
                 );
               }
@@ -269,7 +270,7 @@ class _CambiarHoraState extends State<_CambiarHora> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Cambiar hora', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(tr('Cambiar hora'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             Text('${widget.cita.profesional} · ${widget.cita.tipoTexto}',
                 style: TextStyle(color: Colors.grey[700])),
             Text('Hora actual: ${widget.cita.fechaCorta} a las ${widget.cita.hora}',
@@ -326,7 +327,7 @@ class _CambiarHoraState extends State<_CambiarHora> {
                   if (horas.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text('No hay horas libres este día.', style: TextStyle(color: Colors.grey[600])),
+                      child: Text(tr('No hay horas libres este día.'), style: TextStyle(color: Colors.grey[600])),
                     );
                   }
                   return SingleChildScrollView(

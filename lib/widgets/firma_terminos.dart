@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../services/contratos_service.dart';
 
 /// Párrafos separados por línea en blanco, **negrita** y viñetas "- ".
@@ -93,7 +94,7 @@ class _FirmaTerminosState extends State<_FirmaTerminos> {
                       onChanged: (v) => setState(() => _acepto = v ?? false),
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Leí y acepto los Términos de uso.', style: TextStyle(fontWeight: FontWeight.w600)),
+                      title: Text(tr('Leí y acepto los Términos de uso.'), style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
                     if (_error != null)
                       Padding(
@@ -102,7 +103,7 @@ class _FirmaTerminosState extends State<_FirmaTerminos> {
                       ),
                     Row(
                       children: [
-                        TextButton(onPressed: _enviando ? null : () => Navigator.of(context).pop(false), child: const Text('Salir')),
+                        TextButton(onPressed: _enviando ? null : () => Navigator.of(context).pop(false), child: Text(tr('Salir'))),
                         const Spacer(),
                         FilledButton(
                           onPressed: _acepto && !_enviando ? _aceptar : null,

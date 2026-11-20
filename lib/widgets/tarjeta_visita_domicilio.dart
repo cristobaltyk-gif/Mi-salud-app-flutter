@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../services/agenda_service.dart';
 import '../screens/reserva_web_screen.dart';
 
@@ -57,12 +58,12 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                 child: Column(
                   children: [
-                    const Text('Código para el profesional',
+                    Text(tr('Código para el profesional'),
                         style: TextStyle(color: Color(0xFF166534), fontWeight: FontWeight.w600, fontSize: 12)),
                     Text(visita.codigo!,
                         style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800,
                             letterSpacing: 10, color: Color(0xFF14532D))),
-                    Text('Entrégaselo cuando llegue', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    Text(tr('Entrégaselo cuando llegue'), style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                   ],
                 ),
               ),
@@ -84,12 +85,12 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
                         await onActualizar();
                       },
                       icon: const Icon(Icons.map_outlined),
-                      label: const Text('Ver en el mapa'),
+                      label: Text(tr('Ver en el mapa')),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Actualizar',
+                    tooltip: tr('Actualizar'),
                     onPressed: onActualizar,
                     icon: const Icon(Icons.refresh),
                   ),
@@ -171,9 +172,9 @@ class TarjetaCita extends StatelessWidget {
             if (cita.direccion.isNotEmpty)
               Text('📍 ${cita.direccion}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
             if (cita.pago == 'efectivo')
-              Text('💵 Pago en efectivo al profesional', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              Text(tr('💵 Pago en efectivo al profesional'), style: TextStyle(color: Colors.grey[600], fontSize: 13)),
             if (cita.pago == 'mensual')
-              Text('🗓 Convenio mensual', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              Text(tr('🗓 Convenio mensual'), style: TextStyle(color: Colors.grey[600], fontSize: 13)),
             if (acciones != null) ...[
               const SizedBox(height: 12),
               acciones!,

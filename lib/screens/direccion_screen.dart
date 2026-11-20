@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/direccion_service.dart';
 
@@ -124,15 +125,15 @@ class _DireccionScreenState extends State<DireccionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi dirección'),
+        title: Text(tr('Mi dirección')),
         backgroundColor: const Color(0xFF1A3B8C),
         foregroundColor: Colors.white,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Donde te atienden a domicilio. Escribe calle, número y elige la comuna; '
-              'después confírmala en el mapa.', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+          Text(tr('Donde te atienden a domicilio. Escribe calle, número y elige la comuna; '
+              'después confírmala en el mapa.'), style: TextStyle(color: Colors.grey[700], fontSize: 13)),
           const SizedBox(height: 14),
           Row(children: [
             Expanded(flex: 3, child: TextField(controller: _calle, decoration: _deco('Calle', hint: 'Av. España'),
@@ -195,7 +196,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
             Text('📍 ${_verif!.encontrada.isNotEmpty ? _verif!.encontrada : _verif!.direccion}',
                 style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text('¿El punto está en el lugar correcto?', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+            Text(tr('¿El punto está en el lugar correcto?'), style: TextStyle(color: Colors.grey[700], fontSize: 13)),
             const SizedBox(height: 10),
             Row(children: [
               Expanded(
@@ -208,7 +209,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
               const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: _guardando ? null : () => setState(() => _verif = null),
-                child: const Text('No, corregir'),
+                child: Text(tr('No, corregir')),
               ),
             ]),
           ],

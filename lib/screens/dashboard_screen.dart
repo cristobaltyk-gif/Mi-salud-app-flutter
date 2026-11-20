@@ -25,6 +25,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../models/carpeta_activa.dart';
@@ -158,12 +159,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           icon: const Icon(Icons.fingerprint, size: 40, color: Color(0xFF1A3B8C)),
-          title: const Text('La huella está activa'),
-          content: const Text('Entras con tu huella y te la pedimos si no usas la app por 5 minutos. '
-              '¿Quieres desactivarla? Volverás a entrar con tu contraseña.'),
+          title: Text(tr('La huella está activa')),
+          content: Text(tr('Entras con tu huella y te la pedimos si no usas la app por 5 minutos. '
+              '¿Quieres desactivarla? Volverás a entrar con tu contraseña.')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Desactivar')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Desactivar'))),
           ],
         ),
       );
@@ -191,12 +192,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.fingerprint, size: 40, color: Color(0xFF1A3B8C)),
-        title: const Text('¿Entrar con tu huella?'),
-        content: const Text('Entra con tu huella (o el PIN de tu teléfono) sin escribir la contraseña. '
-            'Si no usas la app por 5 minutos, te la pediremos para proteger tu ficha.'),
+        title: Text(tr('¿Entrar con tu huella?')),
+        content: Text(tr('Entra con tu huella (o el PIN de tu teléfono) sin escribir la contraseña. '
+            'Si no usas la app por 5 minutos, te la pediremos para proteger tu ficha.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ahora no')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Activar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ahora no'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Activar'))),
         ],
       ),
     );
@@ -233,17 +234,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final r = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirma tu contraseña'),
+        title: Text(tr('Confirma tu contraseña')),
         content: TextField(
           controller: ctrl,
           obscureText: true,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Contraseña de MiSalud'),
+          decoration: InputDecoration(labelText: tr('Contraseña de MiSalud')),
           onSubmitted: (v) => Navigator.pop(ctx, v),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Confirmar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text), child: Text(tr('Confirmar'))),
         ],
       ),
     );
@@ -258,7 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(titulo),
         content: Text(texto),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido'))],
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Entendido')))],
       ),
     );
   }
@@ -277,7 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final opcion = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cerrar sesión'),
+        title: Text(tr('Cerrar sesión')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,26 +294,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact,
                       foregroundColor: const Color(0xFF64748B)),
                   onPressed: () => launchUrl(Uri.parse(AppConfig.privacidadUrl), mode: LaunchMode.inAppBrowserView),
-                  child: const Text('Política de privacidad', style: TextStyle(fontSize: 12.5)),
+                  child: Text(tr('Política de privacidad'), style: TextStyle(fontSize: 12.5)),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact,
                       foregroundColor: const Color(0xFFB91C1C)),
                   onPressed: () => Navigator.pop(ctx, 'eliminar'),
-                  child: const Text('Eliminar mi cuenta', style: TextStyle(fontSize: 12.5)),
+                  child: Text(tr('Eliminar mi cuenta'), style: TextStyle(fontSize: 12.5)),
                 ),
               ],
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, 'olvidar'),
-            child: const Text('Olvidar este teléfono'),
+            child: Text(tr('Olvidar este teléfono')),
           ),
-          TextButton(onPressed: () => Navigator.pop(ctx, 'salir'), child: const Text('Salir')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'salir'), child: Text(tr('Salir'))),
         ],
       ),
     );
@@ -341,20 +342,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
           icon: const Icon(Icons.delete_forever, size: 40, color: Color(0xFFB91C1C)),
-          title: const Text('Eliminar mi cuenta'),
+          title: Text(tr('Eliminar mi cuenta')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Se borran tu acceso, tus recordatorios, tus cuidadores y las personas que cuidas.\n\n'
+                Text(tr('Se borran tu acceso, tus recordatorios, tus cuidadores y las personas que cuidas.\n\n'
                     'Tu ficha clínica no se borra: la conserva tu centro de salud porque la ley lo exige. '
-                    'Si vuelves a activar tu cuenta podrás verla de nuevo.'),
+                    'Si vuelves a activar tu cuenta podrás verla de nuevo.')),
                 const SizedBox(height: 12),
                 TextField(
                   controller: ctrl,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Confirma con tu contraseña'),
+                  decoration: InputDecoration(labelText: tr('Confirma con tu contraseña')),
                   onChanged: (_) => setD(() {}),
                 ),
                 CheckboxListTile(
@@ -362,17 +363,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   controlAffinity: ListTileControlAffinity.leading,
                   value: entiende,
                   onChanged: (v) => setD(() => entiende = v ?? false),
-                  title: const Text('Entiendo que no se puede deshacer', style: TextStyle(fontSize: 13.5)),
+                  title: Text(tr('Entiendo que no se puede deshacer'), style: TextStyle(fontSize: 13.5)),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB91C1C)),
               onPressed: entiende && ctrl.text.isNotEmpty ? () => Navigator.pop(ctx, ctrl.text) : null,
-              child: const Text('Eliminar'),
+              child: Text(tr('Eliminar')),
             ),
           ],
         ),
@@ -448,7 +449,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               height: 22,
             ),
             const SizedBox(width: 8),
-            const Text('HypokratIA',
+            Text(tr('HypokratIA'),
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
           ],
         ),
@@ -461,19 +462,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               ),
             ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.translate),
+            tooltip: 'Idioma / Language',
+            onSelected: (c) => Idioma.poner(c),
+            itemBuilder: (_) => Idioma.disponibles.entries
+                .map((e) => PopupMenuItem<String>(
+                      value: e.key,
+                      child: Row(children: [
+                        Icon(
+                          e.key == Idioma.actual.value ? Icons.check : null,
+                          size: 18,
+                          color: const Color(0xFF1A3B8C),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(e.value),
+                      ]),
+                    ))
+                .toList(),
+          ),
           IconButton(
             icon: const Icon(Icons.people_alt_outlined, color: Colors.white),
-            tooltip: 'Cuidadores',
+            tooltip: tr('Cuidadores'),
             onPressed: _abrirCuidadores,
           ),
           IconButton(
             icon: const Icon(Icons.fingerprint, color: Colors.white),
-            tooltip: 'Ingreso con huella',
+            tooltip: tr('Ingreso con huella'),
             onPressed: _configurarHuella,
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Cerrar sesión',
+            tooltip: tr('Cerrar sesión'),
             onPressed: _cerrarSesion,
           ),
         ],
@@ -490,13 +510,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Icon(Icons.warning_amber_outlined, color: Colors.orange[800], size: 18),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('No se pudieron actualizar las alarmas',
+                    child: Text(tr('No se pudieron actualizar las alarmas'),
                         style: TextStyle(color: Colors.orange[900], fontSize: 12)),
                   ),
                   TextButton(
                     style: TextButton.styleFrom(foregroundColor: Colors.orange[800]),
                     onPressed: _sincronizarAlarmas,
-                    child: const Text('Reintentar', style: TextStyle(fontSize: 12)),
+                    child: Text(tr('Reintentar'), style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ),

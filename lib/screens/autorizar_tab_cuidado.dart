@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'compartir_ficha_cuidado_screen.dart';
 import 'lector_screen.dart';
 import '../services/http_sesion.dart' as http;
@@ -61,13 +62,13 @@ class TabAutorizarCuidado extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Center(
-          child: Text('Autorizar acceso a médico',
+          child: Text(tr('Autorizar acceso a médico'),
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: Colors.purple[800])),
         ),
         const SizedBox(height: 8),
         Center(
           child: Text(
-            'Da acceso temporal a un médico para que revise esta ficha',
+            tr('Da acceso temporal a un médico para que revise esta ficha'),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: Colors.purple[300]),
           ),
@@ -76,9 +77,9 @@ class TabAutorizarCuidado extends StatelessWidget {
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: const Color(0xFF4C1D95)),
           onPressed: () => _autorizar(context),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.symmetric(vertical: 6),
-            child: Text('Autorizar médico'),
+            child: Text(tr('Autorizar médico')),
           ),
         ),
       ],
