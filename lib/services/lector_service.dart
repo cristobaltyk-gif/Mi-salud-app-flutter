@@ -103,6 +103,9 @@ class LectorService {
   static StreamController<List<int>>? _entradaBle;
   static int _mtu = 23;
 
+  /// Si el teléfono no pudo anunciarse por Bluetooth, el motivo (se muestra).
+  static String? ultimoErrorBle;
+
   /// Prepara el Bluetooth del teléfono (una vez).
   static Future<void> _prepararBle() async {
     if (_listo) return;
@@ -143,6 +146,7 @@ class LectorService {
   /// Devuelve el primer canal que se conecte (o null si nadie llega a tiempo).
   static Future<_Canal?> esperarConexion({Duration limite = const Duration(seconds: 60)}) async {
     final listo = Completer<_Canal?>();
+    ultimoErrorBle = null;
     // ── Bluetooth: el PC encuentra al teléfono ──
     try {
       if (Platform.isAndroid) {
@@ -157,9 +161,17 @@ class LectorService {
           listo.complete(_canalBle);
         }
       });
-      await BlePeripheral.startAdvertising(services: [_servicioBle], localName: 'HypokratIA');
-    } catch (_) {
-      // sin Bluetooth: queda la red local
+      // Sin nombre: el identificador de 128 bits ya ocupa casi todo el anuncio
+      // (máx. 31 bytes); con nombre Android lo rechaza sin avisar. Además
+      // localName le cambiaría el nombre Bluetooth al teléfono.
+      final anuncio = Completer<String?>();
+      BlePeripheral.setAdvertisingStatusUpdateCallback((ok, error) {
+        if (!anuncio.isCompleted) anuncio.complete(ok ? null : (error ?? 'error desconocido'));
+      });
+      await BlePeripheral.startAdvertising(services: [_servicioBle]);
+      ultimoErrorBle = await anuncio.future.timeout(const Duration(seconds: 5), onTimeout: () => null);
+    } catch (e) {
+      ultimoErrorBle = e.toString(); // sin Bluetooth: queda la red local
     }
     // ── Red local (si el teléfono está en la misma red que el PC) ──
     unawaited(_buscarRed().then((s) {

@@ -164,6 +164,11 @@ class _LectorScreenState extends State<LectorScreen> {
           'teléfono esté encendido.',
           textAlign: TextAlign.center,
         ),
+        if (LectorService.ultimoErrorBle != null) ...[
+          const SizedBox(height: 8),
+          Text('Bluetooth: ${LectorService.ultimoErrorBle}',
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Color(0xFFB91C1C))),
+        ],
         const SizedBox(height: 10),
         OutlinedButton(onPressed: _buscar, child: const Text('Intentar de nuevo')),
         TextButton(
