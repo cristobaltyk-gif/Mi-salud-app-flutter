@@ -14,7 +14,8 @@ dependencies:
   flutter_secure_storage: ^9.2.2      # JWT, RUT y recordatorios (Keystore/Keychain cifrado)
   local_auth: ^2.3.0                  # ingreso con huella / rostro (o PIN del teléfono)
   cryptography: ^2.7.0                # AES-256-GCM: abre la copia cifrada de la ficha (lectura sin internet)
-  ble_peripheral: ^2.4.0              # Bluetooth: el teléfono se anuncia al Lector HypokratIA (consulta sin conexión)
+  ble_peripheral:                     # Bluetooth: el teléfono se anuncia al Lector HypokratIA (consulta sin conexión)
+    path: paquetes/ble_peripheral     # copia con un cambio: sin vincular (ver paquetes/ble_peripheral/HIPOKRATIA.md)
   # --- Notificaciones locales / Alarmas ---
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4                    # requerido por flutter_local_notifications para programar horarios exactos
