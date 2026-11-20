@@ -59,7 +59,7 @@ class _ReservaWebScreenState extends State<ReservaWebScreen> {
         onProgress: (p) { if (mounted) setState(() => _progreso = p); },
         onWebResourceError: (e) {
           if (e.isForMainFrame ?? true) {
-            if (mounted) setState(() => _error = 'No se pudo cargar la página de reservas.');
+            if (mounted) setState(() => _error = tr('No se pudo cargar la página de reservas.'));
           }
         },
         onNavigationRequest: (req) {

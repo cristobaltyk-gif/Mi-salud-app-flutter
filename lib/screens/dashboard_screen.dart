@@ -170,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
       if (desactivar == true) {
         await StorageService.guardarBiometria(false);
-        _aviso('Huella desactivada');
+        _aviso(tr('Huella desactivada'));
       }
       return;
     }
@@ -179,9 +179,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _activarHuella({required bool alEntrar}) async {
     if (!await BiometriaService.disponible()) {
-      if (!alEntrar) await _mensaje('Ingreso con huella', BiometriaService.ultimoError ?? 'Este teléfono no permite huella.');
+      if (!alEntrar) await _mensaje(tr('Ingreso con huella'), BiometriaService.ultimoError ?? tr('Este teléfono no permite huella.'));
       if (alEntrar) {
-        _aviso(BiometriaService.ultimoError ?? 'Este teléfono no permite huella.');
+        _aviso(BiometriaService.ultimoError ?? tr('Este teléfono no permite huella.'));
         await StorageService.guardarBiometria(false);
       }
       return;
@@ -213,20 +213,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       try {
         await AuthService.vincularTelefono(password);
       } on AuthException catch (e) {
-        await _mensaje('No se pudo activar', e.mensaje);
+        await _mensaje(tr('No se pudo activar'), e.mensaje);
         return;
       } catch (_) {
-        await _mensaje('No se pudo activar', 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+        await _mensaje(tr('No se pudo activar'), tr('No se pudo conectar. Revisa tu conexión e intenta de nuevo.'));
         return;
       }
     }
 
-    if (!await BiometriaService.autenticar(motivo: 'Confirma tu huella para activarla en MiSalud')) {
-      await _mensaje('No se activó la huella', BiometriaService.ultimoError ?? 'No se confirmó la huella.');
+    if (!await BiometriaService.autenticar(motivo: tr('Confirma tu huella para activarla en MiSalud'))) {
+      await _mensaje(tr('No se activó la huella'), BiometriaService.ultimoError ?? tr('No se confirmó la huella.'));
       return;
     }
     await StorageService.guardarBiometria(true);
-    _aviso('✓ Huella activada');
+    _aviso(tr('✓ Huella activada'));
   }
 
   Future<String?> _pedirContrasena() async {
@@ -284,8 +284,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(huella
-                ? 'La próxima vez entras con tu huella. Tus recordatorios seguirán sonando.'
-                : 'Tus recordatorios seguirán sonando en este teléfono.'),
+                ? tr('La próxima vez entras con tu huella. Tus recordatorios seguirán sonando.')
+                : tr('Tus recordatorios seguirán sonando en este teléfono.')),
             const SizedBox(height: 14),
             Wrap(
               spacing: 4,
@@ -386,16 +386,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await AlarmService.cancelarTodas();
       await AuthService.logout(olvidar: true);
       if (!mounted) return;
-      await _mensaje('Cuenta eliminada', mensaje);
+      await _mensaje(tr('Cuenta eliminada'), mensaje);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
         (route) => false,
       );
     } on AuthException catch (e) {
-      await _mensaje('No se pudo eliminar', e.mensaje);
+      await _mensaje(tr('No se pudo eliminar'), e.mensaje);
     } catch (_) {
-      await _mensaje('No se pudo eliminar', 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+      await _mensaje(tr('No se pudo eliminar'), tr('No se pudo conectar. Revisa tu conexión e intenta de nuevo.'));
     }
   }
 

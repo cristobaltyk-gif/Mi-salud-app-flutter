@@ -169,13 +169,13 @@ class _FarmaciaCard extends StatelessWidget {
                         children: [
                           if (esMasBarata)
                             _Badge(
-                              texto: 'Más económica',
+                              texto: tr('Más económica'),
                               color: const Color(0xFF0F766E),
                               fondo: const Color(0xFFF0FDF9),
                             ),
                           if (!farmacia.completo)
                             _Badge(
-                              texto: 'Receta incompleta',
+                              texto: tr('Receta incompleta'),
                               color: Colors.red[700]!,
                               fondo: Colors.red[50]!,
                             ),
@@ -215,7 +215,7 @@ class _ItemRow extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Text(
-          '${item.principioActivo} — no disponible en esta farmacia',
+          trp('{0} — no disponible en esta farmacia', [item.principioActivo]),
           style: TextStyle(color: Colors.red[700], fontSize: 12.5),
         ),
       );

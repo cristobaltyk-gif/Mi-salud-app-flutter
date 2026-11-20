@@ -44,7 +44,7 @@ class EventoDetalleScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          evento.medico.isNotEmpty ? evento.medico : 'Profesional no especificado',
+                          evento.medico.isNotEmpty ? evento.medico : tr('Profesional no especificado'),
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
@@ -54,7 +54,7 @@ class EventoDetalleScreen extends StatelessWidget {
                   Text(
                     evento.especialidad.isNotEmpty
                         ? '${evento.especialidad} · ${evento.tipo}'
-                        : 'Tipo de consulta: ${evento.tipo}',
+                        : trp('Tipo de consulta: {0}', [evento.tipo]),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
@@ -69,43 +69,43 @@ class EventoDetalleScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (contenido.diagnostico.isNotEmpty)
-            _SeccionDetalle(titulo: 'Diagnóstico', texto: contenido.diagnostico,
+            _SeccionDetalle(titulo: tr('Diagnóstico'), texto: contenido.diagnostico,
                 icono: Icons.assignment_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.examenClinicoBucal.isNotEmpty)
-            _SeccionDetalle(titulo: 'Examen bucal', texto: contenido.examenClinicoBucal,
+            _SeccionDetalle(titulo: tr('Examen bucal'), texto: contenido.examenClinicoBucal,
                 icono: Icons.search_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.piezasTratadas.isNotEmpty)
-            _SeccionDetalle(titulo: 'Piezas tratadas', texto: contenido.piezasTratadas,
+            _SeccionDetalle(titulo: tr('Piezas tratadas'), texto: contenido.piezasTratadas,
                 icono: Icons.grid_view_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.planTratamiento.isNotEmpty)
-            _SeccionDetalle(titulo: 'Plan de tratamiento', texto: contenido.planTratamiento,
+            _SeccionDetalle(titulo: tr('Plan de tratamiento'), texto: contenido.planTratamiento,
                 icono: Icons.event_note_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.examenFisico.isNotEmpty)
-            _SeccionDetalle(titulo: 'Examen físico', texto: contenido.examenFisico,
+            _SeccionDetalle(titulo: tr('Examen físico'), texto: contenido.examenFisico,
                 icono: Icons.accessibility_new_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.signosVitales.isNotEmpty)
-            _SeccionDetalle(titulo: 'Signos vitales', texto: contenido.signosVitales,
+            _SeccionDetalle(titulo: tr('Signos vitales'), texto: contenido.signosVitales,
                 icono: Icons.monitor_heart_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.procedimientoEnfermeria.isNotEmpty)
-            _SeccionDetalle(titulo: 'Procedimientos de enfermería', texto: contenido.procedimientoEnfermeria,
+            _SeccionDetalle(titulo: tr('Procedimientos de enfermería'), texto: contenido.procedimientoEnfermeria,
                 icono: Icons.vaccines_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.evolucion.isNotEmpty)
-            _SeccionDetalle(titulo: 'Evolución', texto: contenido.evolucion,
+            _SeccionDetalle(titulo: tr('Evolución'), texto: contenido.evolucion,
                 icono: Icons.timeline_outlined, eventoId: evento.id, tipoPdf: null),
           if (contenido.receta.isNotEmpty)
-            _SeccionDetalle(titulo: 'Receta', texto: contenido.receta,
+            _SeccionDetalle(titulo: tr('Receta'), texto: contenido.receta,
                 icono: Icons.medication_outlined, eventoId: evento.id, tipoPdf: 'receta'),
           if (contenido.indicaciones.isNotEmpty)
-            _SeccionDetalle(titulo: 'Indicaciones', texto: contenido.indicaciones,
+            _SeccionDetalle(titulo: tr('Indicaciones'), texto: contenido.indicaciones,
                 icono: Icons.checklist_outlined, eventoId: evento.id, tipoPdf: 'informe'),
           if (contenido.examenes.isNotEmpty)
-            _SeccionDetalle(titulo: 'Exámenes', texto: contenido.examenes,
+            _SeccionDetalle(titulo: tr('Exámenes'), texto: contenido.examenes,
                 icono: Icons.science_outlined, eventoId: evento.id, tipoPdf: 'examenes'),
           if (contenido.ordenKinesiologia.isNotEmpty)
-            _SeccionDetalle(titulo: 'Orden de kinesiología', texto: contenido.ordenKinesiologia,
+            _SeccionDetalle(titulo: tr('Orden de kinesiología'), texto: contenido.ordenKinesiologia,
                 icono: Icons.accessibility_new_outlined, eventoId: evento.id, tipoPdf: 'kinesiologia'),
           if (contenido.indicacionQuirurgica.isNotEmpty)
-            _SeccionDetalle(titulo: 'Indicación quirúrgica', texto: contenido.indicacionQuirurgica,
+            _SeccionDetalle(titulo: tr('Indicación quirúrgica'), texto: contenido.indicacionQuirurgica,
                 icono: Icons.healing_outlined, eventoId: evento.id, tipoPdf: 'quirurgica'),
           if (contenido.fotosDermatologia.isNotEmpty)
             _GaleriaFotos(fotos: contenido.fotosDermatologia),
@@ -156,7 +156,7 @@ class _SeccionDetalleState extends State<_SeccionDetalle> {
       await OpenFile.open(ruta);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el PDF: $e')));
+        SnackBar(content: Text(trp('No se pudo abrir el PDF: {0}', [e]))));
     } finally {
       if (mounted) setState(() => _descargando = false);
       if (ruta != null) {
@@ -236,7 +236,7 @@ class _GaleriaFotosState extends State<_GaleriaFotos> {
               children: [
                 const Icon(Icons.photo_library_outlined, size: 20, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
-                Text('📸 Fotos (${widget.fotos.length})',
+                Text(trp('📸 Fotos ({0})', [widget.fotos.length]),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
               ],
             ),

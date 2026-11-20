@@ -1,5 +1,6 @@
 // Textos de la interfaz de MiSalud en inglés, alemán y francés.
-// Clave = texto original en español (tal como aparece en tr('...')).
+// Clave = texto original en español (tal como aparece en tr('...') o trp('...')).
+// {0}, {1}… son los datos que se insertan (nombres, fechas, cantidades).
 // Si falta una traducción, se muestra el español.
 
 const Map<String, Map<String, String>> textos = {
@@ -757,5 +758,1525 @@ const Map<String, Map<String, String>> textos = {
     'en': 'Authorize',
     'de': 'Freigeben',
     'fr': 'Autoriser',
+  },
+  'Ocurrió un error al mostrar esta pantalla:\n\n{0}': {
+    'en': 'An error occurred while showing this screen:\n\n{0}',
+    'de': 'Beim Anzeigen dieses Bildschirms ist ein Fehler aufgetreten:\n\n{0}',
+    'fr': 'Une erreur s\'est produite lors de l\'affichage de cet écran :\n\n{0}',
+  },
+  'Tu sesión expiró. Vuelve a ingresar con tu contraseña.': {
+    'en': 'Your session expired. Sign in again with your password.',
+    'de': 'Ihre Sitzung ist abgelaufen. Melden Sie sich erneut mit Ihrem Passwort an.',
+    'fr': 'Votre session a expiré. Reconnectez-vous avec votre mot de passe.',
+  },
+  'Esperando médico': {
+    'en': 'Waiting for doctor',
+    'de': 'Warten auf Arzt',
+    'fr': 'En attente du médecin',
+  },
+  'En uso ahora': {
+    'en': 'In use now',
+    'de': 'Gerade in Nutzung',
+    'fr': 'En cours d\'utilisation',
+  },
+  'Sesión cerrada': {
+    'en': 'Session closed',
+    'de': 'Sitzung beendet',
+    'fr': 'Session fermée',
+  },
+  'Expirado': {
+    'en': 'Expired',
+    'de': 'Abgelaufen',
+    'fr': 'Expiré',
+  },
+  'Revocado': {
+    'en': 'Revoked',
+    'de': 'Widerrufen',
+    'fr': 'Révoqué',
+  },
+  'Desconocido': {
+    'en': 'Unknown',
+    'de': 'Unbekannt',
+    'fr': 'Inconnu',
+  },
+  'Pieza {0}: {1}': {
+    'en': 'Tooth {0}: {1}',
+    'de': 'Zahn {0}: {1}',
+    'fr': 'Dent {0} : {1}',
+  },
+  'Ingresa tu RUT': {
+    'en': 'Enter your RUT',
+    'de': 'Geben Sie Ihre RUT ein',
+    'fr': 'Saisissez votre RUT',
+  },
+  'No se pudo conectar. Revisa tu conexión a internet.': {
+    'en': 'Could not connect. Check your internet connection.',
+    'de': 'Verbindung fehlgeschlagen. Prüfen Sie Ihre Internetverbindung.',
+    'fr': 'Connexion impossible. Vérifiez votre connexion internet.',
+  },
+  'Revisa tu correo para continuar.': {
+    'en': 'Check your email to continue.',
+    'de': 'Prüfen Sie Ihre E-Mails, um fortzufahren.',
+    'fr': 'Vérifiez vos e-mails pour continuer.',
+  },
+  '¿Cancelar la hora del {0} a las {1} con {2}?': {
+    'en': 'Cancel the appointment on {0} at {1} with {2}?',
+    'de': 'Termin am {0} um {1} bei {2} absagen?',
+    'fr': 'Annuler le rendez-vous du {0} à {1} avec {2} ?',
+  },
+  'Hora cancelada. Te enviamos la confirmación por correo.': {
+    'en': 'Appointment cancelled. We sent you the confirmation by email.',
+    'de': 'Termin abgesagt. Wir haben Ihnen die Bestätigung per E-Mail gesendet.',
+    'fr': 'Rendez-vous annulé. Nous vous avons envoyé la confirmation par e-mail.',
+  },
+  'Hora cambiada. Te enviamos la confirmación por correo.': {
+    'en': 'Appointment changed. We sent you the confirmation by email.',
+    'de': 'Termin geändert. Wir haben Ihnen die Bestätigung per E-Mail gesendet.',
+    'fr': 'Rendez-vous modifié. Nous vous avons envoyé la confirmation par e-mail.',
+  },
+  'Agendar hora para {0}': {
+    'en': 'Book an appointment for {0}',
+    'de': 'Termin für {0} buchen',
+    'fr': 'Prendre rendez-vous pour {0}',
+  },
+  'Agendar hora': {
+    'en': 'Book an appointment',
+    'de': 'Termin buchen',
+    'fr': 'Prendre rendez-vous',
+  },
+  'A domicilio': {
+    'en': 'Home visit',
+    'de': 'Hausbesuch',
+    'fr': 'À domicile',
+  },
+  'Te atienden en casa': {
+    'en': 'Seen at home',
+    'de': 'Behandlung zu Hause',
+    'fr': 'Soins à domicile',
+  },
+  'Presencial': {
+    'en': 'In person',
+    'de': 'Vor Ort',
+    'fr': 'En présentiel',
+  },
+  'En un centro': {
+    'en': 'At a center',
+    'de': 'In einem Zentrum',
+    'fr': 'Dans un centre',
+  },
+  'Telemedicina': {
+    'en': 'Telemedicine',
+    'de': 'Telemedizin',
+    'fr': 'Télémédecine',
+  },
+  'Por videollamada': {
+    'en': 'By video call',
+    'de': 'Per Videoanruf',
+    'fr': 'Par appel vidéo',
+  },
+  'Derma online': {
+    'en': 'Online dermatology',
+    'de': 'Online-Dermatologie',
+    'fr': 'Dermato en ligne',
+  },
+  'Sin hora, con fotos': {
+    'en': 'No appointment, with photos',
+    'de': 'Ohne Termin, mit Fotos',
+    'fr': 'Sans rendez-vous, avec photos',
+  },
+  'Horas agendadas de {0}': {
+    'en': '{0}\'s appointments',
+    'de': 'Termine von {0}',
+    'fr': 'Rendez-vous de {0}',
+  },
+  'Tus horas agendadas': {
+    'en': 'Your appointments',
+    'de': 'Ihre Termine',
+    'fr': 'Vos rendez-vous',
+  },
+  'Hora actual: {0} a las {1}': {
+    'en': 'Current appointment: {0} at {1}',
+    'de': 'Aktueller Termin: {0} um {1}',
+    'fr': 'Rendez-vous actuel : {0} à {1}',
+  },
+  'Guardando…': {
+    'en': 'Saving…',
+    'de': 'Wird gespeichert…',
+    'fr': 'Enregistrement…',
+  },
+  'Elige una hora': {
+    'en': 'Choose a time',
+    'de': 'Uhrzeit wählen',
+    'fr': 'Choisissez une heure',
+  },
+  'Cambiar a las {0}': {
+    'en': 'Change to {0}',
+    'de': 'Auf {0} ändern',
+    'fr': 'Changer pour {0}',
+  },
+  'Agendar para {0}': {
+    'en': 'Book for {0}',
+    'de': 'Für {0} buchen',
+    'fr': 'Réserver pour {0}',
+  },
+  'Estás agendando para {0}: la reserva queda a su nombre.': {
+    'en': 'You are booking for {0}: the booking will be in their name.',
+    'de': 'Sie buchen für {0}: Die Buchung läuft auf deren Namen.',
+    'fr': 'Vous réservez pour {0} : la réservation sera à son nom.',
+  },
+  '🏠 Agrega tu dirección': {
+    'en': '🏠 Add your address',
+    'de': '🏠 Adresse hinzufügen',
+    'fr': '🏠 Ajoutez votre adresse',
+  },
+  '🏠 Actualiza tu dirección': {
+    'en': '🏠 Update your address',
+    'de': '🏠 Adresse aktualisieren',
+    'fr': '🏠 Mettez à jour votre adresse',
+  },
+  'Para ver quién puede atenderte en tu casa necesitamos tu dirección (calle, número y comuna).': {
+    'en': 'To see who can visit you at home we need your address (street, number and district).',
+    'de': 'Um zu sehen, wer Sie zu Hause behandeln kann, benötigen wir Ihre Adresse (Straße, Hausnummer und Gemeinde).',
+    'fr': 'Pour savoir qui peut venir chez vous, nous avons besoin de votre adresse (rue, numéro et commune).',
+  },
+  'A tu dirección registrada le falta la comuna. La necesitamos para saber quién puede ir a atenderte.': {
+    'en': 'Your saved address is missing the district. We need it to know who can visit you.',
+    'de': 'Bei Ihrer gespeicherten Adresse fehlt die Gemeinde. Wir brauchen sie, um zu wissen, wer Sie besuchen kann.',
+    'fr': 'Il manque la commune à votre adresse enregistrée. Nous en avons besoin pour savoir qui peut venir vous soigner.',
+  },
+  'Agregar mi dirección': {
+    'en': 'Add my address',
+    'de': 'Meine Adresse hinzufügen',
+    'fr': 'Ajouter mon adresse',
+  },
+  'Actualizar mi dirección': {
+    'en': 'Update my address',
+    'de': 'Meine Adresse aktualisieren',
+    'fr': 'Mettre à jour mon adresse',
+  },
+  '🏠 Visita en {0}': {
+    'en': '🏠 Visit at {0}',
+    'de': '🏠 Besuch in {0}',
+    'fr': '🏠 Visite à {0}',
+  },
+  'Ver centros más lejos ({0})': {
+    'en': 'See centers farther away ({0})',
+    'de': 'Weiter entfernte Zentren ansehen ({0})',
+    'fr': 'Voir les centres plus éloignés ({0})',
+  },
+  'No hay centros a menos de 50 km de tu dirección.': {
+    'en': 'There are no centers within 50 km of your address.',
+    'de': 'Im Umkreis von 50 km um Ihre Adresse gibt es keine Zentren.',
+    'fr': 'Aucun centre à moins de 50 km de votre adresse.',
+  },
+  'Por ahora no hay {0} disponible.': {
+    'en': 'No {0} available for now.',
+    'de': 'Derzeit ist keine {0} verfügbar.',
+    'fr': 'Pas de {0} disponible pour le moment.',
+  },
+  '📍 Ordenado por cercanía a {0}': {
+    'en': '📍 Sorted by distance from {0}',
+    'de': '📍 Nach Entfernung zu {0} sortiert',
+    'fr': '📍 Trié par proximité de {0}',
+  },
+  'Completa el pago: la hora queda apartada 30 minutos. También te llegó el link por correo.': {
+    'en': 'Complete the payment: the slot is held for 30 minutes. The link was also sent to your email.',
+    'de': 'Schließen Sie die Zahlung ab: Der Termin wird 30 Minuten reserviert. Der Link wurde Ihnen auch per E-Mail gesendet.',
+    'fr': 'Finalisez le paiement : le créneau est réservé 30 minutes. Le lien vous a aussi été envoyé par e-mail.',
+  },
+  'Hora reservada. Te llegará la confirmación por correo.': {
+    'en': 'Appointment booked. You will receive the confirmation by email.',
+    'de': 'Termin gebucht. Sie erhalten die Bestätigung per E-Mail.',
+    'fr': 'Rendez-vous réservé. Vous recevrez la confirmation par e-mail.',
+  },
+  'Consulta online · \${0}': {
+    'en': 'Online consultation · \${0}',
+    'de': 'Online-Sprechstunde · \${0}',
+    'fr': 'Consultation en ligne · \${0}',
+  },
+  '🏠 Sale a {0} de tu domicilio': {
+    'en': '🏠 Leaves {0} from your home',
+    'de': '🏠 Startet {0} von Ihrer Wohnung entfernt',
+    'fr': '🏠 Part à {0} de votre domicile',
+  },
+  'Cómo llegar': {
+    'en': 'Directions',
+    'de': 'Route',
+    'fr': 'Itinéraire',
+  },
+  'No puedes autorizar acceso médico en nombre de esta persona.': {
+    'en': 'You can\'t authorize doctor access on behalf of this person.',
+    'de': 'Sie können für diese Person keinen Arztzugriff freigeben.',
+    'fr': 'Vous ne pouvez pas autoriser l\'accès médical au nom de cette personne.',
+  },
+  'Ingresa el email del médico': {
+    'en': 'Enter the doctor\'s email',
+    'de': 'Geben Sie die E-Mail des Arztes ein',
+    'fr': 'Saisissez l\'e-mail du médecin',
+  },
+  'Acceso enviado a {0}': {
+    'en': 'Access sent to {0}',
+    'de': 'Zugriff an {0} gesendet',
+    'fr': 'Accès envoyé à {0}',
+  },
+  'Modo cuidador': {
+    'en': 'Caregiver mode',
+    'de': 'Betreuungsmodus',
+    'fr': 'Mode aidant',
+  },
+  ' · Autorizando en nombre de {0}': {
+    'en': ' · Authorizing on behalf of {0}',
+    'de': ' · Freigabe im Namen von {0}',
+    'fr': ' · Autorisation au nom de {0}',
+  },
+  'Genera un acceso temporal para que un médico revise tu ficha. Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.': {
+    'en': 'Create temporary access for a doctor to review your record. They can review it for 3 hours. When the session closes, access expires.',
+    'de': 'Erstellen Sie einen vorübergehenden Zugriff, damit ein Arzt Ihre Akte einsehen kann. Er kann sie 3 Stunden lang einsehen. Beim Beenden der Sitzung läuft der Zugriff ab.',
+    'fr': 'Créez un accès temporaire pour qu\'un médecin consulte votre dossier. Il pourra le consulter pendant 3 heures. À la fermeture de la session, l\'accès expire.',
+  },
+  'Genera un acceso temporal para que un médico revise la ficha de {0}. Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.': {
+    'en': 'Create temporary access for a doctor to review {0}\'s record. They can review it for 3 hours. When the session closes, access expires.',
+    'de': 'Erstellen Sie einen vorübergehenden Zugriff, damit ein Arzt die Akte von {0} einsehen kann. Er kann sie 3 Stunden lang einsehen. Beim Beenden der Sitzung läuft der Zugriff ab.',
+    'fr': 'Créez un accès temporaire pour qu\'un médecin consulte le dossier de {0}. Il pourra le consulter pendant 3 heures. À la fermeture de la session, l\'accès expire.',
+  },
+  'Genera un acceso temporal para que un médico revise la ficha del paciente. Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.': {
+    'en': 'Create temporary access for a doctor to review the patient\'s record. They can review it for 3 hours. When the session closes, access expires.',
+    'de': 'Erstellen Sie einen vorübergehenden Zugriff, damit ein Arzt die Akte des Patienten einsehen kann. Er kann sie 3 Stunden lang einsehen. Beim Beenden der Sitzung läuft der Zugriff ab.',
+    'fr': 'Créez un accès temporaire pour qu\'un médecin consulte le dossier du patient. Il pourra le consulter pendant 3 heures. À la fermeture de la session, l\'accès expire.',
+  },
+  '📱 Código QR': {
+    'en': '📱 QR code',
+    'de': '📱 QR-Code',
+    'fr': '📱 Code QR',
+  },
+  '📧 Email': {
+    'en': '📧 Email',
+    'de': '📧 E-Mail',
+    'fr': '📧 E-mail',
+  },
+  '+ Generar código QR': {
+    'en': '+ Generate QR code',
+    'de': '+ QR-Code erstellen',
+    'fr': '+ Générer un code QR',
+  },
+  'Enviar acceso por email': {
+    'en': 'Send access by email',
+    'de': 'Zugriff per E-Mail senden',
+    'fr': 'Envoyer l\'accès par e-mail',
+  },
+  '👤 RUT {0}': {
+    'en': '👤 RUT {0}',
+    'de': '👤 RUT {0}',
+    'fr': '👤 RUT {0}',
+  },
+  '⏱ Sesión activa hasta: {0}:{1}': {
+    'en': '⏱ Session active until: {0}:{1}',
+    'de': '⏱ Sitzung aktiv bis: {0}:{1}',
+    'fr': '⏱ Session active jusqu\'à : {0}:{1}',
+  },
+  'Confirma que compartes la ficha bajo tu responsabilidad': {
+    'en': 'Confirm that you share the record under your responsibility',
+    'de': 'Bestätigen Sie, dass Sie die Akte in eigener Verantwortung teilen',
+    'fr': 'Confirmez que vous partagez le dossier sous votre responsabilité',
+  },
+  'No se confirmó tu identidad.': {
+    'en': 'Your identity was not confirmed.',
+    'de': 'Ihre Identität wurde nicht bestätigt.',
+    'fr': 'Votre identité n\'a pas été confirmée.',
+  },
+  '{0} Abre la ficha una vez con internet para guardarla en el teléfono.': {
+    'en': '{0} Open the record once with internet to save it on the phone.',
+    'de': '{0} Öffnen Sie die Akte einmal mit Internet, um sie auf dem Telefon zu speichern.',
+    'fr': '{0} Ouvrez le dossier une fois avec internet pour l\'enregistrer sur le téléphone.',
+  },
+  'Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. Lo hago por mi propia decisión y bajo mi responsabilidad. Sé que la identidad del profesional se verificará en el RNPI cuando vuelva la conexión, y que su nota no entrará a mi ficha hasta esa verificación.': {
+    'en': 'I am going to show my medical record to a health professional without an internet connection. I do so by my own decision and under my responsibility. I know that the professional\'s identity will be verified in the RNPI when the connection returns, and that their note will not enter my record until that verification.',
+    'de': 'Ich werde meine Krankenakte einer Gesundheitsfachperson ohne Internetverbindung zeigen. Ich tue dies aus eigener Entscheidung und in eigener Verantwortung. Mir ist bekannt, dass die Identität der Fachperson im RNPI geprüft wird, sobald wieder eine Verbindung besteht, und dass ihre Notiz erst nach dieser Prüfung in meine Akte aufgenommen wird.',
+    'fr': 'Je vais montrer mon dossier médical à un professionnel de santé sans connexion internet. Je le fais de ma propre décision et sous ma responsabilité. Je sais que l\'identité du professionnel sera vérifiée dans le RNPI au retour de la connexion, et que sa note n\'entrera pas dans mon dossier avant cette vérification.',
+  },
+  'Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin conexión a internet. Lo hago bajo mi responsabilidad como su cuidador. Sé que la identidad del profesional se verificará en el RNPI cuando vuelva la conexión, y que su nota no entrará a la ficha hasta esa verificación.': {
+    'en': 'I am going to show the medical record of the person I care for to a health professional without an internet connection. I do so under my responsibility as their caregiver. I know that the professional\'s identity will be verified in the RNPI when the connection returns, and that their note will not enter the record until that verification.',
+    'de': 'Ich werde die Krankenakte der von mir betreuten Person einer Gesundheitsfachperson ohne Internetverbindung zeigen. Ich tue dies in meiner Verantwortung als Betreuungsperson. Mir ist bekannt, dass die Identität der Fachperson im RNPI geprüft wird, sobald wieder eine Verbindung besteht, und dass ihre Notiz erst nach dieser Prüfung in die Akte aufgenommen wird.',
+    'fr': 'Je vais montrer le dossier médical de la personne dont je m\'occupe à un professionnel de santé sans connexion internet. Je le fais sous ma responsabilité en tant qu\'aidant. Je sais que l\'identité du professionnel sera vérifiée dans le RNPI au retour de la connexion, et que sa note n\'entrera pas dans le dossier avant cette vérification.',
+  },
+  'Termina en {0}': {
+    'en': 'Ends in {0}',
+    'de': 'Endet in {0}',
+    'fr': 'Se termine dans {0}',
+  },
+  'Red: {0}\nClave: {1}': {
+    'en': 'Network: {0}\nPassword: {1}',
+    'de': 'Netzwerk: {0}\nPasswort: {1}',
+    'fr': 'Réseau : {0}\nMot de passe : {1}',
+  },
+  'Paso 2 de 2 · Abrir la ficha': {
+    'en': 'Step 2 of 2 · Open the record',
+    'de': 'Schritt 2 von 2 · Akte öffnen',
+    'fr': 'Étape 2 sur 2 · Ouvrir le dossier',
+  },
+  'Abrir la ficha': {
+    'en': 'Open the record',
+    'de': 'Akte öffnen',
+    'fr': 'Ouvrir le dossier',
+  },
+  'Ningún profesional ha entrado todavía.': {
+    'en': 'No professional has signed in yet.',
+    'de': 'Noch hat sich keine Fachperson angemeldet.',
+    'fr': 'Aucun professionnel ne s\'est encore connecté.',
+  },
+  'Profesionales que entraron:': {
+    'en': 'Professionals who signed in:',
+    'de': 'Angemeldete Fachpersonen:',
+    'fr': 'Professionnels connectés :',
+  },
+  'Notas guardadas: {0} — se enviarán solas cuando vuelva internet.': {
+    'en': 'Saved notes: {0} — they will be sent automatically when internet returns.',
+    'de': 'Gespeicherte Notizen: {0} — sie werden automatisch gesendet, sobald wieder Internet verfügbar ist.',
+    'fr': 'Notes enregistrées : {0} — elles seront envoyées automatiquement au retour d\'internet.',
+  },
+  'Más económica': {
+    'en': 'Cheapest',
+    'de': 'Günstigste',
+    'fr': 'La moins chère',
+  },
+  'Receta incompleta': {
+    'en': 'Incomplete prescription',
+    'de': 'Rezept unvollständig',
+    'fr': 'Ordonnance incomplète',
+  },
+  '{0} — no disponible en esta farmacia': {
+    'en': '{0} — not available at this pharmacy',
+    'de': '{0} — in dieser Apotheke nicht verfügbar',
+    'fr': '{0} — non disponible dans cette pharmacie',
+  },
+  'No se pudieron cargar tus recetas: {0}': {
+    'en': 'Your prescriptions could not be loaded: {0}',
+    'de': 'Ihre Rezepte konnten nicht geladen werden: {0}',
+    'fr': 'Vos ordonnances n\'ont pas pu être chargées : {0}',
+  },
+  'No tienes recetas de los últimos {0} días\npara cotizar': {
+    'en': 'You have no prescriptions from the last {0} days\nto compare',
+    'de': 'Sie haben keine Rezepte aus den letzten {0} Tagen\nzum Vergleichen',
+    'fr': 'Vous n\'avez pas d\'ordonnances des {0} derniers jours\nà comparer',
+  },
+  'Recetas con medicamentos ({0})': {
+    'en': 'Prescriptions with medicines ({0})',
+    'de': 'Rezepte mit Medikamenten ({0})',
+    'fr': 'Ordonnances avec médicaments ({0})',
+  },
+  'Receta médica': {
+    'en': 'Prescription',
+    'de': 'Rezept',
+    'fr': 'Ordonnance',
+  },
+  '1 medicamento — Ver cotización': {
+    'en': '1 medicine — See prices',
+    'de': '1 Medikament — Preise ansehen',
+    'fr': '1 médicament — Voir les prix',
+  },
+  '{0} medicamentos — Ver cotización': {
+    'en': '{0} medicines — See prices',
+    'de': '{0} Medikamente — Preise ansehen',
+    'fr': '{0} médicaments — Voir les prix',
+  },
+  'Cotización': {
+    'en': 'Price comparison',
+    'de': 'Preisvergleich',
+    'fr': 'Comparaison des prix',
+  },
+  'Esta persona no te dio acceso a cotizar sus medicamentos.': {
+    'en': 'This person did not give you access to compare their medicine prices.',
+    'de': 'Diese Person hat Ihnen keinen Zugriff auf den Preisvergleich ihrer Medikamente gegeben.',
+    'fr': 'Cette personne ne vous a pas donné accès à la comparaison des prix de ses médicaments.',
+  },
+  'No se pudo cargar: {0}': {
+    'en': 'Could not load: {0}',
+    'de': 'Konnte nicht geladen werden: {0}',
+    'fr': 'Chargement impossible : {0}',
+  },
+  'Yo cuido': {
+    'en': 'I care for',
+    'de': 'Ich betreue',
+    'fr': 'Je m\'occupe de',
+  },
+  'Personas que cuidas y tus invitaciones': {
+    'en': 'People you care for and your invitations',
+    'de': 'Personen, die Sie betreuen, und Ihre Einladungen',
+    'fr': 'Personnes dont vous vous occupez et vos invitations',
+  },
+  'Me cuidan': {
+    'en': 'My caregivers',
+    'de': 'Meine Betreuer',
+    'fr': 'Mes aidants',
+  },
+  'Quién puede ver tus recordatorios': {
+    'en': 'Who can see your reminders',
+    'de': 'Wer Ihre Erinnerungen sehen kann',
+    'fr': 'Qui peut voir vos rappels',
+  },
+  '¿Cancelar la invitación a {0}?': {
+    'en': 'Cancel the invitation to {0}?',
+    'de': 'Einladung an {0} zurückziehen?',
+    'fr': 'Annuler l\'invitation à {0} ?',
+  },
+  '¿Quitarle acceso a {0}? Ya no podrá ver tus notificaciones.': {
+    'en': 'Remove {0}\'s access? They will no longer see your notifications.',
+    'de': '{0} den Zugriff entziehen? Diese Person sieht Ihre Benachrichtigungen dann nicht mehr.',
+    'fr': 'Retirer l\'accès à {0} ? Cette personne ne verra plus vos notifications.',
+  },
+  'Error: {0}': {
+    'en': 'Error: {0}',
+    'de': 'Fehler: {0}',
+    'fr': 'Erreur : {0}',
+  },
+  'Vinculado': {
+    'en': 'Linked',
+    'de': 'Verknüpft',
+    'fr': 'Associé',
+  },
+  'Esperando que acepte la invitación': {
+    'en': 'Waiting for them to accept the invitation',
+    'de': 'Warten auf Annahme der Einladung',
+    'fr': 'En attente d\'acceptation de l\'invitation',
+  },
+  'Rechazó la invitación': {
+    'en': 'Declined the invitation',
+    'de': 'Einladung abgelehnt',
+    'fr': 'A refusé l\'invitation',
+  },
+  'Expiró sin confirmar': {
+    'en': 'Expired without confirmation',
+    'de': 'Ohne Bestätigung abgelaufen',
+    'fr': 'Expirée sans confirmation',
+  },
+  'No se pudieron cargar los niveles de acceso: {0}': {
+    'en': 'Access levels could not be loaded: {0}',
+    'de': 'Zugriffsstufen konnten nicht geladen werden: {0}',
+    'fr': 'Les niveaux d\'accès n\'ont pas pu être chargés : {0}',
+  },
+  'Completa nombre, apellidos, RUT y nivel de acceso': {
+    'en': 'Fill in first name, last name, RUT and access level',
+    'de': 'Vorname, Nachname, RUT und Zugriffsstufe ausfüllen',
+    'fr': 'Renseignez prénom, nom, RUT et niveau d\'accès',
+  },
+  'Ahora cuidas a {0}': {
+    'en': 'You now care for {0}',
+    'de': 'Sie betreuen jetzt {0}',
+    'fr': 'Vous vous occupez maintenant de {0}',
+  },
+  'Invitación rechazada': {
+    'en': 'Invitation declined',
+    'de': 'Einladung abgelehnt',
+    'fr': 'Invitation refusée',
+  },
+  '{0} te invita a ser su cuidador': {
+    'en': '{0} invites you to be their caregiver',
+    'de': '{0} lädt Sie ein, Betreuungsperson zu werden',
+    'fr': '{0} vous invite à être son aidant',
+  },
+  'Podrás recibir {0}.': {
+    'en': 'You will be able to receive {0}.',
+    'de': 'Sie können {0} erhalten.',
+    'fr': 'Vous pourrez recevoir {0}.',
+  },
+  '📩 {0} te invita a ser su cuidador': {
+    'en': '📩 {0} invites you to be their caregiver',
+    'de': '📩 {0} lädt Sie ein, Betreuungsperson zu werden',
+    'fr': '📩 {0} vous invite à être son aidant',
+  },
+  'Acceso: {0}': {
+    'en': 'Access: {0}',
+    'de': 'Zugriff: {0}',
+    'fr': 'Accès : {0}',
+  },
+  'Huella desactivada': {
+    'en': 'Fingerprint turned off',
+    'de': 'Fingerabdruck deaktiviert',
+    'fr': 'Empreinte désactivée',
+  },
+  'Este teléfono no permite huella.': {
+    'en': 'This phone does not support fingerprint.',
+    'de': 'Dieses Telefon unterstützt keinen Fingerabdruck.',
+    'fr': 'Ce téléphone ne prend pas en charge l\'empreinte.',
+  },
+  'No se pudo activar': {
+    'en': 'Could not turn on',
+    'de': 'Aktivierung fehlgeschlagen',
+    'fr': 'Activation impossible',
+  },
+  'No se pudo conectar. Revisa tu conexión e intenta de nuevo.': {
+    'en': 'Could not connect. Check your connection and try again.',
+    'de': 'Verbindung fehlgeschlagen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
+    'fr': 'Connexion impossible. Vérifiez votre connexion et réessayez.',
+  },
+  'Confirma tu huella para activarla en MiSalud': {
+    'en': 'Confirm your fingerprint to turn it on in MiSalud',
+    'de': 'Bestätigen Sie Ihren Fingerabdruck, um ihn in MiSalud zu aktivieren',
+    'fr': 'Confirmez votre empreinte pour l\'activer dans MiSalud',
+  },
+  'No se activó la huella': {
+    'en': 'Fingerprint was not turned on',
+    'de': 'Fingerabdruck wurde nicht aktiviert',
+    'fr': 'L\'empreinte n\'a pas été activée',
+  },
+  'No se confirmó la huella.': {
+    'en': 'Fingerprint was not confirmed.',
+    'de': 'Fingerabdruck wurde nicht bestätigt.',
+    'fr': 'L\'empreinte n\'a pas été confirmée.',
+  },
+  '✓ Huella activada': {
+    'en': '✓ Fingerprint on',
+    'de': '✓ Fingerabdruck aktiviert',
+    'fr': '✓ Empreinte activée',
+  },
+  'La próxima vez entras con tu huella. Tus recordatorios seguirán sonando.': {
+    'en': 'Next time you sign in with your fingerprint. Your reminders will keep ringing.',
+    'de': 'Beim nächsten Mal melden Sie sich mit Fingerabdruck an. Ihre Erinnerungen klingeln weiterhin.',
+    'fr': 'La prochaine fois, vous vous connecterez avec votre empreinte. Vos rappels continueront de sonner.',
+  },
+  'Tus recordatorios seguirán sonando en este teléfono.': {
+    'en': 'Your reminders will keep ringing on this phone.',
+    'de': 'Ihre Erinnerungen klingeln auf diesem Telefon weiterhin.',
+    'fr': 'Vos rappels continueront de sonner sur ce téléphone.',
+  },
+  'Cuenta eliminada': {
+    'en': 'Account deleted',
+    'de': 'Konto gelöscht',
+    'fr': 'Compte supprimé',
+  },
+  'No se pudo eliminar': {
+    'en': 'Could not delete',
+    'de': 'Löschen fehlgeschlagen',
+    'fr': 'Suppression impossible',
+  },
+  'No se pudo confirmar. Toca el botón para intentar de nuevo.': {
+    'en': 'Could not confirm. Tap the button to try again.',
+    'de': 'Bestätigung fehlgeschlagen. Tippen Sie auf die Schaltfläche, um es erneut zu versuchen.',
+    'fr': 'Confirmation impossible. Touchez le bouton pour réessayer.',
+  },
+  'Este teléfono ya no está vinculado. Ingresa con tu contraseña.': {
+    'en': 'This phone is no longer linked. Sign in with your password.',
+    'de': 'Dieses Telefon ist nicht mehr verknüpft. Melden Sie sich mit Ihrem Passwort an.',
+    'fr': 'Ce téléphone n\'est plus associé. Connectez-vous avec votre mot de passe.',
+  },
+  'Confirma que eres tú para seguir.': {
+    'en': 'Confirm it\'s you to continue.',
+    'de': 'Bestätigen Sie, dass Sie es sind, um fortzufahren.',
+    'fr': 'Confirmez que c\'est vous pour continuer.',
+  },
+  'Entra con tu huella para ver tu ficha.': {
+    'en': 'Sign in with your fingerprint to see your record.',
+    'de': 'Melden Sie sich mit Fingerabdruck an, um Ihre Akte zu sehen.',
+    'fr': 'Connectez-vous avec votre empreinte pour voir votre dossier.',
+  },
+  'No se pudo cargar la lista de comunas. Revisa tu conexión.': {
+    'en': 'The list of districts could not be loaded. Check your connection.',
+    'de': 'Die Gemeindeliste konnte nicht geladen werden. Prüfen Sie Ihre Verbindung.',
+    'fr': 'La liste des communes n\'a pas pu être chargée. Vérifiez votre connexion.',
+  },
+  'Escribe la calle.': {
+    'en': 'Enter the street.',
+    'de': 'Geben Sie die Straße ein.',
+    'fr': 'Saisissez la rue.',
+  },
+  'Escribe el número (si no tiene, S/N).': {
+    'en': 'Enter the number (if none, S/N).',
+    'de': 'Geben Sie die Hausnummer ein (falls keine, S/N).',
+    'fr': 'Saisissez le numéro (s\'il n\'y en a pas, S/N).',
+  },
+  'Elige la comuna de la lista.': {
+    'en': 'Choose the district from the list.',
+    'de': 'Wählen Sie die Gemeinde aus der Liste.',
+    'fr': 'Choisissez la commune dans la liste.',
+  },
+  'No encontramos esa dirección.': {
+    'en': 'We couldn\'t find that address.',
+    'de': 'Wir konnten diese Adresse nicht finden.',
+    'fr': 'Nous n\'avons pas trouvé cette adresse.',
+  },
+  'Sin conexión. Intenta de nuevo.': {
+    'en': 'No connection. Try again.',
+    'de': 'Keine Verbindung. Versuchen Sie es erneut.',
+    'fr': 'Pas de connexion. Réessayez.',
+  },
+  'Calle': {
+    'en': 'Street',
+    'de': 'Straße',
+    'fr': 'Rue',
+  },
+  'Número': {
+    'en': 'Number',
+    'de': 'Hausnummer',
+    'fr': 'Numéro',
+  },
+  'Comuna': {
+    'en': 'District (comuna)',
+    'de': 'Gemeinde (Comuna)',
+    'fr': 'Commune',
+  },
+  'Escribe y elige de la lista': {
+    'en': 'Type and choose from the list',
+    'de': 'Eingeben und aus der Liste wählen',
+    'fr': 'Saisissez et choisissez dans la liste',
+  },
+  'Región: {0}': {
+    'en': 'Region: {0}',
+    'de': 'Region: {0}',
+    'fr': 'Région : {0}',
+  },
+  'Elige una comuna de la lista': {
+    'en': 'Choose a district from the list',
+    'de': 'Wählen Sie eine Gemeinde aus der Liste',
+    'fr': 'Choisissez une commune dans la liste',
+  },
+  'Depto / oficina (opcional)': {
+    'en': 'Apt / office (optional)',
+    'de': 'Wohnung / Büro (optional)',
+    'fr': 'Appartement / bureau (facultatif)',
+  },
+  'Buscando…': {
+    'en': 'Searching…',
+    'de': 'Suche läuft…',
+    'fr': 'Recherche…',
+  },
+  '✓ Sí, es aquí': {
+    'en': '✓ Yes, it\'s here',
+    'de': '✓ Ja, hier ist es',
+    'fr': '✓ Oui, c\'est ici',
+  },
+  'Profesional no especificado': {
+    'en': 'Professional not specified',
+    'de': 'Fachperson nicht angegeben',
+    'fr': 'Professionnel non précisé',
+  },
+  'Tipo de consulta: {0}': {
+    'en': 'Type of consultation: {0}',
+    'de': 'Art der Sprechstunde: {0}',
+    'fr': 'Type de consultation : {0}',
+  },
+  'Diagnóstico': {
+    'en': 'Diagnosis',
+    'de': 'Diagnose',
+    'fr': 'Diagnostic',
+  },
+  'Examen bucal': {
+    'en': 'Oral examination',
+    'de': 'Mundbefund',
+    'fr': 'Examen buccal',
+  },
+  'Piezas tratadas': {
+    'en': 'Treated teeth',
+    'de': 'Behandelte Zähne',
+    'fr': 'Dents traitées',
+  },
+  'Plan de tratamiento': {
+    'en': 'Treatment plan',
+    'de': 'Behandlungsplan',
+    'fr': 'Plan de traitement',
+  },
+  'Examen físico': {
+    'en': 'Physical examination',
+    'de': 'Körperliche Untersuchung',
+    'fr': 'Examen physique',
+  },
+  'Signos vitales': {
+    'en': 'Vital signs',
+    'de': 'Vitalzeichen',
+    'fr': 'Signes vitaux',
+  },
+  'Procedimientos de enfermería': {
+    'en': 'Nursing procedures',
+    'de': 'Pflegemaßnahmen',
+    'fr': 'Soins infirmiers',
+  },
+  'Evolución': {
+    'en': 'Progress notes',
+    'de': 'Verlauf',
+    'fr': 'Évolution',
+  },
+  'Receta': {
+    'en': 'Prescription',
+    'de': 'Rezept',
+    'fr': 'Ordonnance',
+  },
+  'Indicaciones': {
+    'en': 'Instructions',
+    'de': 'Anweisungen',
+    'fr': 'Prescriptions',
+  },
+  'Exámenes': {
+    'en': 'Tests',
+    'de': 'Untersuchungen',
+    'fr': 'Examens',
+  },
+  'Orden de kinesiología': {
+    'en': 'Physiotherapy order',
+    'de': 'Physiotherapie-Verordnung',
+    'fr': 'Prescription de kinésithérapie',
+  },
+  'Orden kinésica': {
+    'en': 'Physiotherapy order',
+    'de': 'Physiotherapie-Verordnung',
+    'fr': 'Prescription de kinésithérapie',
+  },
+  'Indicación quirúrgica': {
+    'en': 'Surgical indication',
+    'de': 'Operationsindikation',
+    'fr': 'Indication chirurgicale',
+  },
+  'No se pudo abrir el PDF: {0}': {
+    'en': 'The PDF could not be opened: {0}',
+    'de': 'Das PDF konnte nicht geöffnet werden: {0}',
+    'fr': 'Le PDF n\'a pas pu être ouvert : {0}',
+  },
+  '📸 Fotos ({0})': {
+    'en': '📸 Photos ({0})',
+    'de': '📸 Fotos ({0})',
+    'fr': '📸 Photos ({0})',
+  },
+  ' · Viendo la ficha de {0}': {
+    'en': ' · Viewing {0}\'s record',
+    'de': ' · Akte von {0}',
+    'fr': ' · Dossier de {0}',
+  },
+  'Sin conexión a internet y aún no hay una copia de tu ficha en este teléfono. Ábrela una vez con internet para guardarla.': {
+    'en': 'No internet connection and there is no copy of your record on this phone yet. Open it once with internet to save it.',
+    'de': 'Keine Internetverbindung und noch keine Kopie Ihrer Akte auf diesem Telefon. Öffnen Sie sie einmal mit Internet, um sie zu speichern.',
+    'fr': 'Pas de connexion internet et pas encore de copie de votre dossier sur ce téléphone. Ouvrez-le une fois avec internet pour l\'enregistrer.',
+  },
+  'No se pudo cargar tu ficha: {0}': {
+    'en': 'Your record could not be loaded: {0}',
+    'de': 'Ihre Akte konnte nicht geladen werden: {0}',
+    'fr': 'Votre dossier n\'a pas pu être chargé : {0}',
+  },
+  'Hola, {0} 👋': {
+    'en': 'Hi, {0} 👋',
+    'de': 'Hallo, {0} 👋',
+    'fr': 'Bonjour, {0} 👋',
+  },
+  'Revisa tu historial médico explicado en lenguaje simple': {
+    'en': 'Review your medical history explained in plain language',
+    'de': 'Ihre Krankengeschichte in einfacher Sprache erklärt',
+    'fr': 'Consultez votre historique médical expliqué simplement',
+  },
+  'Tu historial, explicado simple': {
+    'en': 'Your history, explained simply',
+    'de': 'Ihre Krankengeschichte, einfach erklärt',
+    'fr': 'Votre historique, expliqué simplement',
+  },
+  '⚠️ Alergias': {
+    'en': '⚠️ Allergies',
+    'de': '⚠️ Allergien',
+    'fr': '⚠️ Allergies',
+  },
+  'Sin alergias conocidas registradas': {
+    'en': 'No known allergies recorded',
+    'de': 'Keine bekannten Allergien erfasst',
+    'fr': 'Aucune allergie connue enregistrée',
+  },
+  '💊 Medicamentos habituales': {
+    'en': '💊 Regular medicines',
+    'de': '💊 Dauermedikation',
+    'fr': '💊 Traitements habituels',
+  },
+  'Sin medicamentos habituales registrados': {
+    'en': 'No regular medicines recorded',
+    'de': 'Keine Dauermedikation erfasst',
+    'fr': 'Aucun traitement habituel enregistré',
+  },
+  '🩺 Enfermedades crónicas': {
+    'en': '🩺 Chronic conditions',
+    'de': '🩺 Chronische Erkrankungen',
+    'fr': '🩺 Maladies chroniques',
+  },
+  'Sin enfermedades crónicas registradas': {
+    'en': 'No chronic conditions recorded',
+    'de': 'Keine chronischen Erkrankungen erfasst',
+    'fr': 'Aucune maladie chronique enregistrée',
+  },
+  '📸 1 foto': {
+    'en': '📸 1 photo',
+    'de': '📸 1 Foto',
+    'fr': '📸 1 photo',
+  },
+  '📸 {0} fotos': {
+    'en': '📸 {0} photos',
+    'de': '📸 {0} Fotos',
+    'fr': '📸 {0} photos',
+  },
+  'No se pudieron cargar más atenciones: {0}': {
+    'en': 'More consultations could not be loaded: {0}',
+    'de': 'Weitere Sprechstunden konnten nicht geladen werden: {0}',
+    'fr': 'Impossible de charger plus de consultations : {0}',
+  },
+  '{0} consultas registradas': {
+    'en': '{0} consultations recorded',
+    'de': '{0} Sprechstunden erfasst',
+    'fr': '{0} consultations enregistrées',
+  },
+  ' · última: {0}': {
+    'en': ' · latest: {0}',
+    'de': ' · letzte: {0}',
+    'fr': ' · dernière : {0}',
+  },
+  'Tus consultas ({0})': {
+    'en': 'Your consultations ({0})',
+    'de': 'Ihre Sprechstunden ({0})',
+    'fr': 'Vos consultations ({0})',
+  },
+  'Cargando…': {
+    'en': 'Loading…',
+    'de': 'Wird geladen…',
+    'fr': 'Chargement…',
+  },
+  'Ver más atenciones': {
+    'en': 'See more consultations',
+    'de': 'Weitere Sprechstunden ansehen',
+    'fr': 'Voir plus de consultations',
+  },
+  'Desde {0}': {
+    'en': 'Since {0}',
+    'de': 'Seit {0}',
+    'fr': 'Depuis {0}',
+  },
+  'Este nivel de acceso solo autoriza ver medicamentos y controles.\nRevisa la pestaña "Recordatorios".': {
+    'en': 'This access level only allows seeing medicines and check-ups.\nSee the "Reminders" tab.',
+    'de': 'Diese Zugriffsstufe erlaubt nur Medikamente und Kontrollen.\nSiehe Reiter "Erinnerungen".',
+    'fr': 'Ce niveau d\'accès permet seulement de voir les médicaments et les contrôles.\nConsultez l\'onglet "Rappels".',
+  },
+  'Sin indicaciones registradas': {
+    'en': 'No instructions recorded',
+    'de': 'Keine Anweisungen erfasst',
+    'fr': 'Aucune prescription enregistrée',
+  },
+  '⚠️ ALERGIAS': {
+    'en': '⚠️ ALLERGIES',
+    'de': '⚠️ ALLERGIEN',
+    'fr': '⚠️ ALLERGIES',
+  },
+  'Sin alergias conocidas': {
+    'en': 'No known allergies',
+    'de': 'Keine bekannten Allergien',
+    'fr': 'Aucune allergie connue',
+  },
+  '💊 MEDICAMENTOS': {
+    'en': '💊 MEDICINES',
+    'de': '💊 MEDIKAMENTE',
+    'fr': '💊 MÉDICAMENTS',
+  },
+  'Sin medicamentos habituales': {
+    'en': 'No regular medicines',
+    'de': 'Keine Dauermedikation',
+    'fr': 'Aucun traitement habituel',
+  },
+  '🩺 CRÓNICAS': {
+    'en': '🩺 CHRONIC',
+    'de': '🩺 CHRONISCH',
+    'fr': '🩺 CHRONIQUES',
+  },
+  'Sin enfermedades crónicas': {
+    'en': 'No chronic conditions',
+    'de': 'Keine chronischen Erkrankungen',
+    'fr': 'Aucune maladie chronique',
+  },
+  '1 consulta registrada': {
+    'en': '1 consultation recorded',
+    'de': '1 Sprechstunde erfasst',
+    'fr': '1 consultation enregistrée',
+  },
+  'Esta persona no te dio acceso a su ficha clínica completa.': {
+    'en': 'This person did not give you access to their full medical record.',
+    'de': 'Diese Person hat Ihnen keinen Zugriff auf ihre vollständige Krankenakte gegeben.',
+    'fr': 'Cette personne ne vous a pas donné accès à son dossier médical complet.',
+  },
+  'Consulta': {
+    'en': 'Consultation',
+    'de': 'Sprechstunde',
+    'fr': 'Consultation',
+  },
+  'Diagnóstico: ': {
+    'en': 'Diagnosis: ',
+    'de': 'Diagnose: ',
+    'fr': 'Diagnostic : ',
+  },
+  'Ocultar': {
+    'en': 'Hide',
+    'de': 'Ausblenden',
+    'fr': 'Masquer',
+  },
+  'Ver detalle': {
+    'en': 'See details',
+    'de': 'Details ansehen',
+    'fr': 'Voir le détail',
+  },
+  '⬇ PDF': {
+    'en': '⬇ PDF',
+    'de': '⬇ PDF',
+    'fr': '⬇ PDF',
+  },
+  'Sin internet: compartir con el computador del médico': {
+    'en': 'No internet: share with the doctor\'s computer',
+    'de': 'Ohne Internet: mit dem Computer des Arztes teilen',
+    'fr': 'Sans internet : partager avec l\'ordinateur du médecin',
+  },
+  'Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. Lo hago por mi propia decisión y bajo mi responsabilidad. Sé que su identidad se verificará en el RNPI cuando vuelva la conexión, y que su nota no entrará a mi ficha hasta esa verificación.': {
+    'en': 'I am going to show my medical record to a health professional without an internet connection. I do so by my own decision and under my responsibility. I know that their identity will be verified in the RNPI when the connection returns, and that their note will not enter my record until that verification.',
+    'de': 'Ich werde meine Krankenakte einer Gesundheitsfachperson ohne Internetverbindung zeigen. Ich tue dies aus eigener Entscheidung und in eigener Verantwortung. Mir ist bekannt, dass ihre Identität im RNPI geprüft wird, sobald wieder eine Verbindung besteht, und dass ihre Notiz erst nach dieser Prüfung in meine Akte aufgenommen wird.',
+    'fr': 'Je vais montrer mon dossier médical à un professionnel de santé sans connexion internet. Je le fais de ma propre décision et sous ma responsabilité. Je sais que son identité sera vérifiée dans le RNPI au retour de la connexion, et que sa note n\'entrera pas dans mon dossier avant cette vérification.',
+  },
+  'Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin conexión a internet, bajo mi responsabilidad como su cuidador. Sé que su identidad se verificará en el RNPI cuando vuelva la conexión, y que su nota no entrará a la ficha hasta esa verificación.': {
+    'en': 'I am going to show the medical record of the person I care for to a health professional without an internet connection, under my responsibility as their caregiver. I know that their identity will be verified in the RNPI when the connection returns, and that their note will not enter the record until that verification.',
+    'de': 'Ich werde die Krankenakte der von mir betreuten Person einer Gesundheitsfachperson ohne Internetverbindung zeigen, in meiner Verantwortung als Betreuungsperson. Mir ist bekannt, dass ihre Identität im RNPI geprüft wird, sobald wieder eine Verbindung besteht, und dass ihre Notiz erst nach dieser Prüfung in die Akte aufgenommen wird.',
+    'fr': 'Je vais montrer le dossier médical de la personne dont je m\'occupe à un professionnel de santé sans connexion internet, sous ma responsabilité en tant qu\'aidant. Je sais que son identité sera vérifiée dans le RNPI au retour de la connexion, et que sa note n\'entrera pas dans le dossier avant cette vérification.',
+  },
+  'Esperando al computador del médico…': {
+    'en': 'Waiting for the doctor\'s computer…',
+    'de': 'Warten auf den Computer des Arztes…',
+    'fr': 'En attente de l\'ordinateur du médecin…',
+  },
+  'No se encontró el computador del médico': {
+    'en': 'The doctor\'s computer was not found',
+    'de': 'Der Computer des Arztes wurde nicht gefunden',
+    'fr': 'L\'ordinateur du médecin est introuvable',
+  },
+  'Bluetooth: {0}': {
+    'en': 'Bluetooth: {0}',
+    'de': 'Bluetooth: {0}',
+    'fr': 'Bluetooth : {0}',
+  },
+  'Conectando…': {
+    'en': 'Connecting…',
+    'de': 'Verbindung wird hergestellt…',
+    'fr': 'Connexion…',
+  },
+  'Verifica el código': {
+    'en': 'Check the code',
+    'de': 'Code prüfen',
+    'fr': 'Vérifiez le code',
+  },
+  'Consulta en curso': {
+    'en': 'Consultation in progress',
+    'de': 'Sprechstunde läuft',
+    'fr': 'Consultation en cours',
+  },
+  'Computador: {0}': {
+    'en': 'Computer: {0}',
+    'de': 'Computer: {0}',
+    'fr': 'Ordinateur : {0}',
+  },
+  'El médico aún no se identifica.': {
+    'en': 'The doctor has not identified themselves yet.',
+    'de': 'Der Arzt hat sich noch nicht identifiziert.',
+    'fr': 'Le médecin ne s\'est pas encore identifié.',
+  },
+  'Profesionales:': {
+    'en': 'Professionals:',
+    'de': 'Fachpersonen:',
+    'fr': 'Professionnels :',
+  },
+  'El médico no aceptó': {
+    'en': 'The doctor did not accept',
+    'de': 'Der Arzt hat nicht angenommen',
+    'fr': 'Le médecin n\'a pas accepté',
+  },
+  'Consulta terminada': {
+    'en': 'Consultation finished',
+    'de': 'Sprechstunde beendet',
+    'fr': 'Consultation terminée',
+  },
+  'Se guardaron {0} nota(s). Se enviarán solas cuando vuelva internet.': {
+    'en': '{0} note(s) saved. They will be sent automatically when internet returns.',
+    'de': '{0} Notiz(en) gespeichert. Sie werden automatisch gesendet, sobald wieder Internet verfügbar ist.',
+    'fr': '{0} note(s) enregistrée(s). Elles seront envoyées automatiquement au retour d\'internet.',
+  },
+  'El computador ya no tiene acceso a la ficha.': {
+    'en': 'The computer no longer has access to the record.',
+    'de': 'Der Computer hat keinen Zugriff mehr auf die Akte.',
+    'fr': 'L\'ordinateur n\'a plus accès au dossier.',
+  },
+  'Ingresa tu RUT y tu contraseña': {
+    'en': 'Enter your RUT and password',
+    'de': 'Geben Sie Ihre RUT und Ihr Passwort ein',
+    'fr': 'Saisissez votre RUT et votre mot de passe',
+  },
+  'El RUT ingresado no es válido': {
+    'en': 'The RUT entered is not valid',
+    'de': 'Die eingegebene RUT ist ungültig',
+    'fr': 'Le RUT saisi n\'est pas valide',
+  },
+  'No se pudo conectar. Revisa tu conexión.': {
+    'en': 'Could not connect. Check your connection.',
+    'de': 'Verbindung fehlgeschlagen. Prüfen Sie Ihre Verbindung.',
+    'fr': 'Connexion impossible. Vérifiez votre connexion.',
+  },
+  'Escribe los 6 dígitos que llegaron a tu correo': {
+    'en': 'Enter the 6 digits sent to your email',
+    'de': 'Geben Sie die 6 Ziffern aus Ihrer E-Mail ein',
+    'fr': 'Saisissez les 6 chiffres reçus par e-mail',
+  },
+  'Sin medicamentos ni controles vigentes': {
+    'en': 'No current medicines or check-ups',
+    'de': 'Keine aktuellen Medikamente oder Kontrollen',
+    'fr': 'Aucun médicament ni contrôle en cours',
+  },
+  '⏰ Próxima toma: {0}': {
+    'en': '⏰ Next dose: {0}',
+    'de': '⏰ Nächste Einnahme: {0}',
+    'fr': '⏰ Prochaine prise : {0}',
+  },
+  'Cada {0}h': {
+    'en': 'Every {0}h',
+    'de': 'Alle {0} Std.',
+    'fr': 'Toutes les {0} h',
+  },
+  ' · {0} días de tratamiento': {
+    'en': ' · {0} days of treatment',
+    'de': ' · {0} Behandlungstage',
+    'fr': ' · {0} jours de traitement',
+  },
+  'Citas agendadas': {
+    'en': 'Booked appointments',
+    'de': 'Gebuchte Termine',
+    'fr': 'Rendez-vous pris',
+  },
+  'No se pudieron cargar los recordatorios:\n{0}': {
+    'en': 'Reminders could not be loaded:\n{0}',
+    'de': 'Erinnerungen konnten nicht geladen werden:\n{0}',
+    'fr': 'Les rappels n\'ont pas pu être chargés :\n{0}',
+  },
+  'Próximas 2 horas': {
+    'en': 'Next 2 hours',
+    'de': 'Nächste 2 Stunden',
+    'fr': '2 prochaines heures',
+  },
+  'Próximas tomas': {
+    'en': 'Upcoming doses',
+    'de': 'Nächste Einnahmen',
+    'fr': 'Prochaines prises',
+  },
+  'Sin próxima toma': {
+    'en': 'No upcoming dose',
+    'de': 'Keine nächste Einnahme',
+    'fr': 'Aucune prochaine prise',
+  },
+  'Hoy a las {0}': {
+    'en': 'Today at {0}',
+    'de': 'Heute um {0}',
+    'fr': 'Aujourd\'hui à {0}',
+  },
+  'Mañana a las {0}': {
+    'en': 'Tomorrow at {0}',
+    'de': 'Morgen um {0}',
+    'fr': 'Demain à {0}',
+  },
+  '{0} a las {1}': {
+    'en': '{0} at {1}',
+    'de': '{0} um {1}',
+    'fr': '{0} à {1}',
+  },
+  ' · {0} días': {
+    'en': ' · {0} days',
+    'de': ' · {0} Tage',
+    'fr': ' · {0} jours',
+  },
+  'No se pudo cargar la página de reservas.': {
+    'en': 'The booking page could not be loaded.',
+    'de': 'Die Buchungsseite konnte nicht geladen werden.',
+    'fr': 'La page de réservation n\'a pas pu être chargée.',
+  },
+  'Compara precios de las recetas de {0}': {
+    'en': 'Compare prices of {0}\'s prescriptions',
+    'de': 'Preise der Rezepte von {0} vergleichen',
+    'fr': 'Comparez les prix des ordonnances de {0}',
+  },
+  'No hay recetas de los últimos {0} días\npara cotizar': {
+    'en': 'There are no prescriptions from the last {0} days\nto compare',
+    'de': 'Keine Rezepte aus den letzten {0} Tagen\nzum Vergleichen',
+    'fr': 'Aucune ordonnance des {0} derniers jours\nà comparer',
+  },
+  'No pudimos conectar con el servidor. Intenta de nuevo en un momento ({0}).': {
+    'en': 'We couldn\'t connect to the server. Try again in a moment ({0}).',
+    'de': 'Keine Verbindung zum Server. Versuchen Sie es gleich noch einmal ({0}).',
+    'fr': 'Impossible de joindre le serveur. Réessayez dans un instant ({0}).',
+  },
+  'Error inesperado ({0})': {
+    'en': 'Unexpected error ({0})',
+    'de': 'Unerwarteter Fehler ({0})',
+    'fr': 'Erreur inattendue ({0})',
+  },
+  '🏠 A domicilio': {
+    'en': '🏠 Home visit',
+    'de': '🏠 Hausbesuch',
+    'fr': '🏠 À domicile',
+  },
+  '💻 Telemedicina': {
+    'en': '💻 Telemedicine',
+    'de': '💻 Telemedizin',
+    'fr': '💻 Télémédecine',
+  },
+  '🏥 Presencial': {
+    'en': '🏥 In person',
+    'de': '🏥 Vor Ort',
+    'fr': '🏥 En présentiel',
+  },
+  'No se pudieron cargar tus horas': {
+    'en': 'Your appointments could not be loaded',
+    'de': 'Ihre Termine konnten nicht geladen werden',
+    'fr': 'Vos rendez-vous n\'ont pas pu être chargés',
+  },
+  'No se pudieron cargar las horas': {
+    'en': 'The time slots could not be loaded',
+    'de': 'Die Termine konnten nicht geladen werden',
+    'fr': 'Les créneaux n\'ont pas pu être chargés',
+  },
+  'No se pudo cancelar la hora': {
+    'en': 'The appointment could not be cancelled',
+    'de': 'Der Termin konnte nicht abgesagt werden',
+    'fr': 'Le rendez-vous n\'a pas pu être annulé',
+  },
+  'No se pudo cambiar la hora': {
+    'en': 'The appointment could not be changed',
+    'de': 'Der Termin konnte nicht geändert werden',
+    'fr': 'Le rendez-vous n\'a pas pu être modifié',
+  },
+  'No se pudieron cargar los centros ({0})': {
+    'en': 'The centers could not be loaded ({0})',
+    'de': 'Die Zentren konnten nicht geladen werden ({0})',
+    'fr': 'Les centres n\'ont pas pu être chargés ({0})',
+  },
+  'Hora de tu medicamento': {
+    'en': 'Time for your medicine',
+    'de': 'Zeit für Ihr Medikament',
+    'fr': 'C\'est l\'heure de votre médicament',
+  },
+  '🏃 Hora de tu ejercicio': {
+    'en': '🏃 Time for your exercise',
+    'de': '🏃 Zeit für Ihre Übung',
+    'fr': '🏃 C\'est l\'heure de votre exercice',
+  },
+  'Si el RUT corresponde a una ficha registrada, se enviarán instrucciones al correo asociado.': {
+    'en': 'If the RUT matches a registered record, instructions will be sent to the associated email.',
+    'de': 'Wenn die RUT zu einer registrierten Akte gehört, werden Anweisungen an die verknüpfte E-Mail gesendet.',
+    'fr': 'Si le RUT correspond à un dossier enregistré, des instructions seront envoyées à l\'e-mail associé.',
+  },
+  'Este teléfono no está vinculado': {
+    'en': 'This phone is not linked',
+    'de': 'Dieses Telefon ist nicht verknüpft',
+    'fr': 'Ce téléphone n\'est pas associé',
+  },
+  'Tu cuenta fue eliminada.': {
+    'en': 'Your account was deleted.',
+    'de': 'Ihr Konto wurde gelöscht.',
+    'fr': 'Votre compte a été supprimé.',
+  },
+  'El teléfono no tiene huella, rostro ni bloqueo de pantalla configurado.': {
+    'en': 'The phone has no fingerprint, face or screen lock set up.',
+    'de': 'Auf dem Telefon ist weder Fingerabdruck, Gesichtserkennung noch Bildschirmsperre eingerichtet.',
+    'fr': 'Le téléphone n\'a ni empreinte, ni visage, ni verrouillage d\'écran configuré.',
+  },
+  'No se pudo revisar la huella del teléfono ({0}).': {
+    'en': 'The phone\'s fingerprint could not be checked ({0}).',
+    'de': 'Der Fingerabdruck des Telefons konnte nicht geprüft werden ({0}).',
+    'fr': 'L\'empreinte du téléphone n\'a pas pu être vérifiée ({0}).',
+  },
+  'La huella no está disponible: {0}': {
+    'en': 'Fingerprint is not available: {0}',
+    'de': 'Fingerabdruck nicht verfügbar: {0}',
+    'fr': 'L\'empreinte n\'est pas disponible : {0}',
+  },
+  'La consulta sin conexión por red local está disponible solo en Android.': {
+    'en': 'Offline consultation over a local network is only available on Android.',
+    'de': 'Die Offline-Sprechstunde über lokales Netzwerk ist nur auf Android verfügbar.',
+    'fr': 'La consultation hors ligne par réseau local n\'est disponible que sur Android.',
+  },
+  'No se pudo crear la red local. Activa el Wi-Fi del teléfono e intenta de nuevo, o conéctalo a la misma red Wi-Fi que el equipo del profesional.': {
+    'en': 'The local network could not be created. Turn on the phone\'s Wi-Fi and try again, or connect it to the same Wi-Fi network as the professional\'s computer.',
+    'de': 'Das lokale Netzwerk konnte nicht erstellt werden. Schalten Sie das WLAN des Telefons ein und versuchen Sie es erneut, oder verbinden Sie es mit demselben WLAN wie den Computer der Fachperson.',
+    'fr': 'Le réseau local n\'a pas pu être créé. Activez le Wi-Fi du téléphone et réessayez, ou connectez-le au même réseau Wi-Fi que l\'ordinateur du professionnel.',
+  },
+  'Términos de uso': {
+    'en': 'Terms of use',
+    'de': 'Nutzungsbedingungen',
+    'fr': 'Conditions d\'utilisation',
+  },
+  'No se pudo registrar': {
+    'en': 'Could not be recorded',
+    'de': 'Konnte nicht gespeichert werden',
+    'fr': 'Enregistrement impossible',
+  },
+  'Para guardar tu ficha en este teléfono, activa un bloqueo de pantalla (huella, rostro o PIN).': {
+    'en': 'To save your record on this phone, turn on a screen lock (fingerprint, face or PIN).',
+    'de': 'Um Ihre Akte auf diesem Telefon zu speichern, aktivieren Sie eine Bildschirmsperre (Fingerabdruck, Gesicht oder PIN).',
+    'fr': 'Pour enregistrer votre dossier sur ce téléphone, activez un verrouillage d\'écran (empreinte, visage ou code PIN).',
+  },
+  'Ya no tienes acceso a la ficha de esta persona': {
+    'en': 'You no longer have access to this person\'s record',
+    'de': 'Sie haben keinen Zugriff mehr auf die Akte dieser Person',
+    'fr': 'Vous n\'avez plus accès au dossier de cette personne',
+  },
+  'No se pudo descargar la copia ({0})': {
+    'en': 'The copy could not be downloaded ({0})',
+    'de': 'Die Kopie konnte nicht heruntergeladen werden ({0})',
+    'fr': 'La copie n\'a pas pu être téléchargée ({0})',
+  },
+  'La copia recibida está incompleta': {
+    'en': 'The copy received is incomplete',
+    'de': 'Die empfangene Kopie ist unvollständig',
+    'fr': 'La copie reçue est incomplète',
+  },
+  'Confirma que eres tú para abrir la ficha': {
+    'en': 'Confirm it\'s you to open the record',
+    'de': 'Bestätigen Sie, dass Sie es sind, um die Akte zu öffnen',
+    'fr': 'Confirmez que c\'est vous pour ouvrir le dossier',
+  },
+  'No hay una copia de tu ficha guardada en este teléfono.': {
+    'en': 'There is no copy of your record saved on this phone.',
+    'de': 'Auf diesem Telefon ist keine Kopie Ihrer Akte gespeichert.',
+    'fr': 'Aucune copie de votre dossier n\'est enregistrée sur ce téléphone.',
+  },
+  'No hay una copia de la ficha de esta persona en este teléfono.': {
+    'en': 'There is no copy of this person\'s record on this phone.',
+    'de': 'Auf diesem Telefon ist keine Kopie der Akte dieser Person.',
+    'fr': 'Aucune copie du dossier de cette personne sur ce téléphone.',
+  },
+  'La copia guardada no es válida.': {
+    'en': 'The saved copy is not valid.',
+    'de': 'Die gespeicherte Kopie ist ungültig.',
+    'fr': 'La copie enregistrée n\'est pas valide.',
+  },
+  'La copia guardada está dañada o fue modificada. Conéctate a internet para descargarla de nuevo.': {
+    'en': 'The saved copy is damaged or was modified. Connect to the internet to download it again.',
+    'de': 'Die gespeicherte Kopie ist beschädigt oder wurde verändert. Verbinden Sie sich mit dem Internet, um sie erneut herunterzuladen.',
+    'fr': 'La copie enregistrée est endommagée ou a été modifiée. Connectez-vous à internet pour la télécharger à nouveau.',
+  },
+  'No se pudo abrir la copia guardada.': {
+    'en': 'The saved copy could not be opened.',
+    'de': 'Die gespeicherte Kopie konnte nicht geöffnet werden.',
+    'fr': 'La copie enregistrée n\'a pas pu être ouverte.',
+  },
+  'No se pudo cargar la ficha ({0})': {
+    'en': 'The record could not be loaded ({0})',
+    'de': 'Die Akte konnte nicht geladen werden ({0})',
+    'fr': 'Le dossier n\'a pas pu être chargé ({0})',
+  },
+  'Error al conectar ({0})': {
+    'en': 'Connection error ({0})',
+    'de': 'Verbindungsfehler ({0})',
+    'fr': 'Erreur de connexion ({0})',
+  },
+  'Sin conexión a internet. Este servicio necesita red; tu ficha guardada en el teléfono sigue disponible.': {
+    'en': 'No internet connection. This service needs a network; your record saved on the phone is still available.',
+    'de': 'Keine Internetverbindung. Dieser Dienst braucht ein Netzwerk; Ihre auf dem Telefon gespeicherte Akte bleibt verfügbar.',
+    'fr': 'Pas de connexion internet. Ce service nécessite un réseau ; votre dossier enregistré sur le téléphone reste disponible.',
+  },
+  'error desconocido': {
+    'en': 'unknown error',
+    'de': 'unbekannter Fehler',
+    'fr': 'erreur inconnue',
+  },
+  'El lector no respondió.': {
+    'en': 'The reader did not respond.',
+    'de': 'Das Lesegerät hat nicht geantwortet.',
+    'fr': 'Le lecteur n\'a pas répondu.',
+  },
+  'El médico no aceptó a tiempo.': {
+    'en': 'The doctor did not accept in time.',
+    'de': 'Der Arzt hat nicht rechtzeitig angenommen.',
+    'fr': 'Le médecin n\'a pas accepté à temps.',
+  },
+  'No se pudieron cargar los recordatorios ({0})': {
+    'en': 'Reminders could not be loaded ({0})',
+    'de': 'Erinnerungen konnten nicht geladen werden ({0})',
+    'fr': 'Les rappels n\'ont pas pu être chargés ({0})',
+  },
+  'No se pudieron generar los recordatorios ({0})': {
+    'en': 'Reminders could not be created ({0})',
+    'de': 'Erinnerungen konnten nicht erstellt werden ({0})',
+    'fr': 'Les rappels n\'ont pas pu être créés ({0})',
+  },
+  'No se pudo revisar la agenda ({0})': {
+    'en': 'The schedule could not be checked ({0})',
+    'de': 'Der Kalender konnte nicht geprüft werden ({0})',
+    'fr': 'L\'agenda n\'a pas pu être vérifié ({0})',
+  },
+  'Este recordatorio ya fue editado antes y no se puede modificar de nuevo': {
+    'en': 'This reminder was already edited and cannot be changed again',
+    'de': 'Diese Erinnerung wurde bereits bearbeitet und kann nicht erneut geändert werden',
+    'fr': 'Ce rappel a déjà été modifié et ne peut plus l\'être',
+  },
+  'No se pudo editar el recordatorio ({0})': {
+    'en': 'The reminder could not be edited ({0})',
+    'de': 'Die Erinnerung konnte nicht bearbeitet werden ({0})',
+    'fr': 'Le rappel n\'a pas pu être modifié ({0})',
+  },
+  'Idioma no disponible': {
+    'en': 'Language not available',
+    'de': 'Sprache nicht verfügbar',
+    'fr': 'Langue non disponible',
+  },
+  'El idioma no está descargado en el teléfono (se baja solo con Wi-Fi)': {
+    'en': 'The language is not downloaded on the phone (it downloads only on Wi-Fi)',
+    'de': 'Die Sprache ist nicht auf dem Telefon heruntergeladen (Download nur über WLAN)',
+    'fr': 'La langue n\'est pas téléchargée sur le téléphone (téléchargement uniquement en Wi-Fi)',
+  },
+  'Sin acceso a esto para {0}': {
+    'en': 'No access to this for {0}',
+    'de': 'Kein Zugriff darauf für {0}',
+    'fr': 'Pas d\'accès à ceci pour {0}',
+  },
+  'Actualizamos los términos. ': {
+    'en': 'We updated the terms. ',
+    'de': 'Wir haben die Bedingungen aktualisiert. ',
+    'fr': 'Nous avons mis à jour les conditions. ',
+  },
+  'Léelos y acéptalos para seguir usando el Portal. Te enviaremos una copia por correo.': {
+    'en': 'Read and accept them to keep using the Portal. We will send you a copy by email.',
+    'de': 'Lesen und akzeptieren Sie sie, um das Portal weiter zu nutzen. Wir senden Ihnen eine Kopie per E-Mail.',
+    'fr': 'Lisez-les et acceptez-les pour continuer à utiliser le Portail. Nous vous enverrons une copie par e-mail.',
+  },
+  '📍 El profesional llegó': {
+    'en': '📍 The professional has arrived',
+    'de': '📍 Die Fachperson ist angekommen',
+    'fr': '📍 Le professionnel est arrivé',
+  },
+  '🚗 Tu profesional va en camino': {
+    'en': '🚗 Your professional is on the way',
+    'de': '🚗 Ihre Fachperson ist unterwegs',
+    'fr': '🚗 Votre professionnel est en route',
+  },
+  '🏠 Visita a domicilio confirmada': {
+    'en': '🏠 Home visit confirmed',
+    'de': '🏠 Hausbesuch bestätigt',
+    'fr': '🏠 Visite à domicile confirmée',
+  },
+  'Llega en aproximadamente {0} min': {
+    'en': 'Arrives in about {0} min',
+    'de': 'Ankunft in etwa {0} Min.',
+    'fr': 'Arrive dans environ {0} min',
+  },
+  'Tu profesional va en camino': {
+    'en': 'Your professional is on the way',
+    'de': 'Ihre Fachperson ist unterwegs',
+    'fr': 'Votre professionnel est en route',
+  },
+  'Seguimiento de tu visita': {
+    'en': 'Track your visit',
+    'de': 'Verfolgung Ihres Besuchs',
+    'fr': 'Suivi de votre visite',
+  },
+  'Pendiente de pago': {
+    'en': 'Payment pending',
+    'de': 'Zahlung ausstehend',
+    'fr': 'Paiement en attente',
+  },
+  'Por confirmar': {
+    'en': 'To be confirmed',
+    'de': 'Zu bestätigen',
+    'fr': 'À confirmer',
+  },
+  'Confirmada': {
+    'en': 'Confirmed',
+    'de': 'Bestätigt',
+    'fr': 'Confirmée',
+  },
+  'Reservada': {
+    'en': 'Booked',
+    'de': 'Gebucht',
+    'fr': 'Réservée',
+  },
+  '🔬 Cirugías': {
+    'en': '🔬 Surgeries',
+    'de': '🔬 Operationen',
+    'fr': '🔬 Chirurgies',
+  },
+  'Sin cirugías registradas': {
+    'en': 'No surgeries recorded',
+    'de': 'Keine Operationen erfasst',
+    'fr': 'Aucune chirurgie enregistrée',
+  },
+  '👨‍👩‍👧 Antecedentes familiares': {
+    'en': '👨‍👩‍👧 Family history',
+    'de': '👨‍👩‍👧 Familienanamnese',
+    'fr': '👨‍👩‍👧 Antécédents familiaux',
+  },
+  'Sin antecedentes familiares registrados': {
+    'en': 'No family history recorded',
+    'de': 'Keine Familienanamnese erfasst',
+    'fr': 'Aucun antécédent familial enregistré',
+  },
+  '📋 Otros antecedentes': {
+    'en': '📋 Other history',
+    'de': '📋 Sonstige Vorgeschichte',
+    'fr': '📋 Autres antécédents',
+  },
+  'Sin otros antecedentes registrados': {
+    'en': 'No other history recorded',
+    'de': 'Keine sonstige Vorgeschichte erfasst',
+    'fr': 'Aucun autre antécédent enregistré',
+  },
+  'Un profesional te atiende en tu casa. El pago es en línea al reservar.': {
+    'en': 'A professional sees you at home. Payment is online when booking.',
+    'de': 'Eine Fachperson behandelt Sie zu Hause. Die Zahlung erfolgt online bei der Buchung.',
+    'fr': 'Un professionnel vous soigne chez vous. Le paiement se fait en ligne à la réservation.',
+  },
+  'atención a domicilio': {
+    'en': 'home visits',
+    'de': 'Hausbesuche',
+    'fr': 'soins à domicile',
+  },
+  'Reserva tu hora en uno de nuestros centros.': {
+    'en': 'Book your appointment at one of our centers.',
+    'de': 'Buchen Sie Ihren Termin in einem unserer Zentren.',
+    'fr': 'Réservez votre rendez-vous dans l\'un de nos centres.',
+  },
+  'atención presencial': {
+    'en': 'in-person care',
+    'de': 'Behandlung vor Ort',
+    'fr': 'consultation en présentiel',
+  },
+  'Consulta por videollamada a la hora que elijas.': {
+    'en': 'Video call consultation at the time you choose.',
+    'de': 'Sprechstunde per Videoanruf zur gewünschten Uhrzeit.',
+    'fr': 'Consultation par appel vidéo à l\'heure de votre choix.',
+  },
+  'Sin hora: envías tus fotos, pagas en línea y un dermatólogo te responde por correo.': {
+    'en': 'No appointment: you send your photos, pay online and a dermatologist answers by email.',
+    'de': 'Ohne Termin: Sie senden Ihre Fotos, zahlen online und ein Dermatologe antwortet per E-Mail.',
+    'fr': 'Sans rendez-vous : vous envoyez vos photos, payez en ligne et un dermatologue vous répond par e-mail.',
+  },
+  'dermatología online': {
+    'en': 'online dermatology',
+    'de': 'Online-Dermatologie',
+    'fr': 'dermatologie en ligne',
+  },
+  'Traumatología': {
+    'en': 'Orthopedics',
+    'de': 'Orthopädie',
+    'fr': 'Orthopédie',
+  },
+  'Dermatología': {
+    'en': 'Dermatology',
+    'de': 'Dermatologie',
+    'fr': 'Dermatologie',
+  },
+  'Odontología': {
+    'en': 'Dentistry',
+    'de': 'Zahnmedizin',
+    'fr': 'Dentisterie',
+  },
+  'Kinesiología': {
+    'en': 'Physiotherapy',
+    'de': 'Physiotherapie',
+    'fr': 'Kinésithérapie',
+  },
+  'Psicología': {
+    'en': 'Psychology',
+    'de': 'Psychologie',
+    'fr': 'Psychologie',
+  },
+  'Enfermería': {
+    'en': 'Nursing',
+    'de': 'Pflege',
+    'fr': 'Soins infirmiers',
   },
 };

@@ -84,9 +84,9 @@ class _CuidadorScreenState extends State<CuidadorScreen> with SingleTickerProvid
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
             child: GrillaOpciones(opciones: [
-              TarjetaOpcion(icono: '🤝', titulo: 'Yo cuido', sub: 'Personas que cuidas y tus invitaciones',
+              TarjetaOpcion(icono: '🤝', titulo: tr('Yo cuido'), sub: tr('Personas que cuidas y tus invitaciones'),
                   seleccionada: _tabController.index == 0, onTap: () => _tabController.animateTo(0)),
-              TarjetaOpcion(icono: '🛡️', titulo: 'Me cuidan', sub: 'Quién puede ver tus recordatorios',
+              TarjetaOpcion(icono: '🛡️', titulo: tr('Me cuidan'), sub: tr('Quién puede ver tus recordatorios'),
                   seleccionada: _tabController.index == 1, onTap: () => _tabController.animateTo(1)),
             ]),
           ),
@@ -141,8 +141,8 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
         title: Text(tr('Revocar acceso')),
         content: Text(
           inv.estado == 'pendiente'
-              ? '¿Cancelar la invitación a ${inv.nombreCompleto}?'
-              : '¿Quitarle acceso a ${inv.nombreCompleto}? Ya no podrá ver tus notificaciones.',
+              ? trp('¿Cancelar la invitación a {0}?', [inv.nombreCompleto])
+              : trp('¿Quitarle acceso a {0}? Ya no podrá ver tus notificaciones.', [inv.nombreCompleto]),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
@@ -160,7 +160,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
       _cargar();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(trp('Error: {0}', [e]))));
     }
   }
 
@@ -175,11 +175,11 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
 
   String _textoEstado(String estado) {
     switch (estado) {
-      case 'vinculado': return 'Vinculado';
-      case 'pendiente': return 'Esperando que acepte la invitación';
-      case 'rechazado': return 'Rechazó la invitación';
-      case 'expirado': return 'Expiró sin confirmar';
-      default: return 'Revocado';
+      case 'vinculado': return tr('Vinculado');
+      case 'pendiente': return tr('Esperando que acepte la invitación');
+      case 'rechazado': return tr('Rechazó la invitación');
+      case 'expirado': return tr('Expiró sin confirmar');
+      default: return tr('Revocado');
     }
   }
 
@@ -200,7 +200,7 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(child: Text(trp('Error: {0}', [snapshot.error])));
             }
             final invitaciones = snapshot.data!;
             if (invitaciones.isEmpty) {
@@ -224,8 +224,8 @@ class _MisCuidadoresTabState extends State<_MisCuidadoresTab> {
                 final puedeRevocar = inv.estado == 'pendiente' || inv.estado == 'vinculado';
                 return TarjetaPersona(
                   nombre: inv.nombreCompleto,
-                  detalle: '${_textoEstado(inv.estado)}'
-                      '${inv.relacion != null && inv.relacion!.isNotEmpty ? ' · ${inv.relacion}' : ''}',
+                  detalle: _textoEstado(inv.estado) +
+                      (inv.relacion != null && inv.relacion!.isNotEmpty ? ' · ${inv.relacion}' : ''),
                   colorDetalle: _colorEstado(inv.estado),
                   derecha: puedeRevocar
                       ? IconButton(icon: const Icon(Icons.close), tooltip: tr('Quitar'), onPressed: () => _revocar(inv))
@@ -285,7 +285,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudieron cargar los niveles de acceso: $e';
+        _error = trp('No se pudieron cargar los niveles de acceso: {0}', [e]);
         _cargandoNiveles = false;
       });
     }
@@ -296,7 +296,7 @@ class _NuevaInvitacionSheetState extends State<_NuevaInvitacionSheet> {
         _apellidosController.text.trim().isEmpty ||
         _rutController.text.trim().isEmpty ||
         _nivelSeleccionado == null) {
-      setState(() => _error = 'Completa nombre, apellidos, RUT y nivel de acceso');
+      setState(() => _error = tr('Completa nombre, apellidos, RUT y nivel de acceso'));
       return;
     }
     setState(() { _enviando = true; _error = null; });
@@ -458,7 +458,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
     setState(() => _ocupado = inv['id'] as int);
     try {
       await CuidadorService.responder(inv['id'] as int, aceptar: aceptar);
-      _aviso(aceptar ? 'Ahora cuidas a ${inv['paciente']}' : 'Invitación rechazada');
+      _aviso(aceptar ? trp('Ahora cuidas a {0}', [inv['paciente']]) : tr('Invitación rechazada'));
       _cargar();
     } catch (e) {
       _aviso('$e');
@@ -479,8 +479,8 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
       final aceptar = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('${inv['paciente']} te invita a ser su cuidador'),
-          content: Text('Podrás recibir ${inv['que_podras_ver']}.'),
+          title: Text(trp('{0} te invita a ser su cuidador', [inv['paciente']])),
+          content: Text(trp('Podrás recibir {0}.', [inv['que_podras_ver']])),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false),
                 child: Text(tr('Rechazar'), style: TextStyle(color: Colors.red))),
@@ -508,10 +508,10 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('📩 ${inv['paciente']} te invita a ser su cuidador${relacion.isNotEmpty ? ' ($relacion)' : ''}',
+          Text(trp('📩 {0} te invita a ser su cuidador', [inv['paciente']]) + (relacion.isNotEmpty ? ' ($relacion)' : ''),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           const SizedBox(height: 4),
-          Text('Podrás recibir ${inv['que_podras_ver']}.',
+          Text(trp('Podrás recibir {0}.', [inv['que_podras_ver']]),
               style: const TextStyle(fontSize: 12.5, color: Color(0xFF92400E))),
           const SizedBox(height: 10),
           Row(children: [
@@ -555,7 +555,7 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(child: Text(trp('Error: {0}', [snapshot.error])));
             }
             final cuidados = snapshot.data!;
             if (cuidados.isEmpty) {
@@ -583,8 +583,8 @@ class _AQuienCuidoTabState extends State<_AQuienCuidoTab> {
                 final c = cuidados[i - _invitaciones.length];
                 return TarjetaPersona(
                   nombre: c.nombreCompleto,
-                  detalle: 'Acceso: ${c.nivelAcceso}'
-                      '${c.relacion != null && c.relacion!.isNotEmpty ? ' · ${c.relacion}' : ''}',
+                  detalle: trp('Acceso: {0}', [c.nivelAcceso]) +
+                      (c.relacion != null && c.relacion!.isNotEmpty ? ' · ${c.relacion}' : ''),
                   onTap: () => _verFicha(c.rutPaciente),
                 );
               },

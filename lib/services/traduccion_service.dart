@@ -14,6 +14,7 @@
 library;
 
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
+import '../i18n/idioma.dart';
 
 class TraduccionService {
   /// Idiomas para el médico, además del español
@@ -55,13 +56,13 @@ class TraduccionService {
   /// Nombres, RUT, fechas y códigos no se tocan.
   static Future<Map<String, dynamic>> traducirFicha(Map<String, dynamic> ficha, String idioma) async {
     final destino = idiomas[idioma];
-    if (destino == null) throw Exception('Idioma no disponible');
+    if (destino == null) throw Exception(tr('Idioma no disponible'));
     if (!await listo(idioma)) {
-      throw Exception('El idioma no está descargado en el teléfono (se baja solo con Wi-Fi)');
+      throw Exception(tr('El idioma no está descargado en el teléfono (se baja solo con Wi-Fi)'));
     }
     final t = OnDeviceTranslator(sourceLanguage: TranslateLanguage.spanish, targetLanguage: destino);
     final cache = <String, String>{};
-    Future<String> tr(dynamic v) async {
+    Future<String> trad(dynamic v) async {
       final s = (v ?? '').toString();
       if (s.trim().isEmpty) return s;
       return cache[s] ??= await _traducirTexto(t, s);
@@ -72,7 +73,7 @@ class TraduccionService {
       final p = copia['paciente'];
       if (p is Map) {
         for (final k in ['sexo', 'prevision']) {
-          if (p[k] is String) p[k] = await tr(p[k]);
+          if (p[k] is String) p[k] = await trad(p[k]);
         }
       }
       for (final lista in [copia['eventos'], copia['eventos_con_indicaciones']]) {
@@ -80,7 +81,7 @@ class TraduccionService {
         for (final e in lista) {
           if (e is! Map) continue;
           for (final k in ['diagnostico', 'especialidad', 'tipo', 'indicaciones']) {
-            if (e[k] is String) e[k] = await tr(e[k]);
+            if (e[k] is String) e[k] = await trad(e[k]);
           }
           final c = e['contenido'];
           if (c is Map) {
@@ -88,7 +89,7 @@ class TraduccionService {
               'atencion', 'diagnostico', 'receta', 'examenes', 'indicaciones',
               'orden_kinesiologia', 'indicacion_quirurgica', 'evolucion',
             ]) {
-              if (c[k] is String) c[k] = await tr(c[k]);
+              if (c[k] is String) c[k] = await trad(c[k]);
             }
           }
         }
@@ -98,7 +99,7 @@ class TraduccionService {
         for (final lista in ant.values) {
           if (lista is! List) continue;
           for (final a in lista) {
-            if (a is Map && a['descripcion'] is String) a['descripcion'] = await tr(a['descripcion']);
+            if (a is Map && a['descripcion'] is String) a['descripcion'] = await trad(a['descripcion']);
           }
         }
       }
@@ -107,7 +108,7 @@ class TraduccionService {
         for (final r in rec) {
           if (r is! Map) continue;
           for (final k in ['dosis', 'indicaciones', 'notas']) {
-            if (r[k] is String) r[k] = await tr(r[k]);
+            if (r[k] is String) r[k] = await trad(r[k]);
           }
         }
       }

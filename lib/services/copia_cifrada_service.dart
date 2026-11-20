@@ -22,6 +22,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cryptography/cryptography.dart';
@@ -61,7 +62,7 @@ class CopiaCifradaService {
     }
     if (!await BiometriaService.disponible()) {
       throw CopiaException(
-        'Para guardar tu ficha en este teléfono, activa un bloqueo de pantalla (huella, rostro o PIN).',
+        tr('Para guardar tu ficha en este teléfono, activa un bloqueo de pantalla (huella, rostro o PIN).'),
       );
     }
 
@@ -74,10 +75,10 @@ class CopiaCifradaService {
     if (res.statusCode == 403 && rutCuidado != null) {
       // Ya no hay vínculo con esa persona: su copia se borra de este teléfono
       await StorageService.borrarCopiaCuidado(rutCuidado);
-      throw CopiaException('Ya no tienes acceso a la ficha de esta persona');
+      throw CopiaException(tr('Ya no tienes acceso a la ficha de esta persona'));
     }
     if (res.statusCode != 200) {
-      throw CopiaException('No se pudo descargar la copia (${res.statusCode})');
+      throw CopiaException(trp('No se pudo descargar la copia ({0})', [res.statusCode]));
     }
 
     final datos = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -86,7 +87,7 @@ class CopiaCifradaService {
     final cifrado = (datos['cifrado'] as String?) ?? '';
     final aad = (datos['aad'] as String?) ?? '';
     if (llave.isEmpty || nonce.isEmpty || cifrado.isEmpty || !aad.startsWith(_prefijoAad)) {
-      throw CopiaException('La copia recibida está incompleta');
+      throw CopiaException(tr('La copia recibida está incompleta'));
     }
 
     final archivo = await StorageService.archivoCopia(rut: rutCuidado);
@@ -172,10 +173,10 @@ class CopiaCifradaService {
   static Future<Map<String, dynamic>> leerJson({String? rutCuidado, bool pedirHuella = true}) async {
     if (pedirHuella) {
       final ok = await BiometriaService.autenticar(
-        motivo: 'Confirma que eres tú para abrir la ficha',
+        motivo: tr('Confirma que eres tú para abrir la ficha'),
       );
       if (!ok) {
-        throw CopiaException(BiometriaService.ultimoError ?? 'No se confirmó tu identidad.');
+        throw CopiaException(BiometriaService.ultimoError ?? tr('No se confirmó tu identidad.'));
       }
     }
 
@@ -183,19 +184,19 @@ class CopiaCifradaService {
     final archivo = await StorageService.archivoCopia(rut: rutCuidado);
     if (llave == null || llave.isEmpty || !await archivo.exists()) {
       throw CopiaException(rutCuidado == null
-          ? 'No hay una copia de tu ficha guardada en este teléfono.'
-          : 'No hay una copia de la ficha de esta persona en este teléfono.');
+          ? tr('No hay una copia de tu ficha guardada en este teléfono.')
+          : tr('No hay una copia de la ficha de esta persona en este teléfono.'));
     }
 
     try {
       final meta = jsonDecode(await archivo.readAsString()) as Map<String, dynamic>;
       final aad = meta['aad'] as String;
       if (!aad.startsWith(_prefijoAad)) {
-        throw CopiaException('La copia guardada no es válida.');
+        throw CopiaException(tr('La copia guardada no es válida.'));
       }
       final bytes = base64Decode(meta['cifrado'] as String);
       if (bytes.length <= _largoMac) {
-        throw CopiaException('La copia guardada no es válida.');
+        throw CopiaException(tr('La copia guardada no es válida.'));
       }
 
       // El servidor entrega texto cifrado + etiqueta de autenticación (16 bytes) juntos.
@@ -214,10 +215,10 @@ class CopiaCifradaService {
       rethrow;
     } on SecretBoxAuthenticationError {
       throw CopiaException(
-        'La copia guardada está dañada o fue modificada. Conéctate a internet para descargarla de nuevo.',
+        tr('La copia guardada está dañada o fue modificada. Conéctate a internet para descargarla de nuevo.'),
       );
     } catch (_) {
-      throw CopiaException('No se pudo abrir la copia guardada.');
+      throw CopiaException(tr('No se pudo abrir la copia guardada.'));
     }
   }
 }

@@ -81,7 +81,7 @@ void main() async {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Ocurrió un error al mostrar esta pantalla:\n\n${details.exceptionAsString()}',
+              trp('Ocurrió un error al mostrar esta pantalla:\n\n{0}', [details.exceptionAsString()]),
               style: const TextStyle(color: Colors.red, fontSize: 13),
             ),
           ),
@@ -89,7 +89,7 @@ void main() async {
       );
 
   await _pasoInicio('idioma', Idioma.cargar);
-  await _pasoInicio('formato de fechas', () => initializeDateFormatting('es'));
+  await _pasoInicio('formato de fechas', () => initializeDateFormatting());
   await _pasoInicio('alarmas', AlarmService.inicializar);
   // Reprograma alarmas desde storage local — no necesita token ni
   // conexión. Garantiza que las alarmas funcionen aunque el JWT
@@ -212,7 +212,7 @@ class _DecidirInicio extends StatelessWidget {
         // Sesión vencida o cerrada con "Salir" en un teléfono de confianza: huella
         if (_huella) return const DesbloquearScreen();
         return _vencida
-            ? const LoginScreen(aviso: 'Tu sesión expiró. Vuelve a ingresar con tu contraseña.')
+            ? LoginScreen(aviso: tr('Tu sesión expiró. Vuelve a ingresar con tu contraseña.'))
             : const LoginScreen();
       },
     );

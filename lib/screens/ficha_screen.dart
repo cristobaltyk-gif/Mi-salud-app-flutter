@@ -71,8 +71,8 @@ class _FichaScreenState extends State<FichaScreen> {
     if (await CopiaCifradaService.hayCopia()) {
       return CopiaCifradaService.leer(pedirHuella: false);
     }
-    throw FichaException('Sin conexión a internet y aún no hay una copia de tu ficha en este teléfono. '
-        'Ábrela una vez con internet para guardarla.');
+    throw FichaException(tr('Sin conexión a internet y aún no hay una copia de tu ficha en este teléfono. '
+        'Ábrela una vez con internet para guardarla.'));
   }
 
   @override
@@ -87,7 +87,7 @@ class _FichaScreenState extends State<FichaScreen> {
           }
           if (snapshot.hasError) {
             return _ErrorConReintentar(
-              mensaje: 'No se pudo cargar tu ficha: ${snapshot.error}',
+              mensaje: trp('No se pudo cargar tu ficha: {0}', [snapshot.error]),
               onReintentar: _cargar,
             );
           }
@@ -96,7 +96,7 @@ class _FichaScreenState extends State<FichaScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Hola, ${resumen.paciente.nombreCompleto.split(' ').first} 👋',
+                trp('Hola, {0} 👋', [resumen.paciente.nombreCompleto.split(' ').first]),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF134E4A),
@@ -110,8 +110,8 @@ class _FichaScreenState extends State<FichaScreen> {
               const SizedBox(height: 12),
               _BotonAcceso(
                 icono: '📋',
-                titulo: 'Mi ficha clínica',
-                subtitulo: 'Revisa tu historial médico explicado en lenguaje simple',
+                titulo: tr('Mi ficha clínica'),
+                subtitulo: tr('Revisa tu historial médico explicado en lenguaje simple'),
                 color: const Color(0xFF0F766E),
                 colorBorde: const Color(0xFF99F6E4),
                 onTap: () => Navigator.of(context).push(
@@ -132,7 +132,7 @@ class _FichaScreenState extends State<FichaScreen> {
       context: context,
       isScrollControlled: true,
       builder: (_) => _ExplicacionSheet(
-        titulo: 'Tu historial, explicado simple',
+        titulo: tr('Tu historial, explicado simple'),
         stream: FichaService.explicarFicha(),
       ),
     );
@@ -172,30 +172,30 @@ class _SeccionAntecedentesCriticos extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _CategoriaCritica(
-              titulo: '⚠️ Alergias',
+              titulo: tr('⚠️ Alergias'),
               colorTitulo: const Color(0xFFDC2626),
               items: alergias,
               colorTarjeta: const Color(0xFFFEF2F2),
               colorTextoTarjeta: const Color(0xFF991B1B),
-              mensajeVacio: 'Sin alergias conocidas registradas',
+              mensajeVacio: tr('Sin alergias conocidas registradas'),
             ),
             const SizedBox(height: 12),
             _CategoriaCritica(
-              titulo: '💊 Medicamentos habituales',
+              titulo: tr('💊 Medicamentos habituales'),
               colorTitulo: const Color(0xFF1D4ED8),
               items: medicamentos,
               colorTarjeta: const Color(0xFFEFF6FF),
               colorTextoTarjeta: const Color(0xFF1E40AF),
-              mensajeVacio: 'Sin medicamentos habituales registrados',
+              mensajeVacio: tr('Sin medicamentos habituales registrados'),
             ),
             const SizedBox(height: 12),
             _CategoriaCritica(
-              titulo: '🩺 Enfermedades crónicas',
+              titulo: tr('🩺 Enfermedades crónicas'),
               colorTitulo: const Color(0xFF065F46),
               items: cronicas,
               colorTarjeta: const Color(0xFFF0FDF4),
               colorTextoTarjeta: const Color(0xFF065F46),
-              mensajeVacio: 'Sin enfermedades crónicas registradas',
+              mensajeVacio: tr('Sin enfermedades crónicas registradas'),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -332,7 +332,7 @@ class _EventoCard extends StatelessWidget {
                 children: [
                   EtiquetaEspecialidad(especialidad: evento.especialidad),
                   if (evento.fotosCount > 0)
-                    Text('📸 ${evento.fotosCount} ${evento.fotosCount == 1 ? 'foto' : 'fotos'}',
+                    Text(evento.fotosCount == 1 ? tr('📸 1 foto') : trp('📸 {0} fotos', [evento.fotosCount]),
                         style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                 ],
               ),
@@ -548,7 +548,7 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudieron cargar más atenciones: $e')),
+          SnackBar(content: Text(trp('No se pudieron cargar más atenciones: {0}', [e]))),
         );
       }
     } finally {
@@ -578,8 +578,8 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
                           ?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
-                    '${resumen.totalConsultas} consultas registradas'
-                    '${resumen.ultimaConsulta != null ? " · última: ${resumen.ultimaConsulta}" : ""}',
+                    trp('{0} consultas registradas', [resumen.totalConsultas]) +
+                    (resumen.ultimaConsulta != null ? trp(' · última: {0}', [resumen.ultimaConsulta]) : ''),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
@@ -593,7 +593,7 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Tus consultas (${resumen.totalConsultas})',
+          Text(trp('Tus consultas ({0})', [resumen.totalConsultas]),
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           if (resumen.eventos.isEmpty)
@@ -611,7 +611,7 @@ class _ConsultasScreenState extends State<ConsultasScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: OutlinedButton(
                 onPressed: _cargandoMas ? null : _cargarMas,
-                child: Text(_cargandoMas ? 'Cargando…' : 'Ver más atenciones'),
+                child: Text(_cargandoMas ? tr('Cargando…') : tr('Ver más atenciones')),
               ),
             ),
         ],
@@ -649,13 +649,13 @@ class AntecedentesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(titulo,
+                  Text(tr(titulo),
                       style: const TextStyle(fontWeight: FontWeight.w600,
                           color: Color(0xFF134E4A))),
                   const SizedBox(height: 10),
                   if (items.isEmpty)
                     _TarjetaTexto(
-                      texto: vacioLabel,
+                      texto: tr(vacioLabel),
                       color: const Color(0xFFF8FAFC),
                       colorTexto: const Color(0xFF94A3B8),
                       italica: true,
@@ -683,7 +683,7 @@ class AntecedentesScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Wrap(spacing: 8, children: [
                                 if (fechaInicio != null)
-                                  Text('Desde $fechaInicio',
+                                  Text(trp('Desde {0}', [fechaInicio]),
                                       style: const TextStyle(fontSize: 11, color: Color(0xFF5EEAD4))),
                                 if (registradoPor != null)
                                   Text('· $registradoPor',

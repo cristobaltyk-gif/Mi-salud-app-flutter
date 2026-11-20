@@ -75,7 +75,7 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
   List<Widget> _citas(BuildContext context) {
     if (_horas.isEmpty) return const [];
     return [
-      const _SeccionHeader(icono: '🗓️', titulo: 'Citas agendadas', color: Color(0xFF1A3B8C)),
+      _SeccionHeader(icono: '🗓️', titulo: tr('Citas agendadas'), color: Color(0xFF1A3B8C)),
       const SizedBox(height: 8),
       ..._horas.map((c) => TarjetaCita(cita: c, onActualizar: _cargarCitas)),
       const SizedBox(height: 12),
@@ -112,7 +112,7 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
                   children: [
                     Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
                     const SizedBox(height: 12),
-                    Text('No se pudieron cargar los recordatorios:\n${snapshot.error}',
+                    Text(trp('No se pudieron cargar los recordatorios:\n{0}', [snapshot.error]),
                         textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     FilledButton(
@@ -132,9 +132,9 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
               padding: const EdgeInsets.all(16),
               children: [
                 ..._citas(context),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(top: 60),
-                  child: EstadoVacio(texto: 'Sin medicamentos ni controles vigentes'),
+                  child: EstadoVacio(texto: tr('Sin medicamentos ni controles vigentes')),
                 ),
               ],
             );
@@ -159,13 +159,13 @@ class _RecordatoriosTabUnificadaState extends State<RecordatoriosTabUnificada> {
             children: [
               ..._citas(context),
               if (urgentes.isNotEmpty) ...[
-                _SeccionHeader(icono: '⚡', titulo: 'Próximas 2 horas', color: Colors.orange[700]!),
+                _SeccionHeader(icono: '⚡', titulo: tr('Próximas 2 horas'), color: Colors.orange[700]!),
                 const SizedBox(height: 8),
                 ...urgentes.map((r) => _TarjetaRecordatorio(r: r)),
                 const SizedBox(height: 16),
               ],
               if (resto.isNotEmpty) ...[
-                _SeccionHeader(icono: '📅', titulo: 'Próximas tomas', color: const Color(0xFF0F766E)),
+                _SeccionHeader(icono: '📅', titulo: tr('Próximas tomas'), color: const Color(0xFF0F766E)),
                 const SizedBox(height: 8),
                 ...resto.map((r) => _TarjetaRecordatorio(r: r)),
               ],
@@ -207,15 +207,15 @@ class _TarjetaRecordatorio extends StatelessWidget {
 
   String _formatearProximoDisparo() {
     final disparo = r.proximoDisparo;
-    if (disparo == null) return 'Sin próxima toma';
+    if (disparo == null) return tr('Sin próxima toma');
     final ahora = DateTime.now();
     final esHoy = disparo.year == ahora.year && disparo.month == ahora.month && disparo.day == ahora.day;
     final manana = ahora.add(const Duration(days: 1));
     final esManana = disparo.year == manana.year && disparo.month == manana.month && disparo.day == manana.day;
     final hora = DateFormat('HH:mm').format(disparo);
-    if (esHoy) return 'Hoy a las $hora';
-    if (esManana) return 'Mañana a las $hora';
-    return '${DateFormat('EEEE d MMM', 'es').format(disparo)} a las $hora';
+    if (esHoy) return trp('Hoy a las {0}', [hora]);
+    if (esManana) return trp('Mañana a las {0}', [hora]);
+    return trp('{0} a las {1}', [DateFormat('EEEE d MMM', Idioma.actual.value).format(disparo), hora]);
   }
 
   void _abrirMedia(BuildContext context) {
@@ -295,8 +295,8 @@ class _TarjetaRecordatorio extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            'Cada ${r.frecuenciaHoras}h'
-                            '${r.duracionDias != null ? ' · ${r.duracionDias} días' : ''}',
+                            trp('Cada {0}h', [r.frecuenciaHoras]) +
+                            (r.duracionDias != null ? trp(' · {0} días', [r.duracionDias]) : ''),
                             style: TextStyle(color: colorPrincipal, fontSize: 11, fontWeight: FontWeight.w500),
                           ),
                         ),

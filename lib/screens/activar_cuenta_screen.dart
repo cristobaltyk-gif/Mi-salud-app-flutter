@@ -49,7 +49,7 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
     final rut = _rutController.text.trim();
 
     if (rut.isEmpty) {
-      setState(() => _error = 'Ingresa tu RUT');
+      setState(() => _error = tr('Ingresa tu RUT'));
       return;
     }
 
@@ -68,7 +68,7 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
     } on AuthException catch (e) {
       setState(() => _error = e.mensaje);
     } catch (_) {
-      setState(() => _error = 'No se pudo conectar. Revisa tu conexión a internet.');
+      setState(() => _error = tr('No se pudo conectar. Revisa tu conexión a internet.'));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -137,7 +137,7 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
                 Icon(Icons.mark_email_read_outlined, size: 56, color: Colors.teal[700]),
                 const SizedBox(height: 16),
                 Text(
-                  _mensaje ?? 'Revisa tu correo para continuar.',
+                  _mensaje ?? tr('Revisa tu correo para continuar.'),
                   style: TextStyle(color: Colors.grey[800]),
                   textAlign: TextAlign.center,
                 ),

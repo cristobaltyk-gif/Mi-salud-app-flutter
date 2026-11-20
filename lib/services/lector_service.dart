@@ -18,6 +18,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -167,7 +168,7 @@ class LectorService {
       // localName le cambiaría el nombre Bluetooth al teléfono.
       final anuncio = Completer<String?>();
       BlePeripheral.setAdvertisingStatusUpdateCallback((ok, error) {
-        if (!anuncio.isCompleted) anuncio.complete(ok ? null : (error ?? 'error desconocido'));
+        if (!anuncio.isCompleted) anuncio.complete(ok ? null : (error ?? tr('error desconocido')));
       });
       await BlePeripheral.startAdvertising(services: [_servicioBle]);
       ultimoErrorBle = await anuncio.future.timeout(const Duration(seconds: 5), onTimeout: () => null);
@@ -260,7 +261,7 @@ class SesionLector {
     await _enviarPlano({'tipo': 'hola', 'pub': base64Encode(pub), 'nombre': _nombrePaciente});
 
     final h = await _hola.future.timeout(const Duration(seconds: 15),
-        onTimeout: () => throw LectorException('El lector no respondió.'));
+        onTimeout: () => throw LectorException(tr('El lector no respondió.')));
     final pubPc = base64Decode(h['pub'] as String);
     equipo = (h['equipo'] as String?) ?? '';
     final secreto = await x25519.sharedSecretKey(
@@ -285,7 +286,7 @@ class SesionLector {
 
     // Espera a que el médico toque ACEPTAR en su PC
     final aceptado = await _respuesta.future.timeout(const Duration(minutes: 3),
-        onTimeout: () => throw LectorException('El médico no aceptó a tiempo.'));
+        onTimeout: () => throw LectorException(tr('El médico no aceptó a tiempo.')));
     if (!aceptado) {
       estado = 'rechazada';
       _cambios.add(null);

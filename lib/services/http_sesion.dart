@@ -29,6 +29,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'dart:convert';
 import 'dart:io' show SocketException, HandshakeException;
 import 'package:flutter/material.dart';
@@ -48,8 +49,8 @@ bool _conSesion(Map<String, String>? headers) =>
 /// teléfono sigue disponible.
 class SinRedException extends http.ClientException {
   SinRedException()
-      : super('Sin conexión a internet. Este servicio necesita red; '
-            'tu ficha guardada en el teléfono sigue disponible.');
+      : super(tr('Sin conexión a internet. Este servicio necesita red; '
+            'tu ficha guardada en el teléfono sigue disponible.'));
   @override
   String toString() => message;
 }

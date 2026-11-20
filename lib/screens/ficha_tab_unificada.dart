@@ -10,6 +10,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import '../models/carpeta_activa.dart';
 import '../models/ficha_cuidado.dart';
 import '../services/ficha_service.dart';
@@ -45,7 +46,7 @@ class _FichaTabUnificadaState extends State<FichaTabUnificada> {
     if (!widget.carpeta.esCompleto) {
       return AvisoSinPermiso(
         nombrePaciente: widget.carpeta.nombreMostrar,
-        mensaje: 'Esta persona no te dio acceso a su ficha clínica completa.',
+        mensaje: tr('Esta persona no te dio acceso a su ficha clínica completa.'),
       );
     }
 
@@ -59,7 +60,7 @@ class _FichaTabUnificadaState extends State<FichaTabUnificada> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('No se pudo cargar: ${snapshot.error}', textAlign: TextAlign.center),
+              child: Text(trp('No se pudo cargar: {0}', [snapshot.error]), textAlign: TextAlign.center),
             ),
           );
         }

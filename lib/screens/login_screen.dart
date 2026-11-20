@@ -104,11 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final rut = _rutController.text.trim();
     final password = _passwordController.text;
     if (rut.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Ingresa tu RUT y tu contraseña');
+      setState(() => _error = tr('Ingresa tu RUT y tu contraseña'));
       return;
     }
     if (!_isValidRut(rut)) {
-      setState(() => _error = 'El RUT ingresado no es válido');
+      setState(() => _error = tr('El RUT ingresado no es válido'));
       return;
     }
     setState(() { _cargando = true; _error = null; });
@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       setState(() => _error = e.mensaje);
     } catch (_) {
-      setState(() => _error = 'No se pudo conectar. Revisa tu conexión.');
+      setState(() => _error = tr('No se pudo conectar. Revisa tu conexión.'));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _enviarCodigo() async {
     final codigo = _codigoController.text.replaceAll(RegExp(r'\D'), '');
     if (codigo.length != 6 || _desafio == null) {
-      setState(() => _error = 'Escribe los 6 dígitos que llegaron a tu correo');
+      setState(() => _error = tr('Escribe los 6 dígitos que llegaron a tu correo'));
       return;
     }
     setState(() { _cargando = true; _error = null; });
@@ -154,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (e.mensaje.contains('venció') || e.mensaje.contains('Demasiados')) _desafio = null;
       });
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se pudo conectar. Revisa tu conexión.');
+      if (mounted) setState(() => _error = tr('No se pudo conectar. Revisa tu conexión.'));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -317,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 const Icon(Icons.lock_clock_outlined, color: Color(0xFF92400E), size: 18),
                                 const SizedBox(width: 8),
-                                Expanded(child: Text(widget.aviso!, style: const TextStyle(color: Color(0xFF92400E), fontSize: 13))),
+                                Expanded(child: Text(tr(widget.aviso!), style: const TextStyle(color: Color(0xFF92400E), fontSize: 13))),
                               ],
                             ),
                           ),

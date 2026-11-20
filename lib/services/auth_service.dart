@@ -28,6 +28,7 @@
 library;
 
 import 'dart:io' show Platform;
+import '../i18n/idioma.dart';
 
 import 'dart:convert';
 import 'http_sesion.dart' as http;
@@ -84,9 +85,9 @@ class AuthService {
       if (d != null && d.toString().trim().isNotEmpty) return d.toString();
     } catch (_) {}
     if (r.statusCode >= 500) {
-      return 'No pudimos conectar con el servidor. Intenta de nuevo en un momento (${r.statusCode}).';
+      return trp('No pudimos conectar con el servidor. Intenta de nuevo en un momento ({0}).', [r.statusCode]);
     }
-    return 'Error inesperado (${r.statusCode})';
+    return trp('Error inesperado ({0})', [r.statusCode]);
   }
 
   /// POST /api/auth/buscar — dispara (si corresponde) el correo de
@@ -104,7 +105,7 @@ class AuthService {
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     return body['mensaje'] ??
-        'Si el RUT corresponde a una ficha registrada, se enviarán instrucciones al correo asociado.';
+        tr('Si el RUT corresponde a una ficha registrada, se enviarán instrucciones al correo asociado.');
   }
 
   /// POST /api/auth/login
@@ -153,7 +154,7 @@ class AuthService {
   static Future<void> renovar() async {
     final llave = await StorageService.obtenerLlave();
     if (llave == null || llave.isEmpty) {
-      throw AuthException(403, 'Este teléfono no está vinculado');
+      throw AuthException(403, tr('Este teléfono no está vinculado'));
     }
     final res = await http.post(
       Uri.parse(AppConfig.renovarEndpoint),
@@ -218,7 +219,7 @@ class AuthService {
     if (res.statusCode != 200) {
       throw AuthException(res.statusCode, _detailDe(res));
     }
-    return (jsonDecode(res.body) as Map<String, dynamic>)['mensaje'] as String? ?? 'Tu cuenta fue eliminada.';
+    return (jsonDecode(res.body) as Map<String, dynamic>)['mensaje'] as String? ?? tr('Tu cuenta fue eliminada.');
   }
 
   /// GET /api/auth/me — requiere token guardado.

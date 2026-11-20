@@ -24,6 +24,7 @@
 library;
 
 import 'dart:convert';
+import '../i18n/idioma.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -248,7 +249,7 @@ class AlarmService {
       visibility: NotificationVisibility.public,
       ongoing: true,
       autoCancel: false,
-      ticker: 'Hora de tu medicamento',
+      ticker: tr('Hora de tu medicamento'),
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -263,7 +264,7 @@ class AlarmService {
     // tocarla se abre MediaEjercicioScreen (antes solo la traía el aviso del
     // servidor, que ahora se omite cuando la alarma ya estaba en el teléfono).
     final conMedia = r.tipo == 'ejercicio' && (r.mediaPath ?? '').isNotEmpty;
-    final titulo = r.tipo == 'ejercicio' ? '🏃 Hora de tu ejercicio' : 'Hora de tu medicamento';
+    final titulo = r.tipo == 'ejercicio' ? tr('🏃 Hora de tu ejercicio') : tr('Hora de tu medicamento');
     final payload = conMedia
         ? jsonEncode({'titulo': titulo, 'cuerpo': r.textoMostrar, 'mediaPath': r.mediaPath})
         : 'recordatorio:${r.id}';

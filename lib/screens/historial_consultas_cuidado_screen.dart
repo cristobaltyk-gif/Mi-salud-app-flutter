@@ -76,7 +76,7 @@ class _HistorialConsultasCuidadoScreenState extends State<HistorialConsultasCuid
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudieron cargar más atenciones: $e')),
+          SnackBar(content: Text(trp('No se pudieron cargar más atenciones: {0}', [e]))),
         );
       }
     } finally {
@@ -111,7 +111,7 @@ class _HistorialConsultasCuidadoScreenState extends State<HistorialConsultasCuid
                 if (_hayMas)
                   OutlinedButton(
                     onPressed: _cargandoMas ? null : _cargarMas,
-                    child: Text(_cargandoMas ? 'Cargando…' : 'Ver más atenciones'),
+                    child: Text(_cargandoMas ? tr('Cargando…') : tr('Ver más atenciones')),
                   ),
               ],
             ),
@@ -182,7 +182,7 @@ class _EventoCardState extends State<_EventoCard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo abrir el PDF: $e')),
+          SnackBar(content: Text(trp('No se pudo abrir el PDF: {0}', [e]))),
         );
       }
     } finally {
@@ -222,7 +222,7 @@ class _EventoCardState extends State<_EventoCard> {
                 Text(
                   widget.ev.tipo.isNotEmpty
                       ? '${widget.ev.tipo[0].toUpperCase()}${widget.ev.tipo.substring(1)}'
-                      : 'Consulta',
+                      : tr('Consulta'),
                   style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF134E4A)),
                 ),
                 Text(
@@ -251,7 +251,7 @@ class _EventoCardState extends State<_EventoCard> {
                 ),
                 child: Text.rich(
                   TextSpan(children: [
-                    const TextSpan(text: 'Diagnóstico: ', style: TextStyle(color: Color(0xFF5EEAD4), fontWeight: FontWeight.w600)),
+                    TextSpan(text: tr('Diagnóstico: '), style: TextStyle(color: Color(0xFF5EEAD4), fontWeight: FontWeight.w600)),
                     TextSpan(text: widget.ev.diagnostico, style: const TextStyle(color: Color(0xFF134E4A))),
                   ]),
                   style: const TextStyle(fontSize: 12),
@@ -265,7 +265,7 @@ class _EventoCardState extends State<_EventoCard> {
                 if (widget.ev.tieneDetalle)
                   OutlinedButton(
                     onPressed: () => setState(() => _expandido = !_expandido),
-                    child: Text(_expandido ? 'Ocultar' : 'Ver detalle'),
+                    child: Text(_expandido ? tr('Ocultar') : tr('Ver detalle')),
                   ),
                 OutlinedButton(
                   onPressed: _abrirExplicar,
@@ -286,7 +286,7 @@ class _EventoCardState extends State<_EventoCard> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              label.toUpperCase(),
+                              tr(label).toUpperCase(),
                               style: const TextStyle(
                                 fontSize: 10, fontWeight: FontWeight.bold,
                                 color: Color(0xFF5EEAD4), letterSpacing: 1.0,
@@ -295,7 +295,7 @@ class _EventoCardState extends State<_EventoCard> {
                             if (pdfTipo != null)
                               TextButton(
                                 onPressed: _descargando == pdfTipo ? null : () => _descargarYAbrir(pdfTipo),
-                                child: Text(_descargando == pdfTipo ? '...' : '⬇ PDF'),
+                                child: Text(_descargando == pdfTipo ? '...' : tr('⬇ PDF')),
                               ),
                           ],
                         ),
@@ -306,7 +306,7 @@ class _EventoCardState extends State<_EventoCard> {
                   ),
               if (widget.ev.fotosDermatologia.isNotEmpty) ...[
                 Text(
-                  '📸 Fotos (${widget.ev.fotosDermatologia.length})',
+                  trp('📸 Fotos ({0})', [widget.ev.fotosDermatologia.length]),
                   style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF5EEAD4)),
                 ),
                 const SizedBox(height: 8),

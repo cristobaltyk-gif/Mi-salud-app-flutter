@@ -43,7 +43,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
           }
           if (snapshot.hasError) {
             return _ErrorConReintentar(
-              mensaje: 'No se pudieron cargar tus recetas: ${snapshot.error}',
+              mensaje: trp('No se pudieron cargar tus recetas: {0}', [snapshot.error]),
               onReintentar: _cargar,
             );
           }
@@ -80,7 +80,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
                             size: 40, color: Colors.grey[400]),
                         const SizedBox(height: 12),
                         Text(
-                          'No tienes recetas de los últimos ${CotizadorService.diasRecetasParaCotizar} días\npara cotizar',
+                          trp('No tienes recetas de los últimos {0} días\npara cotizar', [CotizadorService.diasRecetasParaCotizar]),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey[600]),
                         ),
@@ -90,7 +90,7 @@ class _CotizadorScreenState extends State<CotizadorScreen> {
                 )
               else ...[
                 Text(
-                  'Recetas con medicamentos (${recetas.length})',
+                  trp('Recetas con medicamentos ({0})', [recetas.length]),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -121,7 +121,7 @@ class _RecetaCard extends StatelessWidget {
       child: ListTile(
         leading: const Text('💊', style: TextStyle(fontSize: 22)),
         title: Text(
-          evento.diagnostico.isNotEmpty ? evento.diagnostico : 'Receta médica',
+          evento.diagnostico.isNotEmpty ? evento.diagnostico : tr('Receta médica'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -129,7 +129,7 @@ class _RecetaCard extends StatelessWidget {
         subtitle: Text(
           '${evento.fecha}'
           '${evento.medico.isNotEmpty ? " · ${evento.medico}" : ""}'
-          '\n$cantidad medicamento${cantidad != 1 ? "s" : ""} — Ver cotización',
+          '\n${cantidad == 1 ? tr('1 medicamento — Ver cotización') : trp('{0} medicamentos — Ver cotización', [cantidad])}',
           style: const TextStyle(color: Color(0xFF0F766E), fontSize: 12.5),
         ),
         isThreeLine: true,
@@ -147,7 +147,7 @@ class _RecetaCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => CotizacionDetalleScreen(
                 items: items,
-                titulo: evento.diagnostico.isNotEmpty ? evento.diagnostico : 'Cotización',
+                titulo: evento.diagnostico.isNotEmpty ? evento.diagnostico : tr('Cotización'),
               ),
             ),
           );

@@ -60,7 +60,7 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
     try {
       final ok = await BiometriaService.autenticar();
       if (!ok) {
-        setState(() => _error = 'No se pudo confirmar. Toca el botón para intentar de nuevo.');
+        setState(() => _error = tr('No se pudo confirmar. Toca el botón para intentar de nuevo.'));
         return;
       }
       final token = await StorageService.obtenerToken();
@@ -78,14 +78,14 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
       }
     } on AuthException catch (e) {
       if (e.statusCode == 403) {
-        _usarContrasena(aviso: 'Este teléfono ya no está vinculado. Ingresa con tu contraseña.');
+        _usarContrasena(aviso: tr('Este teléfono ya no está vinculado. Ingresa con tu contraseña.'));
         return;
       }
       setState(() => _error = e.mensaje);
     } catch (_) {
       // Sin red: la huella ya confirmó quién es; abre la ficha guardada en el teléfono
       if (await _abrirCopiaGuardada()) return;
-      if (mounted) setState(() => _error = 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+      if (mounted) setState(() => _error = tr('No se pudo conectar. Revisa tu conexión e intenta de nuevo.'));
     } finally {
       if (mounted) setState(() => _ocupado = false);
     }
@@ -156,8 +156,8 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
                   const SizedBox(height: 8),
                   Text(
                     widget.bloqueo
-                        ? 'Confirma que eres tú para seguir.'
-                        : 'Entra con tu huella para ver tu ficha.',
+                        ? tr('Confirma que eres tú para seguir.')
+                        : tr('Entra con tu huella para ver tu ficha.'),
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.8)),
                   ),

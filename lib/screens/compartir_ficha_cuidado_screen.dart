@@ -161,7 +161,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
   Future<void> _enviarEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(() => _error = 'Ingresa el email del médico');
+      setState(() => _error = tr('Ingresa el email del médico'));
       return;
     }
     setState(() {
@@ -172,7 +172,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
     try {
       await AccesoMedicoService.enviarPorEmail(email, rutPaciente: widget.rutPaciente);
       setState(() {
-        _exito = 'Acceso enviado a $email';
+        _exito = trp('Acceso enviado a {0}', [email]);
         _emailController.clear();
       });
       await _cargarLinks();
@@ -233,9 +233,9 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                     Expanded(
                       child: Text.rich(
                         TextSpan(children: [
-                          const TextSpan(text: 'Modo cuidador', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                          TextSpan(text: tr('Modo cuidador'), style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                           if (_nombrePaciente != null)
-                            TextSpan(text: ' · Autorizando en nombre de $_nombrePaciente', style: const TextStyle(color: Colors.white)),
+                            TextSpan(text: trp(' · Autorizando en nombre de {0}', [_nombrePaciente]), style: const TextStyle(color: Colors.white)),
                         ]),
                         style: const TextStyle(fontSize: 13),
                       ),
@@ -264,11 +264,11 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                           const SizedBox(height: 6),
                           Text(
                             _esPropia
-                                ? 'Genera un acceso temporal para que un médico revise tu ficha. '
-                                  'Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.'
-                                : 'Genera un acceso temporal para que un médico revise la ficha'
-                                  '${_nombrePaciente != null ? ' de $_nombrePaciente' : ' del paciente'}. '
-                                  'Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.',
+                                ? tr('Genera un acceso temporal para que un médico revise tu ficha. '
+                                  'Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.')
+                                : (_nombrePaciente != null
+                                    ? trp('Genera un acceso temporal para que un médico revise la ficha de {0}. Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.', [_nombrePaciente])
+                                    : tr('Genera un acceso temporal para que un médico revise la ficha del paciente. Podrá revisarla por 3 horas. Al cerrar sesión el acceso expira.')),
                             style: const TextStyle(height: 1.4),
                           ),
                         ],
@@ -281,7 +281,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                     children: [
                       Expanded(
                         child: _BotonModo(
-                          texto: '📱 Código QR',
+                          texto: tr('📱 Código QR'),
                           activo: _modo == 'qr',
                           onTap: () => setState(() => _modo = 'qr'),
                         ),
@@ -289,7 +289,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                       const SizedBox(width: 8),
                       Expanded(
                         child: _BotonModo(
-                          texto: '📧 Email',
+                          texto: tr('📧 Email'),
                           activo: _modo == 'email',
                           onTap: () => setState(() => _modo = 'email'),
                         ),
@@ -306,7 +306,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                           backgroundColor: const Color(0xFF0F766E),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: Text(_generando ? 'Generando...' : '+ Generar código QR'),
+                        child: Text(_generando ? 'Generando...' : tr('+ Generar código QR')),
                       )
                     else
                       Card(
@@ -370,7 +370,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
                                 backgroundColor: const Color(0xFF0F766E),
                                 minimumSize: const Size.fromHeight(48),
                               ),
-                              child: Text(_enviando ? 'Enviando...' : 'Enviar acceso por email'),
+                              child: Text(_enviando ? 'Enviando...' : tr('Enviar acceso por email')),
                             ),
                           ],
                         ),
@@ -462,7 +462,7 @@ class _IdentidadMedico extends StatelessWidget {
     if (rut == null) return const SizedBox.shrink();
 
     if (perfil == null) {
-      return Text('👤 RUT $rut', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600));
+      return Text(trp('👤 RUT {0}', [rut]), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600));
     }
 
     final especialidadesRaw = perfil!['especialidades'] as List<dynamic>? ?? [];
@@ -519,7 +519,7 @@ class _TarjetaAcceso extends StatelessWidget {
             if (link.estado == EstadoAccesoMedico.enUso && link.expiraSesion != null) ...[
               const SizedBox(height: 6),
               Text(
-                '⏱ Sesión activa hasta: ${link.expiraSesion!.hour}:${link.expiraSesion!.minute.toString().padLeft(2, '0')}',
+                trp('⏱ Sesión activa hasta: {0}:{1}', [link.expiraSesion!.hour, link.expiraSesion!.minute.toString().padLeft(2, '0')]),
                 style: const TextStyle(fontSize: 12, color: Color(0xFF065F46)),
               ),
             ],

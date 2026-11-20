@@ -45,7 +45,7 @@ class _AutorizarTabUnificadaState extends State<AutorizarTabUnificada> {
     if (!widget.carpeta.esPropia && !widget.carpeta.esCompleto) {
       return AvisoSinPermiso(
         nombrePaciente: widget.carpeta.nombreMostrar,
-        mensaje: 'No puedes autorizar acceso médico en nombre de esta persona.',
+        mensaje: tr('No puedes autorizar acceso médico en nombre de esta persona.'),
       );
     }
 

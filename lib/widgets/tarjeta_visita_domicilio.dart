@@ -26,10 +26,10 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
     final color = llego ? const Color(0xFF166534) : enCamino ? const Color(0xFFB45309) : const Color(0xFF1D4ED8);
     final fondo = llego ? const Color(0xFFF0FDF4) : enCamino ? const Color(0xFFFFFBEB) : const Color(0xFFEFF6FF);
     final titulo = llego
-        ? '📍 El profesional llegó'
+        ? tr('📍 El profesional llegó')
         : enCamino
-            ? '🚗 Tu profesional va en camino'
-            : '🏠 Visita a domicilio confirmada';
+            ? tr('🚗 Tu profesional va en camino')
+            : tr('🏠 Visita a domicilio confirmada');
     final eta = enCamino ? visita.minutosRestantes : null;
 
     return Card(
@@ -44,7 +44,7 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
             Text(titulo, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: color)),
             if (eta != null) ...[
               const SizedBox(height: 4),
-              Text('Llega en aproximadamente $eta min', style: const TextStyle(fontSize: 15)),
+              Text(trp('Llega en aproximadamente {0} min', [eta]), style: const TextStyle(fontSize: 15)),
             ],
             const SizedBox(height: 6),
             Text('${visita.profesional} · ${visita.fecha} · ${visita.hora}',
@@ -79,7 +79,7 @@ class TarjetaVisitaDomicilio extends StatelessWidget {
                         await Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => ReservaWebScreen(
                             url: Uri.parse(visita.link),
-                            titulo: enCamino ? 'Tu profesional va en camino' : 'Seguimiento de tu visita',
+                            titulo: enCamino ? tr('Tu profesional va en camino') : tr('Seguimiento de tu visita'),
                           ),
                         ));
                         await onActualizar();
@@ -150,8 +150,8 @@ class TarjetaCita extends StatelessWidget {
                   ),
                   child: Text(
                     cita.pagoPendiente
-                        ? 'Pendiente de pago'
-                        : porConfirmar ? 'Por confirmar' : confirmada ? 'Confirmada' : 'Reservada',
+                        ? tr('Pendiente de pago')
+                        : porConfirmar ? tr('Por confirmar') : confirmada ? tr('Confirmada') : tr('Reservada'),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,

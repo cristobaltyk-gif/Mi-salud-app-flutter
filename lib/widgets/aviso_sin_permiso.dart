@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 
 class AvisoSinPermiso extends StatelessWidget {
   final String nombrePaciente;
@@ -42,7 +43,7 @@ class AvisoSinPermiso extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Sin acceso a esto para $nombrePaciente',
+              trp('Sin acceso a esto para {0}', [nombrePaciente]),
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF4C1D95)),
             ),

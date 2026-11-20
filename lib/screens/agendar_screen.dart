@@ -117,7 +117,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
-        title: Text(widget.paraNombre == null ? 'Agendar hora' : 'Agendar para ${widget.paraNombre}'),
+        title: Text(widget.paraNombre == null ? tr('Agendar hora') : trp('Agendar para {0}', [widget.paraNombre])),
         backgroundColor: _azul,
         foregroundColor: Colors.white,
       ),
@@ -128,8 +128,8 @@ class _AgendarScreenState extends State<AgendarScreen> {
             // Mismo estilo que la Agenda (widgets/tarjetas.dart)
             child: GrillaOpciones(opciones: _modalidades.entries.map((e) => TarjetaOpcion(
               icono: e.value.$1.split(' ').first,
-              titulo: e.value.$1.substring(e.value.$1.indexOf(' ') + 1),
-              sub: _subtitulos[e.key],
+              titulo: tr(e.value.$1.substring(e.value.$1.indexOf(' ') + 1)),
+              sub: _subtitulos[e.key] == null ? null : tr(_subtitulos[e.key]!),
               seleccionada: _modalidad == e.key,
               onTap: () => _cambiarModalidad(e.key),
             )).toList()),
@@ -137,7 +137,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              _modalidades[_modalidad]!.$2,
+              tr(_modalidades[_modalidad]!.$2),
               style: TextStyle(color: Colors.grey[700], fontSize: 13),
             ),
           ),
@@ -152,7 +152,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                 border: Border.all(color: const Color(0xFFFDE68A)),
               ),
               child: Text(
-                'Estás agendando para ${widget.paraNombre}: la reserva queda a su nombre.',
+                trp('Estás agendando para {0}: la reserva queda a su nombre.', [widget.paraNombre]),
                 style: const TextStyle(fontSize: 13, color: Color(0xFF92400E)),
               ),
             ),
@@ -170,20 +170,20 @@ class _AgendarScreenState extends State<AgendarScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text((_direccion ?? '').isEmpty ? '🏠 Agrega tu dirección' : '🏠 Actualiza tu dirección',
+                  Text((_direccion ?? '').isEmpty ? tr('🏠 Agrega tu dirección') : tr('🏠 Actualiza tu dirección'),
                       style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF92400E))),
                   const SizedBox(height: 4),
                   Text(
                     (_direccion ?? '').isEmpty
-                        ? 'Para ver quién puede atenderte en tu casa necesitamos tu dirección (calle, número y comuna).'
-                        : 'A tu dirección registrada le falta la comuna. La necesitamos para saber quién puede ir a atenderte.',
+                        ? tr('Para ver quién puede atenderte en tu casa necesitamos tu dirección (calle, número y comuna).')
+                        : tr('A tu dirección registrada le falta la comuna. La necesitamos para saber quién puede ir a atenderte.'),
                     style: const TextStyle(fontSize: 13, color: Color(0xFF92400E)),
                   ),
                   const SizedBox(height: 10),
                   FilledButton(
                     style: FilledButton.styleFrom(backgroundColor: _verde),
                     onPressed: _editarDireccion,
-                    child: Text((_direccion ?? '').isEmpty ? 'Agregar mi dirección' : 'Actualizar mi dirección'),
+                    child: Text((_direccion ?? '').isEmpty ? tr('Agregar mi dirección') : tr('Actualizar mi dirección')),
                   ),
                 ],
               ),
@@ -194,7 +194,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text('🏠 Visita en $_direccion',
+                    child: Text(trp('🏠 Visita en {0}', [_direccion]),
                         style: TextStyle(fontSize: 12.5, color: Colors.grey[800])),
                   ),
                   TextButton(onPressed: _editarDireccion, child: Text(tr('Cambiar'))),
@@ -235,7 +235,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text('Ver centros más lejos (${AgendaService.ultimoMasLejos})',
+                  child: Text(trp('Ver centros más lejos ({0})', [AgendaService.ultimoMasLejos]),
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                 );
                 if (centros.isEmpty) {
@@ -247,8 +247,8 @@ class _AgendarScreenState extends State<AgendarScreen> {
                         children: [
                           Text(
                             hayMasLejos
-                                ? 'No hay centros a menos de 50 km de tu dirección.'
-                                : 'Por ahora no hay ${_modalidades[_modalidad]!.$3} disponible.',
+                                ? tr('No hay centros a menos de 50 km de tu dirección.')
+                                : trp('Por ahora no hay {0} disponible.', [tr(_modalidades[_modalidad]!.$3)]),
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.grey[600]),
                           ),
@@ -264,7 +264,7 @@ class _AgendarScreenState extends State<AgendarScreen> {
                     if ((_direccion ?? '').isNotEmpty && _modalidad == 'presencial')
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: Text('📍 Ordenado por cercanía a $_direccion',
+                        child: Text(trp('📍 Ordenado por cercanía a {0}', [_direccion]),
                             style: TextStyle(fontSize: 12, color: Colors.grey[700])),
                       ),
                     // Primero los centros (cerrados, el más cercano arriba); al
@@ -333,8 +333,8 @@ class _TarjetaCentro extends StatelessWidget {
     ));
     if (!context.mounted || resultado == null) return;
     final aviso = resultado == 'pago'
-        ? 'Completa el pago: la hora queda apartada 30 minutos. También te llegó el link por correo.'
-        : 'Hora reservada. Te llegará la confirmación por correo.';
+        ? tr('Completa el pago: la hora queda apartada 30 minutos. También te llegó el link por correo.')
+        : tr('Hora reservada. Te llegará la confirmación por correo.');
     final mensajero = ScaffoldMessenger.maybeOf(context);
     // Volver a Agenda: ahí (y en Recordatorios) aparece la hora nueva
     Navigator.of(context).pop(resultado);
@@ -361,7 +361,7 @@ class _TarjetaCentro extends StatelessWidget {
               Text(centro.profesionales.map((p) => p.nombre).join(', '),
                   style: TextStyle(fontSize: 13, color: Colors.grey[700])),
               if (precio > 0)
-                Text('Consulta online · \$${_miles(precio)}',
+                Text(trp('Consulta online · \${0}', [_miles(precio)]),
                     style: const TextStyle(fontWeight: FontWeight.w700, color: _verde)),
               const SizedBox(height: 10),
               SizedBox(
@@ -483,7 +483,7 @@ class _CentroDesplegableState extends State<_CentroDesplegable> {
         if (widget.modalidad == 'domicilio' && p.distanciaKm != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text('🏠 Sale a ${p.kmTexto} de tu domicilio',
+            child: Text(trp('🏠 Sale a {0} de tu domicilio', [p.kmTexto]),
                 style: const TextStyle(fontSize: 12, color: kTextoGris)),
           ),
         if (widget.modalidad != 'domicilio' && p.lugar != null)
@@ -493,7 +493,7 @@ class _CentroDesplegableState extends State<_CentroDesplegable> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 '📍 ${[p.lugar!['nombre'], p.lugar!['direccion']].where((x) => (x ?? '').toString().isNotEmpty).join(' · ')}'
-                '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · Cómo llegar',
+                '${p.kmTexto.isNotEmpty ? ' · ${p.kmTexto}' : ''} · ${tr('Cómo llegar')}',
                 style: TextStyle(fontSize: 12, color: Colors.blue[800]),
               ),
             ),

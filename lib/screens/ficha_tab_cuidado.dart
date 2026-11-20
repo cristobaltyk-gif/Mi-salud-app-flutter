@@ -26,8 +26,8 @@ class TabFichaCuidado extends StatelessWidget {
     if (ficha.esMedicamentos) {
       return ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
-          EstadoVacio(texto: 'Este nivel de acceso solo autoriza ver medicamentos y controles.\nRevisa la pestaña "Recordatorios".'),
+        children: [
+          EstadoVacio(texto: tr('Este nivel de acceso solo autoriza ver medicamentos y controles.\nRevisa la pestaña "Recordatorios".')),
         ],
       );
     }
@@ -42,7 +42,7 @@ class TabFichaCuidado extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (ficha.eventosConIndicaciones.isEmpty)
-            const EstadoVacio(texto: 'Sin indicaciones registradas')
+            EstadoVacio(texto: tr('Sin indicaciones registradas'))
           else
             ...ficha.eventosConIndicaciones.map((ev) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -94,28 +94,28 @@ class TabFichaCuidado extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _FilaAntecedente(
-                      titulo: '⚠️ ALERGIAS',
+                      titulo: tr('⚠️ ALERGIAS'),
                       colorTitulo: const Color(0xFFDC2626),
                       items: ficha.antecedentes!['alergia'] as List<dynamic>? ?? [],
-                      vacio: 'Sin alergias conocidas',
+                      vacio: tr('Sin alergias conocidas'),
                       colorFondo: const Color(0xFFFEF2F2),
                       colorTexto: const Color(0xFF991B1B),
                     ),
                     const SizedBox(height: 10),
                     _FilaAntecedente(
-                      titulo: '💊 MEDICAMENTOS',
+                      titulo: tr('💊 MEDICAMENTOS'),
                       colorTitulo: const Color(0xFF1D4ED8),
                       items: ficha.antecedentes!['medicamento_habitual'] as List<dynamic>? ?? [],
-                      vacio: 'Sin medicamentos habituales',
+                      vacio: tr('Sin medicamentos habituales'),
                       colorFondo: const Color(0xFFEFF6FF),
                       colorTexto: const Color(0xFF1E40AF),
                     ),
                     const SizedBox(height: 10),
                     _FilaAntecedente(
-                      titulo: '🩺 CRÓNICAS',
+                      titulo: tr('🩺 CRÓNICAS'),
                       colorTitulo: const Color(0xFF065F46),
                       items: ficha.antecedentes!['enfermedad_cronica'] as List<dynamic>? ?? [],
-                      vacio: 'Sin enfermedades crónicas',
+                      vacio: tr('Sin enfermedades crónicas'),
                       colorFondo: const Color(0xFFF0FDF4),
                       colorTexto: const Color(0xFF065F46),
                     ),
@@ -146,8 +146,8 @@ class _TarjetaHistorialLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final n = ficha.totalConsultas ?? ficha.eventos.length;
     final subtitulo = n == 0
-        ? 'Sin consultas registradas'
-        : '$n consulta${n == 1 ? '' : 's'} registrada${n == 1 ? '' : 's'}';
+        ? tr('Sin consultas registradas')
+        : (n == 1 ? tr('1 consulta registrada') : trp('{0} consultas registradas', [n]));
 
     return Card(
       child: InkWell(

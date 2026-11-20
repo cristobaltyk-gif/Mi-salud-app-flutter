@@ -43,7 +43,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
       setState(() => _comunas = l);
       _precargar(widget.actual ?? '');
     }).catchError((_) {
-      if (mounted) setState(() => _error = 'No se pudo cargar la lista de comunas. Revisa tu conexión.');
+      if (mounted) setState(() => _error = tr('No se pudo cargar la lista de comunas. Revisa tu conexión.'));
     });
   }
 
@@ -73,16 +73,16 @@ class _DireccionScreenState extends State<DireccionScreen> {
   }
 
   Future<void> _verMapa() async {
-    if (_calle.text.trim().isEmpty) { setState(() => _error = 'Escribe la calle.'); return; }
-    if (_numero.text.trim().isEmpty) { setState(() => _error = 'Escribe el número (si no tiene, S/N).'); return; }
-    if (_comuna.isEmpty) { setState(() => _error = 'Elige la comuna de la lista.'); return; }
+    if (_calle.text.trim().isEmpty) { setState(() => _error = tr('Escribe la calle.')); return; }
+    if (_numero.text.trim().isEmpty) { setState(() => _error = tr('Escribe el número (si no tiene, S/N).')); return; }
+    if (_comuna.isEmpty) { setState(() => _error = tr('Elige la comuna de la lista.')); return; }
     setState(() { _buscando = true; _error = null; _verif = null; });
     try {
       final v = await DireccionService.verificar(
           calle: _calle.text.trim(), numero: _numero.text.trim(), comuna: _comuna, depto: _depto.text.trim());
       if (!mounted) return;
       if (!v.ok || v.lat == null || v.lng == null) {
-        setState(() => _error = v.mensaje.isNotEmpty ? v.mensaje : 'No encontramos esa dirección.');
+        setState(() => _error = v.mensaje.isNotEmpty ? v.mensaje : tr('No encontramos esa dirección.'));
       } else {
         const d = 0.004;
         final url = 'https://www.openstreetmap.org/export/embed.html?bbox='
@@ -94,7 +94,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
         setState(() => _verif = v);
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Sin conexión. Intenta de nuevo.');
+      if (mounted) setState(() => _error = tr('Sin conexión. Intenta de nuevo.'));
     } finally {
       if (mounted) setState(() => _buscando = false);
     }
@@ -136,10 +136,10 @@ class _DireccionScreenState extends State<DireccionScreen> {
               'después confírmala en el mapa.'), style: TextStyle(color: Colors.grey[700], fontSize: 13)),
           const SizedBox(height: 14),
           Row(children: [
-            Expanded(flex: 3, child: TextField(controller: _calle, decoration: _deco('Calle', hint: 'Av. España'),
+            Expanded(flex: 3, child: TextField(controller: _calle, decoration: _deco(tr('Calle'), hint: 'Av. España'),
                 textCapitalization: TextCapitalization.words, onChanged: (_) => _cambio())),
             const SizedBox(width: 8),
-            Expanded(flex: 1, child: TextField(controller: _numero, decoration: _deco('Número', hint: '998'),
+            Expanded(flex: 1, child: TextField(controller: _numero, decoration: _deco(tr('Número'), hint: '998'),
                 onChanged: (_) => _cambio())),
           ]),
           const SizedBox(height: 10),
@@ -156,7 +156,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
             fieldViewBuilder: (ctx, ctrl, foco, alEnviar) => TextField(
               controller: ctrl,
               focusNode: foco,
-              decoration: _deco('Comuna', hint: 'Escribe y elige de la lista'),
+              decoration: _deco(tr('Comuna'), hint: tr('Escribe y elige de la lista')),
               onChanged: (t) {
                 // Si lo escrito ya no es la comuna elegida, hay que volver a elegir
                 if (DireccionService.normalizar(t) != DireccionService.normalizar(_comuna)) {
@@ -167,11 +167,11 @@ class _DireccionScreenState extends State<DireccionScreen> {
           ),
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 4),
-            child: Text(_region.isNotEmpty ? 'Región: $_region' : 'Elige una comuna de la lista',
+            child: Text(_region.isNotEmpty ? trp('Región: {0}', [_region]) : tr('Elige una comuna de la lista'),
                 style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           ),
           const SizedBox(height: 10),
-          TextField(controller: _depto, decoration: _deco('Depto / oficina (opcional)'), onChanged: (_) => _cambio()),
+          TextField(controller: _depto, decoration: _deco(tr('Depto / oficina (opcional)')), onChanged: (_) => _cambio()),
           const SizedBox(height: 14),
           if (_error != null)
             Container(
@@ -185,7 +185,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
             OutlinedButton.icon(
               onPressed: _buscando ? null : _verMapa,
               icon: const Icon(Icons.place_outlined),
-              label: Text(_buscando ? 'Buscando…' : 'Ver en el mapa'),
+              label: Text(_buscando ? tr('Buscando…') : tr('Ver en el mapa')),
             ),
           if (_verif != null && _mapa != null) ...[
             ClipRRect(
@@ -203,7 +203,7 @@ class _DireccionScreenState extends State<DireccionScreen> {
                 child: FilledButton(
                   style: FilledButton.styleFrom(backgroundColor: _verde),
                   onPressed: _guardando ? null : _confirmar,
-                  child: Text(_guardando ? 'Guardando…' : '✓ Sí, es aquí'),
+                  child: Text(_guardando ? tr('Guardando…') : tr('✓ Sí, es aquí')),
                 ),
               ),
               const SizedBox(width: 8),

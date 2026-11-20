@@ -14,6 +14,7 @@
 library;
 
 import 'dart:convert';
+import '../i18n/idioma.dart';
 import 'http_sesion.dart' as http;
 import '../config/app_config.dart';
 import '../models/recordatorio.dart';
@@ -48,7 +49,7 @@ class RecordatoriosService {
     );
 
     if (res.statusCode != 200) {
-      throw RecordatoriosException('No se pudieron cargar los recordatorios (${res.statusCode})');
+      throw RecordatoriosException(trp('No se pudieron cargar los recordatorios ({0})', [res.statusCode]));
     }
 
     final lista = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
@@ -66,7 +67,7 @@ class RecordatoriosService {
     );
 
     if (res.statusCode != 200) {
-      throw RecordatoriosException('No se pudieron generar los recordatorios (${res.statusCode})');
+      throw RecordatoriosException(trp('No se pudieron generar los recordatorios ({0})', [res.statusCode]));
     }
 
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -88,7 +89,7 @@ class RecordatoriosService {
     );
 
     if (res.statusCode != 200) {
-      throw RecordatoriosException('No se pudo revisar la agenda (${res.statusCode})');
+      throw RecordatoriosException(trp('No se pudo revisar la agenda ({0})', [res.statusCode]));
     }
 
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -122,11 +123,11 @@ class RecordatoriosService {
 
     if (res.statusCode == 409) {
       throw RecordatoriosException(
-        'Este recordatorio ya fue editado antes y no se puede modificar de nuevo',
+        tr('Este recordatorio ya fue editado antes y no se puede modificar de nuevo'),
       );
     }
     if (res.statusCode != 200) {
-      throw RecordatoriosException('No se pudo editar el recordatorio (${res.statusCode})');
+      throw RecordatoriosException(trp('No se pudo editar el recordatorio ({0})', [res.statusCode]));
     }
 
     return Recordatorio.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));

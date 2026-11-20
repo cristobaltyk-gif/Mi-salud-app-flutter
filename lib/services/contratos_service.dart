@@ -6,6 +6,7 @@
 library;
 
 import 'dart:convert';
+import '../i18n/idioma.dart';
 import 'http_sesion.dart' as http;
 import '../config/app_config.dart';
 import 'storage_service.dart';
@@ -33,7 +34,7 @@ class ContratosService {
       final lista = (jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>)['pendientes'] as List<dynamic>? ?? [];
       if (lista.isEmpty) return null;
       final c = lista.first as Map<String, dynamic>;
-      return ContratoPendiente(c['titulo'] as String? ?? 'Términos de uso', c['texto'] as String? ?? '',
+      return ContratoPendiente(c['titulo'] as String? ?? tr('Términos de uso'), c['texto'] as String? ?? '',
           (c['version'] as num).toInt(), c['hash'] as String? ?? '');
     } catch (_) {
       return null;
@@ -44,7 +45,7 @@ class ContratosService {
     final res = await http.post(Uri.parse('${AppConfig.backendBaseUrl}/api/contratos/aceptar'),
         headers: await _headers(), body: jsonEncode({'version': c.version, 'hash': c.hash}));
     if (res.statusCode != 200) {
-      String msg = 'No se pudo registrar';
+      String msg = tr('No se pudo registrar');
       try {
         final d = jsonDecode(utf8.decode(res.bodyBytes));
         if (d is Map && d['detail'] is String) msg = d['detail'] as String;

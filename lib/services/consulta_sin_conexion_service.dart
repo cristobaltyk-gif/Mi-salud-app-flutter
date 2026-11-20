@@ -20,6 +20,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -81,7 +82,7 @@ class ConsultaSinConexionService {
   /// persona no lo da, se intenta igual con la red Wi-Fi actual.
   static Future<void> _permisos() async {
     if (!Platform.isAndroid) {
-      throw ConsultaException('La consulta sin conexión por red local está disponible solo en Android.');
+      throw ConsultaException(tr('La consulta sin conexión por red local está disponible solo en Android.'));
     }
     try {
       if (!(await Permission.nearbyWifiDevices.request()).isGranted) {
@@ -139,8 +140,8 @@ class ConsultaSinConexionService {
     final ip = await _ipLocal(redPropia: red != null);
     if (ip == null) {
       await _canal.invokeMethod('detener').catchError((_) {});
-      throw ConsultaException('No se pudo crear la red local. Activa el Wi-Fi del teléfono e intenta de nuevo, '
-          'o conéctalo a la misma red Wi-Fi que el equipo del profesional.');
+      throw ConsultaException(tr('No se pudo crear la red local. Activa el Wi-Fi del teléfono e intenta de nuevo, '
+          'o conéctalo a la misma red Wi-Fi que el equipo del profesional.'));
     }
 
     _servidor = await HttpServer.bind(InternetAddress.anyIPv4, 8080).catchError(

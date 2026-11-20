@@ -200,13 +200,13 @@ class _BannerModoCuidador extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 children: [
-                  const TextSpan(
-                    text: 'Modo cuidador',
+                  TextSpan(
+                    text: tr('Modo cuidador'),
                     style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   if (nombrePaciente != null)
                     TextSpan(
-                      text: ' · Viendo la ficha de $nombrePaciente',
+                      text: trp(' · Viendo la ficha de {0}', [nombrePaciente]),
                       style: const TextStyle(color: Colors.white),
                     ),
                 ],

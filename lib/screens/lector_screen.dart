@@ -49,9 +49,9 @@ class _LectorScreenState extends State<LectorScreen> {
 
   Future<void> _comenzar() async {
     setState(() => _error = null);
-    final ok = await BiometriaService.autenticar(motivo: 'Confirma que compartes la ficha bajo tu responsabilidad');
+    final ok = await BiometriaService.autenticar(motivo: tr('Confirma que compartes la ficha bajo tu responsabilidad'));
     if (!ok) {
-      setState(() => _error = BiometriaService.ultimoError ?? 'No se confirmó tu identidad.');
+      setState(() => _error = BiometriaService.ultimoError ?? tr('No se confirmó tu identidad.'));
       return;
     }
     try {
@@ -60,7 +60,7 @@ class _LectorScreenState extends State<LectorScreen> {
         pedirHuella: false,
       );
     } on CopiaException catch (e) {
-      setState(() => _error = '${e.mensaje} Abre la ficha una vez con internet para guardarla en el teléfono.');
+      setState(() => _error = trp('{0} Abre la ficha una vez con internet para guardarla en el teléfono.', [e.mensaje]));
       return;
     }
     _aceptadaAt = DateTime.now();
@@ -116,7 +116,7 @@ class _LectorScreenState extends State<LectorScreen> {
       ]);
 
   Widget _vistaAceptar() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _titulo('Sin internet: compartir con el computador del médico'),
+        _titulo(tr('Sin internet: compartir con el computador del médico')),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -126,12 +126,12 @@ class _LectorScreenState extends State<LectorScreen> {
           ),
           child: Text(
             widget.esPropia
-                ? 'Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. Lo hago '
+                ? tr('Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. Lo hago '
                     'por mi propia decisión y bajo mi responsabilidad. Sé que su identidad se verificará en el RNPI '
-                    'cuando vuelva la conexión, y que su nota no entrará a mi ficha hasta esa verificación.'
-                : 'Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin conexión '
+                    'cuando vuelva la conexión, y que su nota no entrará a mi ficha hasta esa verificación.')
+                : tr('Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin conexión '
                     'a internet, bajo mi responsabilidad como su cuidador. Sé que su identidad se verificará en el '
-                    'RNPI cuando vuelva la conexión, y que su nota no entrará a la ficha hasta esa verificación.',
+                    'RNPI cuando vuelva la conexión, y que su nota no entrará a la ficha hasta esa verificación.'),
             style: const TextStyle(fontSize: 14, height: 1.4),
           ),
         ),
@@ -151,7 +151,7 @@ class _LectorScreenState extends State<LectorScreen> {
       ]);
 
   Widget _vistaBuscando() => Column(children: [
-        _titulo('Esperando al computador del médico…'),
+        _titulo(tr('Esperando al computador del médico…')),
         const CircularProgressIndicator(),
         const SizedBox(height: 14),
         Text(tr('Mantén el teléfono cerca del computador, con el Bluetooth encendido.'),
@@ -159,7 +159,7 @@ class _LectorScreenState extends State<LectorScreen> {
       ]);
 
   Widget _vistaNadie() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _titulo('No se encontró el computador del médico'),
+        _titulo(tr('No se encontró el computador del médico')),
         Text(
           tr('Verifica que el programa Lector HypokratIA esté abierto en el computador y que el Bluetooth del '
           'teléfono esté encendido.'),
@@ -167,7 +167,7 @@ class _LectorScreenState extends State<LectorScreen> {
         ),
         if (LectorService.ultimoErrorBle != null) ...[
           const SizedBox(height: 8),
-          Text('Bluetooth: ${LectorService.ultimoErrorBle}',
+          Text(trp('Bluetooth: {0}', [LectorService.ultimoErrorBle]),
               textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Color(0xFFB91C1C))),
         ],
         const SizedBox(height: 10),
@@ -184,10 +184,10 @@ class _LectorScreenState extends State<LectorScreen> {
     final s = _sesion!;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (s.estado == 'conectando') ...[
-        _titulo('Conectando…'),
+        _titulo(tr('Conectando…')),
         const Center(child: CircularProgressIndicator()),
       ] else if (s.estado == 'codigo') ...[
-        _titulo('Verifica el código', Icons.verified_user),
+        _titulo(tr('Verifica el código'), Icons.verified_user),
         Text(tr('El computador del médico debe mostrar este mismo código:'), textAlign: TextAlign.center),
         const SizedBox(height: 8),
         Text(s.codigo,
@@ -196,18 +196,18 @@ class _LectorScreenState extends State<LectorScreen> {
         const SizedBox(height: 8),
         Text(tr('Esperando que el médico toque ACEPTAR…'), textAlign: TextAlign.center),
       ] else if (s.estado == 'activa') ...[
-        _titulo('Consulta en curso', Icons.medical_services),
-        Text('Computador: ${s.equipo}', textAlign: TextAlign.center),
+        _titulo(tr('Consulta en curso'), Icons.medical_services),
+        Text(trp('Computador: {0}', [s.equipo]), textAlign: TextAlign.center),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(10)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.profesionales.isEmpty ? 'El médico aún no se identifica.' : 'Profesionales:',
+            Text(s.profesionales.isEmpty ? tr('El médico aún no se identifica.') : tr('Profesionales:'),
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             for (final p in s.profesionales) Text('• $p'),
             const SizedBox(height: 6),
-            Text('Notas guardadas: ${s.notas} — se enviarán solas cuando vuelva internet.'),
+            Text(trp('Notas guardadas: {0} — se enviarán solas cuando vuelva internet.', [s.notas])),
           ]),
         ),
         const SizedBox(height: 16),
@@ -217,11 +217,11 @@ class _LectorScreenState extends State<LectorScreen> {
           child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Terminar'))),
         ),
       ] else ...[
-        _titulo(s.estado == 'rechazada' ? 'El médico no aceptó' : 'Consulta terminada', Icons.check_circle),
+        _titulo(s.estado == 'rechazada' ? tr('El médico no aceptó') : tr('Consulta terminada'), Icons.check_circle),
         Text(
           s.notas > 0
-              ? 'Se guardaron ${s.notas} nota(s). Se enviarán solas cuando vuelva internet.'
-              : 'El computador ya no tiene acceso a la ficha.',
+              ? trp('Se guardaron {0} nota(s). Se enviarán solas cuando vuelva internet.', [s.notas])
+              : tr('El computador ya no tiene acceso a la ficha.'),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),

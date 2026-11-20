@@ -15,6 +15,7 @@
 library;
 
 import '../widgets/tarjetas.dart';
+import 'package:intl/intl.dart';
 import '../i18n/idioma.dart';
 import 'package:flutter/material.dart';
 import '../models/carpeta_activa.dart';
@@ -73,7 +74,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(tr('Cancelar hora')),
-        content: Text('¿Cancelar la hora del ${cita.fechaCorta} a las ${cita.hora} con ${cita.profesional}?'),
+        content: Text(trp('¿Cancelar la hora del {0} a las {1} con {2}?', [cita.fechaCorta, cita.hora, cita.profesional])),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Volver'))),
           TextButton(
@@ -87,7 +88,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
     if (ok != true) return;
     try {
       await AgendaService.cancelar(cita, rutPaciente: _rut);
-      _avisar('Hora cancelada. Te enviamos la confirmación por correo.');
+      _avisar(tr('Hora cancelada. Te enviamos la confirmación por correo.'));
     } catch (e) {
       _avisar(e.toString().replaceFirst('Exception: ', ''));
     }
@@ -102,7 +103,7 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
       builder: (_) => _CambiarHora(cita: cita, rutPaciente: _rut),
     );
     if (cambiada == true) {
-      _avisar('Hora cambiada. Te enviamos la confirmación por correo.');
+      _avisar(tr('Hora cambiada. Te enviamos la confirmación por correo.'));
       _cargar();
     }
   }
@@ -152,21 +153,21 @@ class _AgendaTabUnificadaState extends State<AgendaTabUnificada> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(paraOtro ? 'Agendar hora para ${widget.carpeta.nombreMostrar}' : 'Agendar hora',
+          Text(paraOtro ? trp('Agendar hora para {0}', [widget.carpeta.nombreMostrar]) : tr('Agendar hora'),
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _azul)),
           const SizedBox(height: 10),
           GrillaOpciones(opciones: [
-            TarjetaOpcion(icono: '🏠', titulo: 'A domicilio', sub: 'Te atienden en casa',
+            TarjetaOpcion(icono: '🏠', titulo: tr('A domicilio'), sub: tr('Te atienden en casa'),
                 onTap: () => _agendar('domicilio')),
-            TarjetaOpcion(icono: '🏥', titulo: 'Presencial', sub: 'En un centro',
+            TarjetaOpcion(icono: '🏥', titulo: tr('Presencial'), sub: tr('En un centro'),
                 onTap: () => _agendar('presencial')),
-            TarjetaOpcion(icono: '📱', titulo: 'Telemedicina', sub: 'Por videollamada',
+            TarjetaOpcion(icono: '📱', titulo: tr('Telemedicina'), sub: tr('Por videollamada'),
                 onTap: () => _agendar('telemedicina')),
-            TarjetaOpcion(icono: '💻', titulo: 'Derma online', sub: 'Sin hora, con fotos',
+            TarjetaOpcion(icono: '💻', titulo: tr('Derma online'), sub: tr('Sin hora, con fotos'),
                 onTap: () => _agendar('online')),
           ]),
           const SizedBox(height: 24),
-          Text(paraOtro ? 'Horas agendadas de ${widget.carpeta.nombreMostrar}' : 'Tus horas agendadas',
+          Text(paraOtro ? trp('Horas agendadas de {0}', [widget.carpeta.nombreMostrar]) : tr('Tus horas agendadas'),
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
           Text(tr('Puedes cambiarlas o cancelarlas hasta 24 horas antes.'),
               style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
@@ -262,7 +263,6 @@ class _CambiarHoraState extends State<_CambiarHora> {
 
   @override
   Widget build(BuildContext context) {
-    const dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
@@ -273,7 +273,7 @@ class _CambiarHoraState extends State<_CambiarHora> {
             Text(tr('Cambiar hora'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             Text('${widget.cita.profesional} · ${widget.cita.tipoTexto}',
                 style: TextStyle(color: Colors.grey[700])),
-            Text('Hora actual: ${widget.cita.fechaCorta} a las ${widget.cita.hora}',
+            Text(trp('Hora actual: {0} a las {1}', [widget.cita.fechaCorta, widget.cita.hora]),
                 style: TextStyle(color: Colors.grey[600], fontSize: 13)),
             const SizedBox(height: 14),
             SizedBox(
@@ -299,7 +299,7 @@ class _CambiarHoraState extends State<_CambiarHora> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(dias[d.weekday - 1],
+                          Text(DateFormat('EEE', Idioma.actual.value).format(d),
                               style: TextStyle(fontSize: 11, color: activo ? Colors.white : Colors.grey[600])),
                           Text('${d.day}',
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
@@ -354,8 +354,8 @@ class _CambiarHoraState extends State<_CambiarHora> {
               child: FilledButton(
                 onPressed: _hora == null || _guardando ? null : _confirmar,
                 child: Text(_guardando
-                    ? 'Guardando…'
-                    : _hora == null ? 'Elige una hora' : 'Cambiar a las $_hora'),
+                    ? tr('Guardando…')
+                    : _hora == null ? tr('Elige una hora') : trp('Cambiar a las {0}', [_hora])),
               ),
             ),
           ],

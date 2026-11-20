@@ -7,6 +7,7 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import '../i18n/idioma.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -21,11 +22,11 @@ class BiometriaService {
       final soportado = await _auth.isDeviceSupported();
       final huella = await _auth.canCheckBiometrics;
       if (!soportado && !huella) {
-        ultimoError = 'El teléfono no tiene huella, rostro ni bloqueo de pantalla configurado.';
+        ultimoError = tr('El teléfono no tiene huella, rostro ni bloqueo de pantalla configurado.');
       }
       return soportado || huella;
     } catch (e) {
-      ultimoError = 'No se pudo revisar la huella del teléfono ($e).';
+      ultimoError = trp('No se pudo revisar la huella del teléfono ({0}).', [e]);
       debugPrint('[huella] no disponible: $e');
       return false;
     }
@@ -36,17 +37,17 @@ class BiometriaService {
     ultimoError = null;
     try {
       final ok = await _auth.authenticate(
-        localizedReason: motivo,
+        localizedReason: tr(motivo),
         options: const AuthenticationOptions(biometricOnly: false, stickyAuth: true),
       );
-      if (!ok) ultimoError = 'No se confirmó la huella.';
+      if (!ok) ultimoError = tr('No se confirmó la huella.');
       return ok;
     } on PlatformException catch (e) {
-      ultimoError = 'La huella no está disponible: ${e.message ?? e.code}';
+      ultimoError = trp('La huella no está disponible: {0}', [e.message ?? e.code]);
       debugPrint('[huella] ${e.code}: ${e.message}');
       return false;
     } catch (e) {
-      ultimoError = 'La huella no está disponible: $e';
+      ultimoError = trp('La huella no está disponible: {0}', [e]);
       debugPrint('[huella] $e');
       return false;
     }

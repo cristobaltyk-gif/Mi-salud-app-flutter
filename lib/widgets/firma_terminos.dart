@@ -77,7 +77,8 @@ class _FirmaTerminosState extends State<_FirmaTerminos> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Text(
-                  '${doc.version > 1 ? 'Actualizamos los términos. ' : ''}Léelos y acéptalos para seguir usando el Portal. Te enviaremos una copia por correo.',
+                  (doc.version > 1 ? tr('Actualizamos los términos. ') : '') +
+                      tr('Léelos y acéptalos para seguir usando el Portal. Te enviaremos una copia por correo.'),
                   style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
                 ),
               ),
@@ -107,7 +108,7 @@ class _FirmaTerminosState extends State<_FirmaTerminos> {
                         const Spacer(),
                         FilledButton(
                           onPressed: _acepto && !_enviando ? _aceptar : null,
-                          child: Text(_enviando ? 'Guardando…' : 'Acepto'),
+                          child: Text(_enviando ? tr('Guardando…') : tr('Acepto')),
                         ),
                       ],
                     ),

@@ -9,6 +9,8 @@
 /// vez de un "Null check operator used on a null value" sin contexto.
 library;
 
+import '../i18n/idioma.dart';
+
 enum EstadoAccesoMedico {
   pendiente,
   enUso,
@@ -88,18 +90,18 @@ class AccesoMedico {
   String get etiqueta {
     switch (estado) {
       case EstadoAccesoMedico.pendiente:
-        return 'Esperando médico';
+        return tr('Esperando médico');
       case EstadoAccesoMedico.enUso:
-        return 'En uso ahora';
+        return tr('En uso ahora');
       case EstadoAccesoMedico.cerrado:
-        return 'Sesión cerrada';
+        return tr('Sesión cerrada');
       case EstadoAccesoMedico.expirado:
       case EstadoAccesoMedico.invitacionExpirada:
-        return 'Expirado';
+        return tr('Expirado');
       case EstadoAccesoMedico.revocado:
-        return 'Revocado';
+        return tr('Revocado');
       case EstadoAccesoMedico.desconocido:
-        return 'Desconocido';
+        return tr('Desconocido');
     }
   }
 }

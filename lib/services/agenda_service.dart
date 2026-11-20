@@ -9,6 +9,8 @@
 library;
 
 import 'dart:convert';
+import 'package:intl/intl.dart';
+import '../i18n/idioma.dart';
 import 'http_sesion.dart' as http;
 import '../config/app_config.dart';
 import 'storage_service.dart';
@@ -120,16 +122,15 @@ class Cita {
   String get fechaCorta {
     final d = DateTime.tryParse(fecha);
     if (d == null) return fecha;
-    const dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
-    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    return '${dias[d.weekday - 1]} ${d.day} ${meses[d.month - 1]}';
+    // En el idioma de la app (es: "sáb 24 oct.", en: "Sat 24 Oct", de: "Sa. 24 Okt.")
+    return DateFormat('EEE d MMM', Idioma.actual.value).format(d);
   }
 
   String get tipoTexto => tipo == 'domicilio'
-      ? '🏠 A domicilio'
+      ? tr('🏠 A domicilio')
       : tipo == 'telemedicina'
-          ? '💻 Telemedicina'
-          : '🏥 Presencial';
+          ? tr('💻 Telemedicina')
+          : tr('🏥 Presencial');
 
   /// Domicilio con seguimiento (código, mapa, tiempo de llegada).
   VisitaDomicilio? get visita {
@@ -275,7 +276,7 @@ class AgendaService {
   static Future<List<Cita>> misCitas({String? rutPaciente}) async {
     final res = await http.get(Uri.parse(AppConfig.citasEndpoint(rutPaciente: rutPaciente)),
         headers: await _headers());
-    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudieron cargar tus horas'));
+    if (res.statusCode != 200) throw Exception(_error(res, tr('No se pudieron cargar tus horas')));
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     return (body['citas'] as List<dynamic>? ?? [])
         .map((c) => Cita.fromJson(c as Map<String, dynamic>))
@@ -287,7 +288,7 @@ class AgendaService {
     final res = await http.get(
         Uri.parse(AppConfig.citasDisponiblesEndpoint(cita.professional, fecha, cita.tipo)),
         headers: await _headers());
-    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudieron cargar las horas'));
+    if (res.statusCode != 200) throw Exception(_error(res, tr('No se pudieron cargar las horas')));
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     return (body['horas'] as List<dynamic>? ?? []).map((h) => h.toString()).toList();
   }
@@ -301,7 +302,7 @@ class AgendaService {
           'professional': cita.professional,
           if (rutPaciente != null) 'rut_paciente': rutPaciente,
         }));
-    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudo cancelar la hora'));
+    if (res.statusCode != 200) throw Exception(_error(res, tr('No se pudo cancelar la hora')));
   }
 
   static Future<void> reprogramar(Cita cita, String nuevaFecha, String nuevaHora, {String? rutPaciente}) async {
@@ -315,7 +316,7 @@ class AgendaService {
           'nueva_hora': nuevaHora,
           if (rutPaciente != null) 'rut_paciente': rutPaciente,
         }));
-    if (res.statusCode != 200) throw Exception(_error(res, 'No se pudo cambiar la hora'));
+    if (res.statusCode != 200) throw Exception(_error(res, tr('No se pudo cambiar la hora')));
   }
 
   /// Visitas a domicilio del paciente con sesión (MiSalud backend).
@@ -347,7 +348,7 @@ class AgendaService {
     if (todos) url += '&radio_km=0';
     final res = await http.get(Uri.parse(url));
     if (res.statusCode != 200) {
-      throw Exception('No se pudieron cargar los centros (${res.statusCode})');
+      throw Exception(trp('No se pudieron cargar los centros ({0})', [res.statusCode]));
     }
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     ultimoMasLejos = (body['mas_lejos'] as num?)?.toInt() ?? 0;

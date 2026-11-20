@@ -4,6 +4,7 @@
 library;
 
 import 'dart:convert';
+import '../i18n/idioma.dart';
 import 'http_sesion.dart' as http;
 import '../config/app_config.dart';
 import '../models/cuidador.dart';
@@ -38,9 +39,9 @@ class CuidadorService {
       if (d != null && d.toString().trim().isNotEmpty) return d.toString();
     } catch (_) {}
     if (r.statusCode >= 500) {
-      return 'No pudimos conectar con el servidor. Intenta de nuevo en un momento (${r.statusCode}).';
+      return trp('No pudimos conectar con el servidor. Intenta de nuevo en un momento ({0}).', [r.statusCode]);
     }
-    return 'Error inesperado (${r.statusCode})';
+    return trp('Error inesperado ({0})', [r.statusCode]);
   }
 
   /// GET /api/cuidador/niveles-acceso — catálogo para el selector de la UI.

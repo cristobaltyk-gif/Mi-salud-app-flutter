@@ -56,3 +56,12 @@ String tr(String es) {
   if (l == 'es') return es;
   return textos[es]?[l] ?? es;
 }
+
+/// Traduce un texto con datos al medio: trp('Agendar para {0}', [nombre]).
+String trp(String es, List<Object?> valores) {
+  var t = tr(es);
+  for (var i = 0; i < valores.length; i++) {
+    t = t.replaceAll('{$i}', '${valores[i] ?? ''}');
+  }
+  return t;
+}

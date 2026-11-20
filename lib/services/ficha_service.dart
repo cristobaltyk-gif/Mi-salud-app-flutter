@@ -38,6 +38,7 @@
 library;
 
 import 'dart:async';
+import '../i18n/idioma.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'http_sesion.dart' as http;
@@ -87,7 +88,7 @@ class FichaService {
     );
 
     if (res.statusCode != 200) {
-      throw FichaException('No se pudo cargar la ficha (${res.statusCode})');
+      throw FichaException(trp('No se pudo cargar la ficha ({0})', [res.statusCode]));
     }
 
     return FichaResumen.fromJson(jsonDecode(utf8.decode(res.bodyBytes)));
@@ -172,9 +173,9 @@ class FichaService {
       if (d != null && d.toString().trim().isNotEmpty) return d.toString();
     } catch (_) {}
     if (r.statusCode >= 500) {
-      return 'No pudimos conectar con el servidor. Intenta de nuevo en un momento (${r.statusCode}).';
+      return trp('No pudimos conectar con el servidor. Intenta de nuevo en un momento ({0}).', [r.statusCode]);
     }
-    return 'Error inesperado (${r.statusCode})';
+    return trp('Error inesperado ({0})', [r.statusCode]);
   }
 
   static Stream<ExplicacionEvento> explicarFicha({String? rutPaciente}) {
@@ -214,7 +215,7 @@ class FichaService {
         return;
       }
       if (response.statusCode != 200) {
-        yield ExplicacionError('Error al conectar (${response.statusCode})');
+        yield ExplicacionError(trp('Error al conectar ({0})', [response.statusCode]));
         return;
       }
 

@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 
 class EtiquetaEspecialidad extends StatelessWidget {
   final String especialidad;
@@ -31,7 +32,7 @@ class EtiquetaEspecialidad extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        '${estilo.$1} $especialidad',
+        '${estilo.$1} ${tr(especialidad)}',
         style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: estilo.$2),
       ),
     );

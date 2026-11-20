@@ -20,6 +20,7 @@
 /// recordatorio del vínculo, no una distinción entre varios pacientes.
 library;
 import 'package:flutter/material.dart';
+import '../i18n/idioma.dart';
 import 'package:intl/intl.dart';
 import '../models/ficha_cuidado.dart';
 import '../models/recordatorio.dart';
@@ -34,7 +35,7 @@ class TabRecordatoriosCuidado extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         if (ficha.recordatorios.isEmpty)
-          const EstadoVacio(texto: 'Sin medicamentos ni controles vigentes')
+          EstadoVacio(texto: tr('Sin medicamentos ni controles vigentes'))
         else
           ...ficha.recordatorios.map((r) => _TarjetaRecordatorio(r: r)),
       ],
@@ -62,7 +63,7 @@ class _TarjetaRecordatorio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final proxima = r.proximoDisparo != null
-        ? DateFormat('EEE HH:mm', 'es').format(r.proximoDisparo!)
+        ? DateFormat('EEE HH:mm', Idioma.actual.value).format(r.proximoDisparo!)
         : null;
     final tieneMedia = r.tipo == 'ejercicio' && r.mediaPath != null && r.mediaPath!.isNotEmpty;
     final tieneRelacion = r.pacienteRelacion != null && r.pacienteRelacion!.isNotEmpty;
@@ -101,13 +102,14 @@ class _TarjetaRecordatorio extends StatelessWidget {
                     Text(r.textoMostrar, style: const TextStyle(fontWeight: FontWeight.w600)),
                     if (proxima != null) ...[
                       const SizedBox(height: 4),
-                      Text('⏰ Próxima toma: $proxima',
+                      Text(trp('⏰ Próxima toma: {0}', [proxima]),
                           style: const TextStyle(fontSize: 12, color: Color(0xFF14B8A6))),
                     ],
                     if (r.frecuenciaHoras != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Cada ${r.frecuenciaHoras}h${r.duracionDias != null ? ' · ${r.duracionDias} días de tratamiento' : ''}',
+                        trp('Cada {0}h', [r.frecuenciaHoras]) +
+                            (r.duracionDias != null ? trp(' · {0} días de tratamiento', [r.duracionDias]) : ''),
                         style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                       ),
                     ],

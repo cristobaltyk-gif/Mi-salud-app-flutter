@@ -7,6 +7,7 @@
 library;
 
 import 'paciente.dart';
+import '../i18n/idioma.dart';
 
 class FotoEvento {
   final String comentario;
@@ -56,7 +57,7 @@ String textoDeCampo(dynamic valor) {
   if (valor is Map) {
     return valor.entries
         .where((e) => (e.value?.toString() ?? '').trim().isNotEmpty)
-        .map((e) => 'Pieza ${e.key}: ${e.value}')
+        .map((e) => trp('Pieza {0}: {1}', [e.key, e.value]))
         .join('\n');
   }
   return valor.toString();

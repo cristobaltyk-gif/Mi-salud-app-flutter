@@ -65,9 +65,9 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
     setState(() { _cargando = true; _error = null; });
     try {
       final ok = await BiometriaService.autenticar(
-        motivo: 'Confirma que compartes la ficha bajo tu responsabilidad',
+        motivo: tr('Confirma que compartes la ficha bajo tu responsabilidad'),
       );
-      if (!ok) throw ConsultaException(BiometriaService.ultimoError ?? 'No se confirmó tu identidad.');
+      if (!ok) throw ConsultaException(BiometriaService.ultimoError ?? tr('No se confirmó tu identidad.'));
 
       final Map<String, dynamic> ficha;
       try {
@@ -76,7 +76,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
           pedirHuella: false,
         );
       } on CopiaException catch (e) {
-        throw ConsultaException('${e.mensaje} Abre la ficha una vez con internet para guardarla en el teléfono.');
+        throw ConsultaException(trp('{0} Abre la ficha una vez con internet para guardarla en el teléfono.', [e.mensaje]));
       }
 
       final sesion = await ConsultaSinConexionService.iniciar(
@@ -136,14 +136,14 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
           ),
           child: Text(
             widget.esPropia
-                ? 'Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. '
+                ? tr('Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. '
                     'Lo hago por mi propia decisión y bajo mi responsabilidad. Sé que la identidad del '
                     'profesional se verificará en el RNPI cuando vuelva la conexión, y que su nota no '
-                    'entrará a mi ficha hasta esa verificación.'
-                : 'Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin '
+                    'entrará a mi ficha hasta esa verificación.')
+                : tr('Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin '
                     'conexión a internet. Lo hago bajo mi responsabilidad como su cuidador. Sé que la '
                     'identidad del profesional se verificará en el RNPI cuando vuelva la conexión, y que su '
-                    'nota no entrará a la ficha hasta esa verificación.',
+                    'nota no entrará a la ficha hasta esa verificación.'),
             style: const TextStyle(fontSize: 14, height: 1.4),
           ),
         ),
@@ -188,7 +188,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
       padding: const EdgeInsets.all(20),
       children: [
         Center(
-          child: Text('Termina en ${_restante(s.vence)}',
+          child: Text(trp('Termina en {0}', [_restante(s.vence)]),
               style: const TextStyle(fontWeight: FontWeight.w700, color: _morado, fontSize: 16)),
         ),
         const SizedBox(height: 14),
@@ -198,7 +198,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
           const SizedBox(height: 6),
           Center(child: QrImageView(data: s.qrWifi!, size: 220)),
           Center(
-            child: SelectableText('Red: ${s.ssid}\nClave: ${s.clave ?? ''}',
+            child: SelectableText(trp('Red: {0}\nClave: {1}', [s.ssid, s.clave ?? '']),
                 textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
           ),
           const SizedBox(height: 12),
@@ -208,7 +208,7 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
             child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Conectado · Siguiente'))),
           ),
         ] else ...[
-          Text(s.qrWifi != null ? 'Paso 2 de 2 · Abrir la ficha' : 'Abrir la ficha',
+          Text(s.qrWifi != null ? tr('Paso 2 de 2 · Abrir la ficha') : tr('Abrir la ficha'),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           if (s.qrWifi == null)
             Text(tr('El computador debe estar en la misma red Wi-Fi que este teléfono.'),
@@ -226,11 +226,11 @@ class _ConsultaSinConexionScreenState extends State<ConsultaSinConexionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(accesos.isEmpty ? 'Ningún profesional ha entrado todavía.' : 'Profesionales que entraron:',
+              Text(accesos.isEmpty ? tr('Ningún profesional ha entrado todavía.') : tr('Profesionales que entraron:'),
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               for (final a in accesos) Text('• ${a.nombre} (${a.rut})'),
               const SizedBox(height: 6),
-              Text('Notas guardadas: $notas — se enviarán solas cuando vuelva internet.'),
+              Text(trp('Notas guardadas: {0} — se enviarán solas cuando vuelva internet.', [notas])),
             ],
           ),
         ),
