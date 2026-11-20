@@ -2,73 +2,79 @@
   <aside class="da-sidebar">
     <div class="da-brand">
       <span class="da-brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-      <span class="da-brand-label">Atención Clínica</span>
+      <span class="da-brand-label" data-i="brand">Atención Clínica</span>
     </div>
+    <div class="hk-idiomas hk-idiomas-lat"><button data-l="es" onclick="ponerIdioma('es')">ES</button><button data-l="en" onclick="ponerIdioma('en')">EN</button><button data-l="de" onclick="ponerIdioma('de')">DE</button><button data-l="fr" onclick="ponerIdioma('fr')">FR</button></div>
     <div class="da-patient-card">
       <div class="da-avatar" id="avatar">P</div>
       <div><p class="da-patient-name" id="pNombre"></p><p class="da-patient-rut" id="pRut"></p></div>
     </div>
     <div class="da-meta-list">
-      <div class="da-meta-item"><span class="da-meta-label">Edad</span><span class="da-meta-value" id="pEdad">—</span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Sexo</span><span class="da-meta-value" id="pSexo">—</span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Previsión</span><span class="da-meta-value" id="pPrev">—</span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Fecha</span><span class="da-meta-value" id="pFecha"></span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Hora</span><span class="da-meta-value" id="pHora"></span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Profesional</span><span class="da-meta-value" id="pProf"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="edad">Edad</span><span class="da-meta-value" id="pEdad">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="sexo">Sexo</span><span class="da-meta-value" id="pSexo">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="prevision">Previsión</span><span class="da-meta-value" id="pPrev">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="fecha">Fecha</span><span class="da-meta-value" id="pFecha"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="hora">Hora</span><span class="da-meta-value" id="pHora"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="profesional">Profesional</span><span class="da-meta-value" id="pProf"></span></div>
     </div>
     <div class="da-tools">
-      <p class="da-tools-label">Herramientas</p>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>Historial clínico</button>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Antecedentes</button>
+      <p class="da-tools-label" data-i="herramientas">Herramientas</p>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span><span data-i="historial">Historial clínico</span></button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><span data-i="antecedentes">Antecedentes</span></button>
     </div>
     <div class="da-sidebar-actions">
-      <button class="da-btn-cancel" onclick="limpiar()">Cancelar</button>
-      <button class="da-btn-save" id="btnGuardar" onclick="guardar()">Guardar</button>
+      <button class="da-btn-cancel" onclick="limpiar()" data-i="cancelar">Cancelar</button>
+      <button class="da-btn-save" id="btnGuardar" onclick="guardar()" data-i="guardar">Guardar</button>
     </div>
   </aside>
   <main class="da-main">
-    <div class="da-main-header"><h1 class="da-title">Registro clínico</h1><span class="da-badge">Sesión activa</span></div>
+    <div class="da-main-header"><h1 class="da-title" data-i="registro">Registro clínico</h1><span class="da-badge" data-i="sesion">Sesión activa</span></div>
+    <div class="hk-aviso" id="avisoTrad" hidden><span id="avisoTxt"></span> <button class="hk-link" id="btnOriginal" onclick="alternarOriginal()"></button></div>
     <p id="msg" class="hk-msg"></p>
     <div class="da-grid">
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Atención</span></div>
-        <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Diagnóstico</span></div>
-        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Receta</span></div>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_atencion">Atención</span></div>
+        <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…" data-ip="ph_atencion"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_diagnostico">Diagnóstico</span></div>
+        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_receta">Receta</span></div>
         <div class="da-medicamentos-editor">
-          <p class="da-medicamentos-vacio" id="medVacio">Sin medicamentos agregados. Agrega uno con el botón.</p>
+          <p class="da-medicamentos-vacio" id="medVacio" data-i="sin_meds">Sin medicamentos agregados. Agrega uno con el botón.</p>
           <div id="meds"></div>
-          <button type="button" class="da-med-agregar" onclick="agregarMed()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar medicamento</button>
-          <div class="da-med-preview" id="preview" hidden><p class="da-med-preview-label">Vista previa de la receta</p><p class="da-med-preview-texto" id="previewTxt"></p></div>
+          <button type="button" class="da-med-agregar" onclick="agregarMed()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i="agregar_med">Agregar medicamento</span></button>
+          <div class="da-med-preview" id="preview" hidden><p class="da-med-preview-label" data-i="vista_receta">Vista previa de la receta</p><p class="da-med-preview-texto" id="previewTxt"></p></div>
         </div></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Exámenes</span></div>
-        <textarea class="da-textarea" id="examenes" rows="2" placeholder="Imágenes o laboratorio con región y lateralidad…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Indicaciones</span></div>
-        <textarea class="da-textarea" id="indicaciones" rows="3" placeholder="Indicaciones post-consulta…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Orden kinésica</span></div>
-        <textarea class="da-textarea" id="orden_kinesiologia" rows="3" placeholder="Objetivos, técnicas, frecuencia…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Indicación quirúrgica</span></div>
-        <textarea class="da-textarea" id="indicacion_quirurgica" rows="3" placeholder="Indicación quirúrgica si aplica…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_examenes">Exámenes</span></div>
+        <textarea class="da-textarea" id="examenes" rows="2" placeholder="Imágenes o laboratorio con región y lateralidad…" data-ip="ph_examenes"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_indicaciones">Indicaciones</span></div>
+        <textarea class="da-textarea" id="indicaciones" rows="3" placeholder="Indicaciones post-consulta…" data-ip="ph_indicaciones"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_kine">Orden kinésica</span></div>
+        <textarea class="da-textarea" id="orden_kinesiologia" rows="3" placeholder="Objetivos, técnicas, frecuencia…" data-ip="ph_kine"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_quirurgica">Indicación quirúrgica</span></div>
+        <textarea class="da-textarea" id="indicacion_quirurgica" rows="3" placeholder="Indicación quirúrgica si aplica…" data-ip="ph_quirurgica"></textarea></section>
     </div>
   </main>
 </div>
 <div class="hk-capa" id="ident">
   <div class="hk-tarjeta">
+    <div class="hk-idiomas"><button data-l="es" onclick="ponerIdioma('es')">ES</button><button data-l="en" onclick="ponerIdioma('en')">EN</button><button data-l="de" onclick="ponerIdioma('de')">DE</button><button data-l="fr" onclick="ponerIdioma('fr')">FR</button></div>
     <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-    <p class="hk-tarjeta-titulo">Identificación del profesional</p>
-    <p class="hk-tarjeta-sub">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
-    <label class="hk-label">Nombre completo</label><input class="hk-input" id="nom" autocomplete="name" placeholder="Dr. Juan Pérez">
-    <label class="hk-label">RUT</label><input class="hk-input" id="rut" placeholder="12345678-9" onkeydown="if(event.key==='Enter')entrar()">
+    <p class="hk-tarjeta-titulo" data-i="ident_t">Identificación del profesional</p>
+    <p class="hk-tarjeta-sub" data-i="ident_s">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
+    <label class="hk-label" data-i="nombre">Nombre completo</label><input class="hk-input" id="nom" autocomplete="name" placeholder="Dr. Juan Pérez" data-ip="ph_nombre">
+    <div id="campoRut"><label class="hk-label" data-i="rut">RUT</label><input class="hk-input" id="rut" placeholder="12345678-9" onkeydown="if(event.key==='Enter')entrar()"></div>
+    <div id="campoExt" hidden><label class="hk-label" data-i="registro_n">N° de registro profesional</label><input class="hk-input" id="regExt">
+    <label class="hk-label" data-i="pais">País</label><input class="hk-input" id="paisExt" placeholder="DE, FR, US…" maxlength="2" style="text-transform:uppercase"></div>
+    <label class="hk-check"><input type="checkbox" id="esExt" onchange="$('campoRut').hidden=this.checked;$('campoExt').hidden=!this.checked"><span data-i="extranjero">Profesional extranjero (sin RUT chileno)</span></label>
     <p id="e1" class="hk-err"></p>
-    <button class="hk-boton" onclick="entrar()">Ingresar</button>
+    <button class="hk-boton" onclick="entrar()" data-i="ingresar">Ingresar</button>
   </div>
 </div>
 <div class="hk-capa" id="guardada" hidden>
   <div class="hk-tarjeta">
     <div class="hk-tarjeta-icono hk-ok"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <p class="hk-tarjeta-titulo">Atención guardada</p>
-    <p class="hk-tarjeta-sub" id="guardadaTxt">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
-    <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()">Terminar consulta</button>
+    <p class="hk-tarjeta-titulo" data-i="guardada_t">Atención guardada</p>
+    <p class="hk-tarjeta-sub" id="guardadaTxt" data-i="guardada_s">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
+    <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()" data-i="terminar">Terminar consulta</button>
   </div>
 </div>
 <div class="hk-velo" id="velo" hidden onclick="cerrarCajon()"></div>

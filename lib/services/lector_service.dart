@@ -26,6 +26,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:ble_peripheral/ble_peripheral.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'notas_offline_service.dart';
+import 'traduccion_service.dart';
 
 const String _servicioBle = '6e8a0001-6b1f-4c39-9d0e-48495046b001';
 const String _caractRx = '6e8a0002-6b1f-4c39-9d0e-48495046b001'; // teléfono → PC
@@ -379,6 +380,15 @@ class SesionLector {
           await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': true});
         } catch (_) {
           await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': false, 'detail': 'No se pudo guardar la nota'});
+        }
+        break;
+      case 'idioma':
+        // El médico eligió otro idioma: la ficha se traduce aquí, sin internet
+        try {
+          final traducida = await TraduccionService.traducirFicha(ficha, (m['idioma'] ?? '').toString());
+          await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': true, 'ficha': traducida});
+        } catch (e) {
+          await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': false, 'detail': e.toString().replaceFirst('Exception: ', '')});
         }
         break;
       case 'fin':

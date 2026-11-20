@@ -26,6 +26,7 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'notas_offline_service.dart';
+import 'traduccion_service.dart';
 import '../web/atencion_pagina.dart';
 
 class ConsultaException implements Exception {
@@ -229,6 +230,15 @@ class ConsultaSinConexionService {
         _cambios.add(null);
         return _responder(res, 200, {'ficha': _ficha});
       }
+      if (req.method == 'POST' && ruta == '/api/idioma') {
+        final b = await _cuerpo(req);
+        try {
+          final f = await TraduccionService.traducirFicha(_ficha!, (b['idioma'] ?? '').toString());
+          return _responder(res, 200, {'ficha': f});
+        } catch (e) {
+          return _responder(res, 400, {'detail': e.toString().replaceFirst('Exception: ', '')});
+        }
+      }
       if (req.method == 'POST' && ruta == '/api/nota') {
         if (notasRecibidas > 0) {
           return _responder(res, 409, {'detail': 'La atención de esta consulta ya fue guardada'});
@@ -279,6 +289,8 @@ class ConsultaSinConexionService {
 
   /// Dígito verificador del RUT chileno (módulo 11).
   static bool _rutValido(String rut) {
+    // Profesional extranjero: EXT-<país>-<registro> (va siempre al superadmin)
+    if (RegExp(r'^EXT-[A-Z]{2}-[A-Z0-9./-]{3,30}$').hasMatch(rut.trim().toUpperCase())) return true;
     final limpio = rut.replaceAll(RegExp(r'[.\s]'), '').toUpperCase();
     final m = RegExp(r'^(\d{6,8})-?([\dK])$').firstMatch(limpio);
     if (m == null) return false;

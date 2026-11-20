@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "1.2"
+VERSION = "1.3"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -91,6 +91,9 @@ def enmarcar(obj: Dict[str, Any]) -> bytes:
 
 
 def rut_valido(rut: str) -> bool:
+    """RUT chileno válido, o profesional extranjero: EXT-<país>-<registro>."""
+    if re.fullmatch(r"EXT-[A-Z]{2}-[A-Z0-9./-]{3,30}", (rut or "").strip().upper()):
+        return True
     limpio = re.sub(r"[.\s]", "", rut or "").upper()
     m = re.fullmatch(r"(\d{6,8})-?([\dK])", limpio)
     if not m:
@@ -408,6 +411,22 @@ async def w_nota(req):
     return web.json_response({"ok": True})
 
 
+async def w_idioma(req):
+    """El teléfono del paciente traduce la ficha (sin internet) al idioma del médico."""
+    s = _sesion_activa()
+    b = await req.json()
+    idioma = str(b.get("idioma") or "")
+    if idioma not in ("en", "de", "fr"):
+        return _error("Idioma no disponible")
+    try:
+        r = await s.pedir({"tipo": "idioma", "idioma": idioma}, espera=240)
+    except (asyncio.TimeoutError, asyncio.CancelledError):
+        return _error("El teléfono no respondió a tiempo", 504)
+    if not r.get("ok", True) or not isinstance(r.get("ficha"), dict):
+        return _error(r.get("detail") or "El teléfono no pudo traducir")
+    return web.json_response({"ficha": r["ficha"]})
+
+
 @web.middleware
 async def solo_este_pc(req, handler):
     if req.remote not in ("127.0.0.1", "::1"):
@@ -423,7 +442,7 @@ async def main() -> None:
         web.get("/", w_pagina), web.get("/api/estado", w_estado),
         web.post("/api/aceptar", w_aceptar), web.post("/api/rechazar", w_rechazar),
         web.post("/api/terminar", w_terminar), web.post("/api/identificar", w_identificar),
-        web.post("/api/nota", w_nota),
+        web.post("/api/nota", w_nota), web.post("/api/idioma", w_idioma),
     ])
     runner = web.AppRunner(app, access_log=None)
     await runner.setup()

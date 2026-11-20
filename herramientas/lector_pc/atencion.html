@@ -1075,79 +1075,95 @@
 .hk-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#0f172a}
 .da-btn-save:disabled{opacity:.5;cursor:not-allowed}
 
+.hk-idiomas{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px}
+.hk-idiomas button{font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;border:1px solid #e2e8f0;background:#fff;color:#64748b;border-radius:6px;padding:3px 7px;cursor:pointer}
+.hk-idiomas button.hk-on{background:#0f172a;border-color:#0f172a;color:#fff}
+.hk-idiomas-lat{justify-content:flex-start;margin:4px 0 12px}
+.hk-idiomas-lat button{background:transparent;border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.7)}
+.hk-idiomas-lat button.hk-on{background:#fff;color:#0f172a;border-color:#fff}
+.hk-check{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:#475569;cursor:pointer}
+.hk-aviso{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:13px;margin:0 0 12px;font-family:'DM Sans','Segoe UI',system-ui,sans-serif}
+.hk-link{background:none;border:0;color:#2563eb;font:inherit;font-weight:600;cursor:pointer;padding:0;margin-left:6px}
+
 .hk-codigo{font-size:42px;font-weight:700;letter-spacing:12px;text-align:center;margin:4px 0 6px;color:#0f172a;font-family:'DM Mono',ui-monospace,Consolas,monospace}
 .hk-fila{display:flex;gap:10px}.hk-fila>*{flex:1}
 </style></head><body><div class="da-root">
   <aside class="da-sidebar">
     <div class="da-brand">
       <span class="da-brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-      <span class="da-brand-label">Atención Clínica</span>
+      <span class="da-brand-label" data-i="brand">Atención Clínica</span>
     </div>
+    <div class="hk-idiomas hk-idiomas-lat"><button data-l="es" onclick="ponerIdioma('es')">ES</button><button data-l="en" onclick="ponerIdioma('en')">EN</button><button data-l="de" onclick="ponerIdioma('de')">DE</button><button data-l="fr" onclick="ponerIdioma('fr')">FR</button></div>
     <div class="da-patient-card">
       <div class="da-avatar" id="avatar">P</div>
       <div><p class="da-patient-name" id="pNombre"></p><p class="da-patient-rut" id="pRut"></p></div>
     </div>
     <div class="da-meta-list">
-      <div class="da-meta-item"><span class="da-meta-label">Edad</span><span class="da-meta-value" id="pEdad">—</span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Sexo</span><span class="da-meta-value" id="pSexo">—</span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Previsión</span><span class="da-meta-value" id="pPrev">—</span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Fecha</span><span class="da-meta-value" id="pFecha"></span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Hora</span><span class="da-meta-value" id="pHora"></span></div>
-      <div class="da-meta-item"><span class="da-meta-label">Profesional</span><span class="da-meta-value" id="pProf"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="edad">Edad</span><span class="da-meta-value" id="pEdad">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="sexo">Sexo</span><span class="da-meta-value" id="pSexo">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="prevision">Previsión</span><span class="da-meta-value" id="pPrev">—</span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="fecha">Fecha</span><span class="da-meta-value" id="pFecha"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="hora">Hora</span><span class="da-meta-value" id="pHora"></span></div>
+      <div class="da-meta-item"><span class="da-meta-label" data-i="profesional">Profesional</span><span class="da-meta-value" id="pProf"></span></div>
     </div>
     <div class="da-tools">
-      <p class="da-tools-label">Herramientas</p>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>Historial clínico</button>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Antecedentes</button>
+      <p class="da-tools-label" data-i="herramientas">Herramientas</p>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span><span data-i="historial">Historial clínico</span></button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><span data-i="antecedentes">Antecedentes</span></button>
     </div>
     <div class="da-sidebar-actions">
-      <button class="da-btn-cancel" onclick="limpiar()">Cancelar</button>
-      <button class="da-btn-save" id="btnGuardar" onclick="guardar()">Guardar</button>
+      <button class="da-btn-cancel" onclick="limpiar()" data-i="cancelar">Cancelar</button>
+      <button class="da-btn-save" id="btnGuardar" onclick="guardar()" data-i="guardar">Guardar</button>
     </div>
   </aside>
   <main class="da-main">
-    <div class="da-main-header"><h1 class="da-title">Registro clínico</h1><span class="da-badge">Sesión activa</span></div>
+    <div class="da-main-header"><h1 class="da-title" data-i="registro">Registro clínico</h1><span class="da-badge" data-i="sesion">Sesión activa</span></div>
+    <div class="hk-aviso" id="avisoTrad" hidden><span id="avisoTxt"></span> <button class="hk-link" id="btnOriginal" onclick="alternarOriginal()"></button></div>
     <p id="msg" class="hk-msg"></p>
     <div class="da-grid">
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Atención</span></div>
-        <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Diagnóstico</span></div>
-        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Receta</span></div>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_atencion">Atención</span></div>
+        <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…" data-ip="ph_atencion"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_diagnostico">Diagnóstico</span></div>
+        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_receta">Receta</span></div>
         <div class="da-medicamentos-editor">
-          <p class="da-medicamentos-vacio" id="medVacio">Sin medicamentos agregados. Agrega uno con el botón.</p>
+          <p class="da-medicamentos-vacio" id="medVacio" data-i="sin_meds">Sin medicamentos agregados. Agrega uno con el botón.</p>
           <div id="meds"></div>
-          <button type="button" class="da-med-agregar" onclick="agregarMed()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar medicamento</button>
-          <div class="da-med-preview" id="preview" hidden><p class="da-med-preview-label">Vista previa de la receta</p><p class="da-med-preview-texto" id="previewTxt"></p></div>
+          <button type="button" class="da-med-agregar" onclick="agregarMed()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i="agregar_med">Agregar medicamento</span></button>
+          <div class="da-med-preview" id="preview" hidden><p class="da-med-preview-label" data-i="vista_receta">Vista previa de la receta</p><p class="da-med-preview-texto" id="previewTxt"></p></div>
         </div></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Exámenes</span></div>
-        <textarea class="da-textarea" id="examenes" rows="2" placeholder="Imágenes o laboratorio con región y lateralidad…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Indicaciones</span></div>
-        <textarea class="da-textarea" id="indicaciones" rows="3" placeholder="Indicaciones post-consulta…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Orden kinésica</span></div>
-        <textarea class="da-textarea" id="orden_kinesiologia" rows="3" placeholder="Objetivos, técnicas, frecuencia…"></textarea></section>
-      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title">Indicación quirúrgica</span></div>
-        <textarea class="da-textarea" id="indicacion_quirurgica" rows="3" placeholder="Indicación quirúrgica si aplica…"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_examenes">Exámenes</span></div>
+        <textarea class="da-textarea" id="examenes" rows="2" placeholder="Imágenes o laboratorio con región y lateralidad…" data-ip="ph_examenes"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_indicaciones">Indicaciones</span></div>
+        <textarea class="da-textarea" id="indicaciones" rows="3" placeholder="Indicaciones post-consulta…" data-ip="ph_indicaciones"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_kine">Orden kinésica</span></div>
+        <textarea class="da-textarea" id="orden_kinesiologia" rows="3" placeholder="Objetivos, técnicas, frecuencia…" data-ip="ph_kine"></textarea></section>
+      <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_quirurgica">Indicación quirúrgica</span></div>
+        <textarea class="da-textarea" id="indicacion_quirurgica" rows="3" placeholder="Indicación quirúrgica si aplica…" data-ip="ph_quirurgica"></textarea></section>
     </div>
   </main>
 </div>
 <div class="hk-capa" id="ident">
   <div class="hk-tarjeta">
+    <div class="hk-idiomas"><button data-l="es" onclick="ponerIdioma('es')">ES</button><button data-l="en" onclick="ponerIdioma('en')">EN</button><button data-l="de" onclick="ponerIdioma('de')">DE</button><button data-l="fr" onclick="ponerIdioma('fr')">FR</button></div>
     <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-    <p class="hk-tarjeta-titulo">Identificación del profesional</p>
-    <p class="hk-tarjeta-sub">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
-    <label class="hk-label">Nombre completo</label><input class="hk-input" id="nom" autocomplete="name" placeholder="Dr. Juan Pérez">
-    <label class="hk-label">RUT</label><input class="hk-input" id="rut" placeholder="12345678-9" onkeydown="if(event.key==='Enter')entrar()">
+    <p class="hk-tarjeta-titulo" data-i="ident_t">Identificación del profesional</p>
+    <p class="hk-tarjeta-sub" data-i="ident_s">El paciente le comparte su ficha. Su nombre y RUT quedan registrados y se verifican en el RNPI.</p>
+    <label class="hk-label" data-i="nombre">Nombre completo</label><input class="hk-input" id="nom" autocomplete="name" placeholder="Dr. Juan Pérez" data-ip="ph_nombre">
+    <div id="campoRut"><label class="hk-label" data-i="rut">RUT</label><input class="hk-input" id="rut" placeholder="12345678-9" onkeydown="if(event.key==='Enter')entrar()"></div>
+    <div id="campoExt" hidden><label class="hk-label" data-i="registro_n">N° de registro profesional</label><input class="hk-input" id="regExt">
+    <label class="hk-label" data-i="pais">País</label><input class="hk-input" id="paisExt" placeholder="DE, FR, US…" maxlength="2" style="text-transform:uppercase"></div>
+    <label class="hk-check"><input type="checkbox" id="esExt" onchange="$('campoRut').hidden=this.checked;$('campoExt').hidden=!this.checked"><span data-i="extranjero">Profesional extranjero (sin RUT chileno)</span></label>
     <p id="e1" class="hk-err"></p>
-    <button class="hk-boton" onclick="entrar()">Ingresar</button>
+    <button class="hk-boton" onclick="entrar()" data-i="ingresar">Ingresar</button>
   </div>
 </div>
 <div class="hk-capa" id="guardada" hidden>
   <div class="hk-tarjeta">
     <div class="hk-tarjeta-icono hk-ok"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <p class="hk-tarjeta-titulo">Atención guardada</p>
-    <p class="hk-tarjeta-sub" id="guardadaTxt">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
-    <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()">Terminar consulta</button>
+    <p class="hk-tarjeta-titulo" data-i="guardada_t">Atención guardada</p>
+    <p class="hk-tarjeta-sub" id="guardadaTxt" data-i="guardada_s">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
+    <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()" data-i="terminar">Terminar consulta</button>
   </div>
 </div>
 <div class="hk-velo" id="velo" hidden onclick="cerrarCajon()"></div>
@@ -1161,37 +1177,113 @@
 
 <div class="hk-capa" id="espera">
   <div class="hk-tarjeta">
+    <div class="hk-idiomas"><button data-l="es" onclick="ponerIdioma('es')">ES</button><button data-l="en" onclick="ponerIdioma('en')">EN</button><button data-l="de" onclick="ponerIdioma('de')">DE</button><button data-l="fr" onclick="ponerIdioma('fr')">FR</button></div>
     <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-    <p class="hk-tarjeta-titulo">Esperando paciente…</p>
-    <p class="hk-tarjeta-sub">Pida al paciente que toque <b>"Autorizar médico"</b> en su teléfono, cerca de este computador. No se necesita internet.</p>
+    <p class="hk-tarjeta-titulo" data-i="espera_t">Esperando paciente…</p>
+    <p class="hk-tarjeta-sub" data-i="espera_s">Pida al paciente que toque "Autorizar médico" en su teléfono, cerca de este computador. No se necesita internet.</p>
   </div>
 </div>
 <div class="hk-capa" id="solicitud" hidden>
   <div class="hk-tarjeta">
     <div class="hk-tarjeta-icono"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-    <p class="hk-tarjeta-titulo"><span id="solNombre"></span> quiere compartir su ficha</p>
-    <p class="hk-tarjeta-sub">Verifique que el teléfono del paciente muestre este mismo código:</p>
+    <p class="hk-tarjeta-titulo"><span id="solNombre"></span> <span data-i="sol_t">quiere compartir su ficha</span></p>
+    <p class="hk-tarjeta-sub" data-i="sol_s">Verifique que el teléfono del paciente muestre este mismo código:</p>
     <p class="hk-codigo" id="solCodigo"></p>
-    <div class="hk-fila"><button class="hk-boton hk-sec" onclick="responder(false)">Rechazar</button>
-    <button class="hk-boton" onclick="responder(true)">Aceptar</button></div>
+    <div class="hk-fila"><button class="hk-boton hk-sec" onclick="responder(false)" data-i="rechazar">Rechazar</button>
+    <button class="hk-boton" onclick="responder(true)" data-i="aceptar">Aceptar</button></div>
   </div>
 </div>
-<script>const k=new URLSearchParams(location.search).get('k');
+<script>// ── Idiomas de la página del médico (es / en / de / fr) ──────────────────
+// La interfaz se traduce aquí (textos fijos). El CONTENIDO de la ficha lo
+// traduce el teléfono del paciente, sin internet (ML Kit, en el teléfono).
+const I18N={
+es:{anios:'años',brand:'Atención Clínica',edad:'Edad',sexo:'Sexo',prevision:'Previsión',fecha:'Fecha',hora:'Hora',profesional:'Profesional',herramientas:'Herramientas',historial:'Historial clínico',antecedentes:'Antecedentes',cancelar:'Cancelar',guardar:'Guardar',registro:'Registro clínico',sesion:'Sesión activa',
+ p_atencion:'Atención',p_diagnostico:'Diagnóstico',p_receta:'Receta',p_examenes:'Exámenes',p_indicaciones:'Indicaciones',p_kine:'Orden kinésica',p_quirurgica:'Indicación quirúrgica',
+ ph_atencion:'Anamnesis, motivo de consulta, evolución…',ph_diagnostico:'Diagnóstico médico con lateralidad si corresponde…',ph_examenes:'Imágenes o laboratorio con región y lateralidad…',ph_indicaciones:'Indicaciones post-consulta…',ph_kine:'Objetivos, técnicas, frecuencia…',ph_quirurgica:'Indicación quirúrgica si aplica…',
+ sin_meds:'Sin medicamentos agregados. Agrega uno con el botón.',agregar_med:'Agregar medicamento',vista_receta:'Vista previa de la receta',ph_med:'Medicamento (ej. Ibuprofeno 400mg)',ph_dosis:'Dosis (ej. 1 comprimido)',cada:'cada',horas:'horas',por:'por',dias:'días',cronico:'uso crónico',eliminar_med:'Eliminar medicamento',
+ ident_t:'Identificación del profesional',ident_s:'El paciente le comparte su ficha. Su identidad queda registrada y se verifica cuando vuelva la conexión.',nombre:'Nombre completo',ph_nombre:'Dr. Juan Pérez',rut:'RUT',extranjero:'Profesional extranjero (sin RUT chileno)',registro_n:'N° de registro profesional',pais:'País',ingresar:'Ingresar',
+ guardada_t:'Atención guardada',guardada_s:'Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.',terminar:'Terminar consulta',terminada:'Consulta terminada. Puede cerrar esta ventana.',
+ h_atenciones:'atenciones',h_vacio:'Sin atenciones previas registradas',sin_dx:'Sin diagnóstico',anterior:'Anterior',siguiente:'Siguiente',c_motivo:'Motivo de consulta',a_registrados:'registrados',a_vacio:'Sin antecedentes registrados',
+ cat_enfermedad_cronica:'Enfermedades crónicas',cat_cirugia:'Cirugías',cat_alergia:'Alergias',cat_medicamento_habitual:'Medicamentos habituales',cat_antecedente_familiar:'Antecedentes familiares',cat_otro:'Otros antecedentes',
+ espera_t:'Esperando paciente…',espera_s:'Pida al paciente que toque "Autorizar médico" en su teléfono, cerca de este computador. No se necesita internet.',sol_t:'quiere compartir su ficha',sol_s:'Verifique que el teléfono del paciente muestre este mismo código:',rechazar:'Rechazar',aceptar:'Aceptar',
+ traduciendo:'Traduciendo la ficha en el teléfono del paciente…',traducida:'Ficha traducida automáticamente en el teléfono del paciente. Ante dudas, ver el original.',ver_original:'Ver original (español)',ver_traduccion:'Ver traducción',err_traducir:'No se pudo traducir:',err_ident:'Ingrese su nombre completo y un RUT válido (o su registro y país).',idioma:'Idioma'},
+en:{anios:'years',brand:'Clinical Encounter',edad:'Age',sexo:'Sex',prevision:'Insurance',fecha:'Date',hora:'Time',profesional:'Clinician',herramientas:'Tools',historial:'Medical history',antecedentes:'Background',cancelar:'Clear',guardar:'Save',registro:'Clinical record',sesion:'Active session',
+ p_atencion:'Encounter',p_diagnostico:'Diagnosis',p_receta:'Prescription',p_examenes:'Tests',p_indicaciones:'Instructions',p_kine:'Physiotherapy order',p_quirurgica:'Surgical indication',
+ ph_atencion:'History, reason for visit, progress…',ph_diagnostico:'Diagnosis, with laterality if applicable…',ph_examenes:'Imaging or lab tests, with region and laterality…',ph_indicaciones:'Post-visit instructions…',ph_kine:'Goals, techniques, frequency…',ph_quirurgica:'Surgical indication, if any…',
+ sin_meds:'No medications added. Add one with the button.',agregar_med:'Add medication',vista_receta:'Prescription preview',ph_med:'Medication (e.g. Ibuprofen 400 mg)',ph_dosis:'Dose (e.g. 1 tablet)',cada:'every',horas:'hours',por:'for',dias:'days',cronico:'long-term use',eliminar_med:'Remove medication',
+ ident_t:'Clinician identification',ident_s:'The patient is sharing their record with you. Your identity is logged and verified once the connection is back.',nombre:'Full name',ph_nombre:'Dr. John Smith',rut:'Chilean ID (RUT)',extranjero:'Foreign clinician (no Chilean RUT)',registro_n:'Professional registration no.',pais:'Country',ingresar:'Continue',
+ guardada_t:'Encounter saved',guardada_s:'It was sealed on the patient’s phone and will be added to their record once the connection is back.',terminar:'End consultation',terminada:'Consultation ended. You can close this window.',
+ h_atenciones:'encounters',h_vacio:'No previous encounters',sin_dx:'No diagnosis',anterior:'Previous',siguiente:'Next',c_motivo:'Reason for visit',a_registrados:'recorded',a_vacio:'No background recorded',
+ cat_enfermedad_cronica:'Chronic conditions',cat_cirugia:'Surgeries',cat_alergia:'Allergies',cat_medicamento_habitual:'Regular medications',cat_antecedente_familiar:'Family history',cat_otro:'Other background',
+ espera_t:'Waiting for patient…',espera_s:'Ask the patient to tap "Autorizar médico" on their phone, near this computer. No internet needed.',sol_t:'wants to share their record',sol_s:'Check that the patient’s phone shows this same code:',rechazar:'Decline',aceptar:'Accept',
+ traduciendo:'Translating the record on the patient’s phone…',traducida:'Record machine-translated on the patient’s phone. If in doubt, check the original.',ver_original:'View original (Spanish)',ver_traduccion:'View translation',err_traducir:'Could not translate:',err_ident:'Enter your full name and a valid RUT (or your registration number and country).',idioma:'Language'},
+de:{anios:'Jahre',brand:'Klinische Behandlung',edad:'Alter',sexo:'Geschlecht',prevision:'Versicherung',fecha:'Datum',hora:'Uhrzeit',profesional:'Behandelnde/r',herramientas:'Werkzeuge',historial:'Krankengeschichte',antecedentes:'Vorgeschichte',cancelar:'Leeren',guardar:'Speichern',registro:'Behandlungsdokumentation',sesion:'Sitzung aktiv',
+ p_atencion:'Behandlung',p_diagnostico:'Diagnose',p_receta:'Rezept',p_examenes:'Untersuchungen',p_indicaciones:'Anweisungen',p_kine:'Physiotherapie-Verordnung',p_quirurgica:'OP-Indikation',
+ ph_atencion:'Anamnese, Konsultationsgrund, Verlauf…',ph_diagnostico:'Diagnose, ggf. mit Seitenangabe…',ph_examenes:'Bildgebung oder Labor, mit Region und Seite…',ph_indicaciones:'Anweisungen nach der Konsultation…',ph_kine:'Ziele, Techniken, Häufigkeit…',ph_quirurgica:'OP-Indikation, falls zutreffend…',
+ sin_meds:'Keine Medikamente hinzugefügt. Fügen Sie eines mit der Schaltfläche hinzu.',agregar_med:'Medikament hinzufügen',vista_receta:'Rezeptvorschau',ph_med:'Medikament (z. B. Ibuprofen 400 mg)',ph_dosis:'Dosis (z. B. 1 Tablette)',cada:'alle',horas:'Stunden',por:'für',dias:'Tage',cronico:'Dauermedikation',eliminar_med:'Medikament entfernen',
+ ident_t:'Identifikation der behandelnden Person',ident_s:'Der Patient teilt seine Akte mit Ihnen. Ihre Identität wird protokolliert und überprüft, sobald wieder eine Verbindung besteht.',nombre:'Vollständiger Name',ph_nombre:'Dr. Max Mustermann',rut:'Chilenische ID (RUT)',extranjero:'Ausländische/r Ärztin/Arzt (ohne chilenische RUT)',registro_n:'Approbations-/Registriernummer',pais:'Land',ingresar:'Weiter',
+ guardada_t:'Behandlung gespeichert',guardada_s:'Sie wurde auf dem Telefon des Patienten versiegelt und wird seiner Akte hinzugefügt, sobald wieder eine Verbindung besteht.',terminar:'Konsultation beenden',terminada:'Konsultation beendet. Sie können dieses Fenster schließen.',
+ h_atenciones:'Behandlungen',h_vacio:'Keine früheren Behandlungen',sin_dx:'Keine Diagnose',anterior:'Zurück',siguiente:'Weiter',c_motivo:'Konsultationsgrund',a_registrados:'erfasst',a_vacio:'Keine Vorgeschichte erfasst',
+ cat_enfermedad_cronica:'Chronische Erkrankungen',cat_cirugia:'Operationen',cat_alergia:'Allergien',cat_medicamento_habitual:'Dauermedikation',cat_antecedente_familiar:'Familienanamnese',cat_otro:'Sonstige Vorgeschichte',
+ espera_t:'Warten auf Patient…',espera_s:'Bitten Sie den Patienten, auf seinem Telefon in der Nähe dieses Computers auf "Autorizar médico" zu tippen. Kein Internet nötig.',sol_t:'möchte seine Akte teilen',sol_s:'Prüfen Sie, ob das Telefon des Patienten denselben Code anzeigt:',rechazar:'Ablehnen',aceptar:'Annehmen',
+ traduciendo:'Die Akte wird auf dem Telefon des Patienten übersetzt…',traducida:'Akte maschinell auf dem Telefon des Patienten übersetzt. Im Zweifel das Original prüfen.',ver_original:'Original anzeigen (Spanisch)',ver_traduccion:'Übersetzung anzeigen',err_traducir:'Übersetzung nicht möglich:',err_ident:'Geben Sie Ihren vollständigen Namen und eine gültige RUT (oder Registriernummer und Land) ein.',idioma:'Sprache'},
+fr:{anios:'ans',brand:'Consultation clinique',edad:'Âge',sexo:'Sexe',prevision:'Assurance',fecha:'Date',hora:'Heure',profesional:'Praticien',herramientas:'Outils',historial:'Antécédents de consultations',antecedentes:'Antécédents',cancelar:'Effacer',guardar:'Enregistrer',registro:'Dossier clinique',sesion:'Session active',
+ p_atencion:'Consultation',p_diagnostico:'Diagnostic',p_receta:'Ordonnance',p_examenes:'Examens',p_indicaciones:'Consignes',p_kine:'Prescription de kinésithérapie',p_quirurgica:'Indication chirurgicale',
+ ph_atencion:'Anamnèse, motif de consultation, évolution…',ph_diagnostico:'Diagnostic, avec latéralité le cas échéant…',ph_examenes:'Imagerie ou biologie, avec région et latéralité…',ph_indicaciones:'Consignes après la consultation…',ph_kine:'Objectifs, techniques, fréquence…',ph_quirurgica:'Indication chirurgicale, le cas échéant…',
+ sin_meds:'Aucun médicament ajouté. Ajoutez-en un avec le bouton.',agregar_med:'Ajouter un médicament',vista_receta:'Aperçu de l’ordonnance',ph_med:'Médicament (ex. Ibuprofène 400 mg)',ph_dosis:'Dose (ex. 1 comprimé)',cada:'toutes les',horas:'heures',por:'pendant',dias:'jours',cronico:'traitement au long cours',eliminar_med:'Supprimer le médicament',
+ ident_t:'Identification du praticien',ident_s:'Le patient partage son dossier avec vous. Votre identité est enregistrée et vérifiée dès le retour de la connexion.',nombre:'Nom complet',ph_nombre:'Dr Jean Dupont',rut:'Identifiant chilien (RUT)',extranjero:'Praticien étranger (sans RUT chilien)',registro_n:'N° d’inscription professionnelle',pais:'Pays',ingresar:'Continuer',
+ guardada_t:'Consultation enregistrée',guardada_s:'Elle a été scellée sur le téléphone du patient et sera ajoutée à son dossier dès le retour de la connexion.',terminar:'Terminer la consultation',terminada:'Consultation terminée. Vous pouvez fermer cette fenêtre.',
+ h_atenciones:'consultations',h_vacio:'Aucune consultation antérieure',sin_dx:'Sans diagnostic',anterior:'Précédent',siguiente:'Suivant',c_motivo:'Motif de consultation',a_registrados:'enregistrés',a_vacio:'Aucun antécédent enregistré',
+ cat_enfermedad_cronica:'Maladies chroniques',cat_cirugia:'Chirurgies',cat_alergia:'Allergies',cat_medicamento_habitual:'Traitements habituels',cat_antecedente_familiar:'Antécédents familiaux',cat_otro:'Autres antécédents',
+ espera_t:'En attente du patient…',espera_s:'Demandez au patient d’appuyer sur "Autorizar médico" sur son téléphone, près de cet ordinateur. Internet n’est pas nécessaire.',sol_t:'souhaite partager son dossier',sol_s:'Vérifiez que le téléphone du patient affiche ce même code :',rechazar:'Refuser',aceptar:'Accepter',
+ traduciendo:'Traduction du dossier sur le téléphone du patient…',traducida:'Dossier traduit automatiquement sur le téléphone du patient. En cas de doute, consultez l’original.',ver_original:'Voir l’original (espagnol)',ver_traduccion:'Voir la traduction',err_traducir:'Traduction impossible :',err_ident:'Saisissez votre nom complet et un RUT valide (ou votre n° d’inscription et votre pays).',idioma:'Langue'}
+};
+let LANG='es';try{LANG=localStorage.getItem('hk_idioma')||(navigator.language||'es').slice(0,2)}catch(e){}
+if(!I18N[LANG])LANG='es';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.es[k]||k}
+function aplicarIdioma(){document.documentElement.lang=LANG;
+ document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+ document.querySelectorAll('[data-ip]').forEach(e=>e.placeholder=t(e.dataset.ip));
+ document.querySelectorAll('.hk-idiomas button').forEach(b=>b.classList.toggle('hk-on',b.dataset.l===LANG))}
+function ponerIdioma(l){LANG=l;try{localStorage.setItem('hk_idioma',l)}catch(e){}aplicarIdioma();
+ if(typeof alCambiarIdioma==='function')alCambiarIdioma()}
+
+const k=new URLSearchParams(location.search).get('k');
 let yo=null,ficha={},meds=[];
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||'Error');return j}
 function edad(f){if(!f)return '—';const [a,m,d]=String(f).slice(0,10).split('-').map(Number);const h=new Date();
- return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' años'}
-function reloj(){const h=new Date();$('pFecha').textContent=h.toLocaleDateString('es-CL');$('pHora').textContent=h.toTimeString().slice(0,5)}
-async function entrar(){$('e1').textContent='';yo={nombre:$('nom').value.trim(),rut:$('rut').value.trim()};
- try{const j=await post('/api/identificar',yo);ficha=j.ficha||{};const p=ficha.paciente||{};
-  const nombre=[p.nombre,p.apellido_paterno,p.apellido_materno].filter(Boolean).join(' ');
-  $('pNombre').textContent=nombre;$('pRut').textContent=p.rut||'';$('avatar').textContent=(nombre||'P').charAt(0).toUpperCase();
-  $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—';
-  $('pProf').textContent=yo.nombre;reloj();setInterval(reloj,30000);$('ident').hidden=true}catch(x){$('e1').textContent=x.message}}
-const CAMPOS_EV=[['atencion','Motivo de consulta'],['diagnostico','Diagnóstico'],['receta','Receta'],['examenes','Exámenes'],['indicaciones','Indicaciones'],['orden_kinesiologia','Orden kinésica'],['indicacion_quirurgica','Indicación quirúrgica']];
+ return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' '+t('anios')}
+function reloj(){const h=new Date();$('pFecha').textContent=h.toLocaleDateString(LANG==='es'?'es-CL':LANG);$('pHora').textContent=h.toTimeString().slice(0,5)}
+let fichaOriginal={},fichaTrad={},verOriginal=false;
+function idProfesional(){
+ if($('esExt').checked){const reg=$('regExt').value.trim().replace(/\s+/g,'');const pais=$('paisExt').value.trim().toUpperCase();
+  return (reg.length>=3&&/^[A-Z]{2}$/.test(pais))?'EXT-'+pais+'-'+reg:''}
+ return $('rut').value.trim()}
+function pintarPaciente(){const p=ficha.paciente||{};
+ const nombre=[p.nombre,p.apellido_paterno,p.apellido_materno].filter(Boolean).join(' ');
+ $('pNombre').textContent=nombre;$('pRut').textContent=p.rut||'';$('avatar').textContent=(nombre||'P').charAt(0).toUpperCase();
+ $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—'}
+async function entrar(){$('e1').textContent='';const id=idProfesional();yo={nombre:$('nom').value.trim(),rut:id};
+ if(yo.nombre.length<3||!id){$('e1').textContent=t('err_ident');return}
+ try{const j=await post('/api/identificar',yo);fichaOriginal=j.ficha||{};ficha=fichaOriginal;fichaTrad={};verOriginal=false;
+  pintarPaciente();$('pProf').textContent=yo.nombre;reloj();setInterval(reloj,30000);$('ident').hidden=true;
+  if(LANG!=='es')traducirFicha()}catch(x){$('e1').textContent=x.message}}
+// El teléfono del paciente traduce la ficha, sin internet
+async function traducirFicha(){if(!yo)return;
+ if(LANG==='es'){ficha=fichaOriginal;$('avisoTrad').hidden=true;pintarPaciente();return}
+ if(fichaTrad[LANG]){ficha=verOriginal?fichaOriginal:fichaTrad[LANG];mostrarAviso();pintarPaciente();return}
+ $('avisoTrad').hidden=false;$('avisoTxt').textContent=t('traduciendo');$('btnOriginal').hidden=true;
+ try{const j=await post('/api/idioma',{idioma:LANG});fichaTrad[LANG]=j.ficha||{};verOriginal=false;ficha=fichaTrad[LANG];mostrarAviso();pintarPaciente()}
+ catch(x){$('avisoTxt').textContent=t('err_traducir')+' '+x.message;ficha=fichaOriginal}}
+function mostrarAviso(){$('avisoTrad').hidden=false;$('avisoTxt').textContent=verOriginal?'':t('traducida');
+ $('btnOriginal').hidden=false;$('btnOriginal').textContent=verOriginal?t('ver_traduccion'):t('ver_original')}
+function alternarOriginal(){verOriginal=!verOriginal;ficha=verOriginal?fichaOriginal:(fichaTrad[LANG]||fichaOriginal);mostrarAviso();pintarPaciente();
+ if(!$('cajon').hidden)cerrarCajon()}
+function alCambiarIdioma(){pintarMeds();if(yo)traducirFicha();if(typeof estadoPrevio!=='undefined'&&typeof mostrarEstado==='function'&&window._ultimoEstado)mostrarEstado(window._ultimoEstado)}
+const CAMPOS_EV=[['atencion','c_motivo'],['diagnostico','p_diagnostico'],['receta','p_receta'],['examenes','p_examenes'],['indicaciones','p_indicaciones'],['orden_kinesiologia','p_kine'],['indicacion_quirurgica','p_quirurgica']];
 const CATEGORIAS={enfermedad_cronica:['Enfermedades crónicas','🩺'],cirugia:['Cirugías','🔬'],alergia:['Alergias','⚠️'],medicamento_habitual:['Medicamentos habituales','💊'],antecedente_familiar:['Antecedentes familiares','👨‍👩‍👧'],otro:['Otros antecedentes','📋']};
 const flechaIzq='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
 const flechaDer='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -1199,39 +1291,39 @@ function valorEv(e,k){if(k==='diagnostico')return e.diagnostico||(e.contenido||{
 function cerrarCajon(){$('cajon').hidden=true;$('velo').hidden=true}
 function abrirCajon(){$('cajon').hidden=false;$('velo').hidden=false}
 function listaHistorial(){const ev=ficha.eventos||[];
- $('cajonTitulo').innerHTML='<p class="hk-t1">Historial clínico</p><p class="hk-t2">'+ev.length+' atenciones</p>';
- if(!ev.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">Sin atenciones previas registradas</div>';return}
+ $('cajonTitulo').innerHTML='<p class="hk-t1">'+t('historial')+'</p><p class="hk-t2">'+ev.length+' '+t('h_atenciones')+'</p>';
+ if(!ev.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">'+t('h_vacio')+'</div>';return}
  $('cajonCuerpo').innerHTML=ev.map((e,i)=>'<div class="hk-fila-ev" onclick="detalleHistorial('+i+')"><div style="flex:1;min-width:0">'+
   '<div style="display:flex;align-items:center;gap:8px"><span class="hk-chip">'+esc(e.fecha)+'</span><span class="hk-t2">'+esc(e.hora||'')+'</span></div>'+
-  '<p class="hk-dx">'+esc(valorEv(e,'diagnostico')||'Sin diagnóstico')+'</p>'+(e.medico?'<p class="hk-prof">'+esc(e.medico)+'</p>':'')+
+  '<p class="hk-dx">'+esc(valorEv(e,'diagnostico')||t('sin_dx'))+'</p>'+(e.medico?'<p class="hk-prof">'+esc(e.medico)+'</p>':'')+
   '</div><span style="color:#cbd5e1">'+flechaDer+'</span></div>').join('')}
 function detalleHistorial(i){const ev=ficha.eventos||[];const e=ev[i];
- $('cajonTitulo').innerHTML='<button class="hk-volver" onclick="listaHistorial()">'+flechaIzq.replace('14','16').replace('14','16')+'Historial</button>';
- let h='<div class="hk-nav"><button '+(i===0?'disabled':'')+' onclick="detalleHistorial('+(i-1)+')">'+flechaIzq+'Anterior</button><span class="hk-t2">'+(i+1)+' / '+ev.length+'</span><button '+(i===ev.length-1?'disabled':'')+' onclick="detalleHistorial('+(i+1)+')">Siguiente'+flechaDer+'</button></div>';
+ $('cajonTitulo').innerHTML='<button class="hk-volver" onclick="listaHistorial()">'+flechaIzq.replace('14','16').replace('14','16')+t('historial')+'</button>';
+ let h='<div class="hk-nav"><button '+(i===0?'disabled':'')+' onclick="detalleHistorial('+(i-1)+')">'+flechaIzq+t('anterior')+'</button><span class="hk-t2">'+(i+1)+' / '+ev.length+'</span><button '+(i===ev.length-1?'disabled':'')+' onclick="detalleHistorial('+(i+1)+')">'+t('siguiente')+flechaDer+'</button></div>';
  h+='<div style="padding:16px 20px 12px;border-bottom:1px solid #f1f5f9"><div style="display:flex;gap:8px;margin-bottom:6px"><span class="hk-chip hk-osc">'+esc(e.fecha)+'</span>'+(e.hora?'<span class="hk-chip">'+esc(e.hora)+'</span>':'')+'</div>'+(e.medico?'<p class="hk-prof" style="font-size:12px">'+esc(e.medico)+(e.especialidad?' · '+esc(e.especialidad):'')+'</p>':'')+'</div><div style="padding:0 20px">';
- for(const [k,l] of CAMPOS_EV){const v=String(valorEv(e,k)||'').trim();if(v)h+='<div class="hk-campo"><p class="hk-campo-l">'+l+'</p><p class="hk-campo-v">'+esc(v)+'</p></div>'}
+ for(const [k,l] of CAMPOS_EV){const v=String(valorEv(e,k)||'').trim();if(v)h+='<div class="hk-campo"><p class="hk-campo-l">'+t(l)+'</p><p class="hk-campo-v">'+esc(v)+'</p></div>'}
  $('cajonCuerpo').innerHTML=h+'</div>'}
 function verAntecedentes(){const a=ficha.antecedentes||{};const ks=Object.keys(a).filter(x=>(a[x]||[]).length);
  const n=ks.reduce((t,x)=>t+a[x].length,0);
- $('cajonTitulo').innerHTML='<p class="hk-t1">Antecedentes</p><p class="hk-t2">'+n+' registrados</p>';
- if(!ks.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">Sin antecedentes registrados</div>';return}
- $('cajonCuerpo').innerHTML=ks.map(x=>{const [l,em]=CATEGORIAS[x]||[x.replace(/_/g,' '),'📋'];
+ $('cajonTitulo').innerHTML='<p class="hk-t1">'+t('antecedentes')+'</p><p class="hk-t2">'+n+' '+t('a_registrados')+'</p>';
+ if(!ks.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">'+t('a_vacio')+'</div>';return}
+ $('cajonCuerpo').innerHTML=ks.map(x=>{const em=(CATEGORIAS[x]||['','📋'])[1];const l=CATEGORIAS[x]?t('cat_'+x):x.replace(/_/g,' ');
   return '<div class="hk-cat"><p class="hk-cat-l">'+em+' '+esc(l)+'</p>'+a[x].map(i=>'<div class="hk-item">'+esc(i.descripcion)+'</div>').join('')+'</div>'}).join('')}
 function abrir(que){if(que==='historial')listaHistorial();else verAntecedentes();abrirCajon()}
 function sanear(){return meds.filter(m=>m.medicamento&&m.medicamento.trim()).map(m=>({medicamento:m.medicamento.trim(),dosis:(m.dosis||'').trim(),
  frecuencia_horas:m.frecuencia_horas===''||m.frecuencia_horas==null?null:parseInt(m.frecuencia_horas,10),
  duracion_dias:m.cronico||m.duracion_dias===''||m.duracion_dias==null?null:parseInt(m.duracion_dias,10),cronico:!!m.cronico}))}
-function linea(m){const r=[];if(m.dosis)r.push(m.dosis);if(m.frecuencia_horas!=null)r.push('cada '+m.frecuencia_horas+' horas');
- if(m.duracion_dias!=null)r.push('por '+m.duracion_dias+' días');if(m.cronico)r.push('uso crónico');const t=r.join(' ');return t?m.medicamento+' — '+t:m.medicamento}
+function linea(m){const r=[];if(m.dosis)r.push(m.dosis);if(m.frecuencia_horas!=null)r.push(t('cada')+' '+m.frecuencia_horas+' '+t('horas'));
+ if(m.duracion_dias!=null)r.push(t('por')+' '+m.duracion_dias+' '+t('dias'));if(m.cronico)r.push(t('cronico'));const t=r.join(' ');return t?m.medicamento+' — '+t:m.medicamento}
 function recetaTxt(){return sanear().map(linea).join('\n')}
 function pintarMeds(){$('medVacio').hidden=meds.length>0;let h='';
  meds.forEach((m,i)=>{h+='<div class="da-medicamento-row">'+
-  '<input class="da-med-input da-med-input--nombre" placeholder="Medicamento (ej. Ibuprofeno 400mg)" value="'+esc(m.medicamento)+'" oninput="setMed('+i+',\'medicamento\',this.value)">'+
-  '<input class="da-med-input da-med-input--dosis" placeholder="Dosis (ej. 1 comprimido)" value="'+esc(m.dosis)+'" oninput="setMed('+i+',\'dosis\',this.value)">'+
-  '<div class="da-med-frecuencia"><span>cada</span><input type="number" min="0" class="da-med-input da-med-input--numero" placeholder="8" value="'+esc(m.frecuencia_horas)+'" oninput="setMed('+i+',\'frecuencia_horas\',this.value)"><span>horas</span></div>'+
-  (m.cronico?'':'<div class="da-med-duracion"><span>por</span><input type="number" min="0" class="da-med-input da-med-input--numero" placeholder="7" value="'+esc(m.duracion_dias)+'" oninput="setMed('+i+',\'duracion_dias\',this.value)"><span>días</span></div>')+
-  '<label class="da-med-duracion" style="cursor:pointer;user-select:none"><input type="checkbox" style="width:15px;height:15px;min-height:0;margin:0;padding:0;flex:0 0 auto" '+(m.cronico?'checked':'')+' onchange="setCronico('+i+',this.checked)"><span>uso crónico</span></label>'+
-  '<button type="button" class="da-med-eliminar" onclick="quitarMed('+i+')" title="Eliminar medicamento"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'});
+  '<input class="da-med-input da-med-input--nombre" placeholder="'+esc(t('ph_med'))+'" value="'+esc(m.medicamento)+'" oninput="setMed('+i+',\'medicamento\',this.value)">'+
+  '<input class="da-med-input da-med-input--dosis" placeholder="'+esc(t('ph_dosis'))+'" value="'+esc(m.dosis)+'" oninput="setMed('+i+',\'dosis\',this.value)">'+
+  '<div class="da-med-frecuencia"><span>'+t('cada')+'</span><input type="number" min="0" class="da-med-input da-med-input--numero" placeholder="8" value="'+esc(m.frecuencia_horas)+'" oninput="setMed('+i+',\'frecuencia_horas\',this.value)"><span>'+t('horas')+'</span></div>'+
+  (m.cronico?'':'<div class="da-med-duracion"><span>'+t('por')+'</span><input type="number" min="0" class="da-med-input da-med-input--numero" placeholder="7" value="'+esc(m.duracion_dias)+'" oninput="setMed('+i+',\'duracion_dias\',this.value)"><span>'+t('dias')+'</span></div>')+
+  '<label class="da-med-duracion" style="cursor:pointer;user-select:none"><input type="checkbox" style="width:15px;height:15px;min-height:0;margin:0;padding:0;flex:0 0 auto" '+(m.cronico?'checked':'')+' onchange="setCronico('+i+',this.checked)"><span>'+t('cronico')+'</span></label>'+
+  '<button type="button" class="da-med-eliminar" onclick="quitarMed('+i+')" title="'+esc(t('eliminar_med'))+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'});
  $('meds').innerHTML=h;vista()}
 function vista(){const t=recetaTxt();$('preview').hidden=!t;$('previewTxt').textContent=t}
 function setMed(i,c,v){meds[i][c]=v;vista()}
@@ -1245,19 +1337,20 @@ async function guardar(){if(guardado)return;const m=$('msg');m.className='hk-msg
  const contenido={};for(const c of CAMPOS)contenido[c]=$(c).value;contenido.receta=recetaTxt();contenido.medicamentos=JSON.stringify(sanear());
  try{$('btnGuardar').disabled=true;await post('/api/nota',{...yo,contenido});guardado=true;$('guardada').hidden=false}
  catch(x){$('btnGuardar').disabled=false;m.className='hk-msg err';m.textContent=x.message}}
-function terminarDesdeGuardada(){if(typeof terminarConsulta==='function')terminarConsulta();else{$('guardadaTxt').textContent='Consulta terminada. Puede cerrar esta ventana.';$('guardadaBtn').hidden=true}}
+function terminarDesdeGuardada(){if(typeof terminarConsulta==='function')terminarConsulta();else{$('guardadaTxt').textContent=t('terminada');$('guardadaBtn').hidden=true}}
 document.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'}));
 pintarMeds();
+aplicarIdioma();
 
 // ── Lector HypokratIA (programa en el PC) ──
 $('ident').hidden=true;
 let estadoPrevio='';
 async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{method:'POST'})}
 async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
-function reiniciar(){yo=null;ficha={};guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
+function reiniciar(){yo=null;ficha={};fichaOriginal={};fichaTrad={};verOriginal=false;$('avisoTrad').hidden=true;$('esExt').checked=false;$('campoRut').hidden=false;$('campoExt').hidden=true;guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
  for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';
  $('avatar').textContent='P';$('nom').value='';$('rut').value=''}
-function mostrarEstado(j){
+function mostrarEstado(j){window._ultimoEstado=j;
  $('espera').hidden=j.estado!=='espera';
  $('solicitud').hidden=j.estado!=='solicitud';
  if(j.estado==='solicitud'){$('solNombre').textContent=j.paciente||'Un paciente';$('solCodigo').textContent=j.codigo||''}
@@ -1266,6 +1359,7 @@ function mostrarEstado(j){
 async function sondeo(){try{const r=await fetch('/api/estado');const j=await r.json();
  if(j.estado!==estadoPrevio){estadoPrevio=j.estado;mostrarEstado(j)}}catch(e){}setTimeout(sondeo,1000)}
 (function(){const h=document.querySelector('.da-main-header');const b=document.createElement('button');
- b.className='da-btn-cancel';b.textContent='Terminar consulta';b.style.marginLeft='auto';b.onclick=terminarConsulta;h.appendChild(b)})();
+ b.className='da-btn-cancel';b.dataset.i='terminar';b.textContent=t('terminar');b.style.marginLeft='auto';b.onclick=terminarConsulta;h.appendChild(b)})();
+aplicarIdioma();
 sondeo();
 </script></body></html>

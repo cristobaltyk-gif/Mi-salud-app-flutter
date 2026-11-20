@@ -21,6 +21,7 @@ import '../models/evento_clinico.dart';
 import '../services/copia_cifrada_service.dart';
 import '../services/ficha_service.dart';
 import '../services/notas_offline_service.dart';
+import '../services/traduccion_service.dart';
 import '../services/http_sesion.dart' as http;
 import '../widgets/etiqueta_especialidad.dart';
 import 'evento_detalle_screen.dart';
@@ -54,6 +55,7 @@ class _FichaScreenState extends State<FichaScreen> {
       unawaited(hubo ? CopiaCifradaService.descargar().catchError((_) {})
                      : CopiaCifradaService.actualizarSiHaceFalta());
       unawaited(CopiaCifradaService.actualizarCuidados());
+      unawaited(TraduccionService.prepararIdiomas()); // para el extranjero sin red (solo Wi-Fi)
       return resumen;
     } on SocketException {
       return _desdeCopiaOReintentar();

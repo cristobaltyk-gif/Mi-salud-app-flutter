@@ -14,6 +14,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2      # JWT, RUT y recordatorios (Keystore/Keychain cifrado)
   local_auth: ^2.3.0                  # ingreso con huella / rostro (o PIN del teléfono)
   cryptography: ^2.7.0                # AES-256-GCM: abre la copia cifrada de la ficha (lectura sin internet)
+  google_mlkit_translation: ^0.13.0   # Traducción de la ficha EN el teléfono, sin internet (inglés, alemán, francés)
   ble_peripheral:                     # Bluetooth: el teléfono se anuncia al Lector HypokratIA (consulta sin conexión)
     path: paquetes/ble_peripheral     # copia con un cambio: sin vincular (ver paquetes/ble_peripheral/HIPOKRATIA.md)
   # --- Notificaciones locales / Alarmas ---
