@@ -1,3 +1,4 @@
 aiohttp>=3.9
 cryptography>=42
 bless==0.3.0
+pysetupdi @ git+https://github.com/gwangyi/pysetupdi
