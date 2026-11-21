@@ -458,3 +458,8 @@ T2 = {
 "Enfermería": ("Nursing","Pflege","Soins infirmiers"),
 }
 T.update(T2)
+T.update({
+"¿En qué idioma quieres usar MiSalud?": ("Which language do you want to use MiSalud in?","In welcher Sprache möchten Sie MiSalud verwenden?","Dans quelle langue voulez-vous utiliser MiSalud ?"),
+"Elige el idioma del país donde vives y te atiendes. Tu ficha se muestra en el idioma en que la escribieron tus médicos.": ("Choose the language of the country where you live and receive care. Your record is shown in the language your doctors wrote it in.","Wählen Sie die Sprache des Landes, in dem Sie leben und behandelt werden. Ihre Akte wird in der Sprache angezeigt, in der Ihre Ärzte sie geschrieben haben.","Choisissez la langue du pays où vous vivez et êtes soigné. Votre dossier s'affiche dans la langue dans laquelle vos médecins l'ont rédigé."),
+"Continuar": ("Continue","Weiter","Continuer"),
+})

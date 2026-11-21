@@ -20,6 +20,7 @@
 library;
 
 import 'dart:convert';
+import '../i18n/idioma.dart';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
@@ -111,6 +112,7 @@ class StorageService {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConfig.prefsNombreKey);
+    await Idioma.olvidar(); // al volver a abrir se pregunta el idioma
   }
 
   // ── Copia cifrada de la ficha (lectura sin internet) ──

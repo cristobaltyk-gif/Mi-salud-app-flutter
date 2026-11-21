@@ -462,25 +462,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               ),
             ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.translate),
-            tooltip: 'Idioma / Language',
-            onSelected: (c) => Idioma.poner(c),
-            itemBuilder: (_) => Idioma.disponibles.entries
-                .map((e) => PopupMenuItem<String>(
-                      value: e.key,
-                      child: Row(children: [
-                        Icon(
-                          e.key == Idioma.actual.value ? Icons.check : null,
-                          size: 18,
-                          color: const Color(0xFF1A3B8C),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(e.value),
-                      ]),
-                    ))
-                .toList(),
-          ),
           IconButton(
             icon: const Icon(Icons.people_alt_outlined, color: Colors.white),
             tooltip: tr('Cuidadores'),

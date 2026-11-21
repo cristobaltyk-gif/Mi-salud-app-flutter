@@ -39,7 +39,10 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = flutter.versionCode
+        // En Codemagic, cada compilación sube el número de versión solo
+        // (BUILD_NUMBER): Android exige que la nueva sea mayor para actualizar
+        // sin desinstalar.
+        versionCode = System.getenv("BUILD_NUMBER")?.toIntOrNull()?.let { 100 + it } ?: flutter.versionCode
         versionName = flutter.versionName
     }
 

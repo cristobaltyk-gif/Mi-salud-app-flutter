@@ -59,6 +59,7 @@ import 'services/http_sesion.dart' show SesionVencida;
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/desbloquear_screen.dart';
+import 'screens/seleccion_idioma_screen.dart';
 import 'i18n/idioma.dart';
 /// Ejecuta una tarea de inicio sin que pueda bloquear la apertura de la app.
 Future<void> _pasoInicio(String nombre, Future<void> Function() tarea) async {
@@ -171,7 +172,7 @@ class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
         colorSchemeSeed: const Color(0xFF2563EB),
         fontFamily: 'Roboto',
       ),
-      home: const _DecidirInicio(),
+      home: const _Inicio(),
       ),
     );
   }
@@ -193,6 +194,23 @@ Future<bool> _haySesionVigente() async {
   }
   _huellaAlAbrir = _huella;
   return true;
+}
+
+/// Primera apertura: elegir el idioma; después, lo de siempre.
+class _Inicio extends StatefulWidget {
+  const _Inicio();
+  @override
+  State<_Inicio> createState() => _InicioState();
+}
+
+class _InicioState extends State<_Inicio> {
+  @override
+  Widget build(BuildContext context) {
+    if (!Idioma.elegido) {
+      return SeleccionIdiomaScreen(alElegir: () => setState(() {}));
+    }
+    return const _DecidirInicio();
+  }
 }
 
 class _DecidirInicio extends StatelessWidget {

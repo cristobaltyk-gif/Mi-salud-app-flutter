@@ -2,6 +2,7 @@
 // Clave = texto original en español (tal como aparece en tr('...') o trp('...')).
 // {0}, {1}… son los datos que se insertan (nombres, fechas, cantidades).
 // Si falta una traducción, se muestra el español.
+// GENERADO desde herramientas/i18n/traducciones.py.
 
 const Map<String, Map<String, String>> textos = {
   'Activar mi cuenta': {
@@ -2278,5 +2279,20 @@ const Map<String, Map<String, String>> textos = {
     'en': 'Nursing',
     'de': 'Pflege',
     'fr': 'Soins infirmiers',
+  },
+  '¿En qué idioma quieres usar MiSalud?': {
+    'en': 'Which language do you want to use MiSalud in?',
+    'de': 'In welcher Sprache möchten Sie MiSalud verwenden?',
+    'fr': 'Dans quelle langue voulez-vous utiliser MiSalud ?',
+  },
+  'Elige el idioma del país donde vives y te atiendes. Tu ficha se muestra en el idioma en que la escribieron tus médicos.': {
+    'en': 'Choose the language of the country where you live and receive care. Your record is shown in the language your doctors wrote it in.',
+    'de': 'Wählen Sie die Sprache des Landes, in dem Sie leben und behandelt werden. Ihre Akte wird in der Sprache angezeigt, in der Ihre Ärzte sie geschrieben haben.',
+    'fr': 'Choisissez la langue du pays où vous vivez et êtes soigné. Votre dossier s\'affiche dans la langue dans laquelle vos médecins l\'ont rédigé.',
+  },
+  'Continuar': {
+    'en': 'Continue',
+    'de': 'Weiter',
+    'fr': 'Continuer',
   },
 };
