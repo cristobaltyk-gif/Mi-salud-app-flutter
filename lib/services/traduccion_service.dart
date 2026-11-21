@@ -118,7 +118,8 @@ class TraduccionService {
     // 2. Con red: IA al instante (no se guarda nada)
     final faltan = textos.where((s) => !hecho.containsKey(s)).toList();
     if (faltan.isNotEmpty && await http.hayInternet()) {
-      final ia = await _traducirConIa(faltan, idioma);
+      final rut = ((ficha['paciente'] as Map?)?['rut'] ?? '').toString();
+      final ia = await _traducirConIa(faltan, idioma, rut);
       hecho.addAll(ia);
       deIa += ia.length;
     }
@@ -149,7 +150,9 @@ class TraduccionService {
   }
 
   /// Pide la traducción al servidor por partes. Devuelve {original: traducción}.
-  static Future<Map<String, String>> _traducirConIa(List<String> textos, String idioma) async {
+  /// Si el paciente se opuso al uso de IA, el servidor responde 403 y todo se
+  /// traduce con ML Kit (no sale del teléfono).
+  static Future<Map<String, String>> _traducirConIa(List<String> textos, String idioma, String rutPaciente) async {
     final salida = <String, String>{};
     final token = await StorageService.obtenerToken();
     if (token == null || token.isEmpty) return salida;
@@ -157,7 +160,7 @@ class TraduccionService {
     while (i < textos.length) {
       final parte = <String>[];
       var largo = 0;
-      while (i < textos.length && parte.length < 300 && (parte.isEmpty || largo + textos[i].length <= 150000)) {
+      while (i < textos.length && parte.length < 300 && (parte.isEmpty || largo + textos[i].length <= 120000)) {
         largo += textos[i].length;
         parte.add(textos[i++]);
       }
@@ -166,9 +169,14 @@ class TraduccionService {
             .post(
               Uri.parse(AppConfig.copiaTraducirEndpoint),
               headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-              body: jsonEncode({'idioma': idioma, 'textos': parte}),
+              body: jsonEncode({
+                'idioma': idioma,
+                if (rutPaciente.isNotEmpty) 'rut_paciente': rutPaciente,
+                'textos': parte,
+              }),
             )
             .timeout(const Duration(seconds: 150));
+        if (r.statusCode == 403) break; // sin permiso de IA: el resto con ML Kit
         if (r.statusCode != 200) continue;
         final lista = (jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>)['textos'];
         if (lista is! List || lista.length != parte.length) continue;

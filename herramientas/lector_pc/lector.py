@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "1.3"
+VERSION = "1.4"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -427,9 +427,22 @@ async def w_idioma(req):
     return web.json_response({"ficha": r["ficha"]})
 
 
+_HOSTS_PROPIOS = {f"127.0.0.1:{PUERTO_WEB}", f"localhost:{PUERTO_WEB}"}
+_ORIGENES_PROPIOS = {f"http://{h}" for h in _HOSTS_PROPIOS}
+
+
 @web.middleware
 async def solo_este_pc(req, handler):
+    """Solo la página del Lector, abierta en este PC:
+    - conexión desde este mismo PC;
+    - Host propio (bloquea el "DNS rebinding": un sitio web que se hace pasar por 127.0.0.1);
+    - en los POST, Origin propio (otra página abierta en el navegador del médico no
+      puede aceptar consultas, escribir notas ni cambiar el idioma por él)."""
     if req.remote not in ("127.0.0.1", "::1"):
+        raise web.HTTPForbidden()
+    if req.host not in _HOSTS_PROPIOS:
+        raise web.HTTPForbidden()
+    if req.method != "GET" and req.headers.get("Origin") not in _ORIGENES_PROPIOS:
         raise web.HTTPForbidden()
     return await handler(req)
 
