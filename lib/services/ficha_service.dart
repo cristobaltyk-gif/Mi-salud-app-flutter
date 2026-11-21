@@ -182,13 +182,20 @@ class FichaService {
     final url = rutPaciente != null
         ? '${AppConfig.fichaExplicarEndpoint}?rut_paciente=$rutPaciente'
         : AppConfig.fichaExplicarEndpoint;
-    return _streamSSE(url);
+    return _streamSSE(_conIdioma(url));
+  }
+
+  /// La explicación sale en el idioma de la app (es por defecto).
+  static String _conIdioma(String url) {
+    final l = Idioma.actual.value;
+    if (l == 'es') return url;
+    return '$url${url.contains('?') ? '&' : '?'}idioma=$l';
   }
 
   static Stream<ExplicacionEvento> explicarEvento(int eventoId, {String? rutPaciente}) {
     final base = AppConfig.fichaEventoExplicarEndpoint(eventoId);
     final url = rutPaciente != null ? '$base?rut_paciente=$rutPaciente' : base;
-    return _streamSSE(url);
+    return _streamSSE(_conIdioma(url));
   }
 
   static Stream<ExplicacionEvento> _streamSSE(String url) async* {

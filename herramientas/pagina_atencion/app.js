@@ -3,7 +3,7 @@ let yo=null,ficha={},meds=[];
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
- const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||'Error');return j}
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(td(j.detail||'Error'));return j}
 function edad(f){if(!f)return '—';const [a,m,d]=String(f).slice(0,10).split('-').map(Number);const h=new Date();
  return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' '+t('anios')}
 function reloj(){const h=new Date();$('pFecha').textContent=h.toLocaleDateString(LANG==='es'?'es-CL':LANG);$('pHora').textContent=h.toTimeString().slice(0,5)}
@@ -28,7 +28,7 @@ async function traducirFicha(){if(!yo)return;
  $('avisoTrad').hidden=false;$('avisoTxt').textContent=t('traduciendo');$('btnOriginal').hidden=true;
  try{const j=await post('/api/idioma',{idioma:LANG});fichaTrad[LANG]=j.ficha||{};verOriginal=false;ficha=fichaTrad[LANG];mostrarAviso();pintarPaciente()}
  catch(x){$('avisoTxt').textContent=t('err_traducir')+' '+x.message;ficha=fichaOriginal}}
-function mostrarAviso(){$('avisoTrad').hidden=false;$('avisoTxt').textContent=verOriginal?'':t('traducida');
+function mostrarAviso(){$('avisoTrad').hidden=false;$('avisoTxt').textContent=verOriginal?'':t((fichaTrad[LANG]||{}).traduccion_fuente==='telefono'?'traducida':'traducida_ia');
  $('btnOriginal').hidden=false;$('btnOriginal').textContent=verOriginal?t('ver_traduccion'):t('ver_original')}
 function alternarOriginal(){verOriginal=!verOriginal;ficha=verOriginal?fichaOriginal:(fichaTrad[LANG]||fichaOriginal);mostrarAviso();pintarPaciente();
  if(!$('cajon').hidden)cerrarCajon()}
