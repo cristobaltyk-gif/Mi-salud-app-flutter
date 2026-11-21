@@ -1,7 +1,8 @@
 // ── Idiomas de la página del médico (es / en / de / fr) ──────────────────
 // La interfaz se traduce aquí (textos fijos). El CONTENIDO de la ficha lo
-// traduce el teléfono del paciente, sin internet: usa la traducción hecha con
-// IA que trae la copia cifrada y, si falta algo, ML Kit en el teléfono.
+// traduce el teléfono del paciente al instante, solo al idioma del médico:
+// con red, IA; sin red, ML Kit en el teléfono. El resumen (antecedentes) ya
+// viene traducido con IA en la copia cifrada.
 const I18N={
 es:{anios:'años',brand:'Atención Clínica',edad:'Edad',sexo:'Sexo',prevision:'Previsión',fecha:'Fecha',hora:'Hora',profesional:'Profesional',herramientas:'Herramientas',historial:'Historial clínico',antecedentes:'Antecedentes',cancelar:'Cancelar',guardar:'Guardar',registro:'Registro clínico',sesion:'Sesión activa',
  p_atencion:'Atención',p_diagnostico:'Diagnóstico',p_receta:'Receta',p_examenes:'Exámenes',p_indicaciones:'Indicaciones',p_kine:'Orden kinésica',p_quirurgica:'Indicación quirúrgica',

@@ -70,6 +70,8 @@ class AppConfig {
   static const String notasOfflineEndpoint = '$backendBaseUrl/api/copia/notas-offline';
   /// Accesos de profesionales en consultas sin conexión (historial de accesos)
   static const String accesosOfflineEndpoint = '$backendBaseUrl/api/copia/accesos-offline';
+  /// Traducción al instante (IA) de la ficha que lee un médico, solo a su idioma
+  static const String copiaTraducirEndpoint = '$backendBaseUrl/api/copia/traducir';
 
   // --- Endpoints de PDF clínico (Documentospdf/pdfPacienteRouter.py,
   //     backend de ICA, prefix /api/paciente/pdf) ---

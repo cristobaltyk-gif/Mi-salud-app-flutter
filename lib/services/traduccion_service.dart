@@ -1,19 +1,31 @@
-/// lib/services/traduccion_service.dart — v1.0
+/// lib/services/traduccion_service.dart — v1.2
 ///
-/// Traduce el CONTENIDO de la ficha (diagnósticos, atenciones, recetas,
-/// indicaciones, antecedentes) EN EL TELÉFONO, sin internet: ML Kit de
-/// Google (traducción automática que corre dentro del teléfono, no IA
-/// generativa; nada sale del teléfono).
+/// Traduce la ficha SOLO para el médico (lector en el PC / página por la red
+/// del teléfono), SOLO a su idioma y SOLO cuando la lee. No se guarda ninguna
+/// ficha traducida: la ficha es una, en su idioma original. El paciente nunca
+/// ve esto (en la app ve su explicación con IA, en su idioma).
 ///
-/// Para que funcione en el extranjero sin red, los idiomas se bajan antes
-/// (≈30 MB cada uno) con Wi-Fi: prepararIdiomas() se llama sola al abrir la
-/// ficha con internet.
+/// De dónde sale la traducción, en este orden:
+/// 1. Resumen (antecedentes): viene ya traducido con IA dentro de la copia
+///    cifrada (ficha['resumen_traducido'][idioma]); sirve aun sin internet.
+/// 2. Con red: el resto se traduce al instante con IA (Claude) en el servidor
+///    (POST /api/copia/traducir; no se guarda nada).
+/// 3. Sin red, o si falla: ML Kit en el teléfono (sin internet, de menor
+///    calidad con lenguaje médico). Los idiomas se bajan antes con Wi-Fi:
+///    prepararIdiomas() se llama sola al abrir la ficha con internet.
+/// Lo que no se pueda traducir queda en el original; el médico siempre puede
+/// ver el original.
 ///
-/// La traducción es una AYUDA para el médico: el original en español sigue
-/// siendo el registro clínico y siempre se puede ver.
+/// Los errores van en español: la página del médico los muestra en su idioma.
 library;
 
+import 'dart:convert';
+
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
+
+import '../config/app_config.dart';
+import 'http_sesion.dart' as http;
+import 'storage_service.dart';
 
 class TraduccionService {
   /// Idiomas para el médico, además del español
@@ -22,6 +34,17 @@ class TraduccionService {
     'de': TranslateLanguage.german,
     'fr': TranslateLanguage.french,
   };
+
+  /// Mismos campos que se muestran al médico
+  static const camposPaciente = ['sexo', 'prevision'];
+  static const camposEvento = ['diagnostico', 'especialidad', 'tipo', 'indicaciones'];
+  static const camposContenido = [
+    'atencion', 'diagnostico', 'receta', 'examenes', 'indicaciones',
+    'orden_kinesiologia', 'indicacion_quirurgica', 'evolucion',
+    'examen_fisico', 'examen_clinico_bucal', 'plan_tratamiento',
+    'procedimiento_enfermeria', 'piezas_tratadas', 'signos_vitales',
+  ];
+  static const camposRecordatorio = ['dosis', 'indicaciones', 'notas'];
 
   static bool _preparando = false;
 
@@ -43,7 +66,7 @@ class TraduccionService {
     }
   }
 
-  /// ¿Está el idioma listo para traducir sin internet?
+  /// ¿Está el idioma listo para traducir sin internet (ML Kit)?
   static Future<bool> listo(String idioma) async {
     final l = idiomas[idioma];
     if (l == null) return false;
@@ -51,70 +74,148 @@ class TraduccionService {
     return await m.isModelDownloaded(TranslateLanguage.spanish.bcpCode) && await m.isModelDownloaded(l.bcpCode);
   }
 
-  /// Devuelve una COPIA de la ficha con los textos clínicos traducidos.
-  /// Nombres, RUT, fechas y códigos no se tocan.
+  /// La ficha que se le envía al médico, sin el resumen traducido a otros
+  /// idiomas (no lo necesita: se usa al traducir).
+  static Map<String, dynamic> sinTraducciones(Map<String, dynamic> ficha) {
+    if (!ficha.containsKey('resumen_traducido')) return ficha;
+    return Map<String, dynamic>.of(ficha)..remove('resumen_traducido');
+  }
+
+  /// Devuelve una COPIA de la ficha con los textos clínicos en el idioma del
+  /// médico (solo para mostrar). Nombres, RUT, fechas y códigos no se tocan.
   static Future<Map<String, dynamic>> traducirFicha(Map<String, dynamic> ficha, String idioma) async {
     final destino = idiomas[idioma];
     if (destino == null) throw Exception('Idioma no disponible');
-    if (!await listo(idioma)) {
-      throw Exception('El idioma no está descargado en el teléfono (se baja solo con Wi-Fi)');
-    }
-    final t = OnDeviceTranslator(sourceLanguage: TranslateLanguage.spanish, targetLanguage: destino);
-    final cache = <String, String>{};
-    Future<String> trad(dynamic v) async {
-      final s = (v ?? '').toString();
-      if (s.trim().isEmpty) return s;
-      return cache[s] ??= await _traducirTexto(t, s);
+
+    final copia = sinTraducciones(_copia(ficha) as Map<String, dynamic>);
+
+    // 1. Resumen ya traducido (antecedentes)
+    final resumen = <String, String>{};
+    final rt = ficha['resumen_traducido'];
+    if (rt is Map && rt[idioma] is Map) {
+      (rt[idioma] as Map).forEach((k, v) {
+        if (k is String && v is String) resumen[k] = v;
+      });
     }
 
-    try {
-      final copia = _copia(ficha) as Map<String, dynamic>;
-      final p = copia['paciente'];
-      if (p is Map) {
-        for (final k in ['sexo', 'prevision']) {
-          if (p[k] is String) p[k] = await trad(p[k]);
-        }
+    // Textos a mostrar traducidos
+    final textos = <String>{};
+    _recorrer(copia, (s) {
+      if (s.trim().isNotEmpty) textos.add(s);
+      return s;
+    });
+
+    final hecho = <String, String>{};
+    var deIa = 0, deTelefono = 0;
+    for (final s in textos) {
+      final r = resumen[s];
+      if (r != null) {
+        hecho[s] = r;
+        deIa++;
       }
-      for (final lista in [copia['eventos'], copia['eventos_con_indicaciones']]) {
+    }
+
+    // 2. Con red: IA al instante (no se guarda nada)
+    final faltan = textos.where((s) => !hecho.containsKey(s)).toList();
+    if (faltan.isNotEmpty && await http.hayInternet()) {
+      final ia = await _traducirConIa(faltan, idioma);
+      hecho.addAll(ia);
+      deIa += ia.length;
+    }
+
+    // 3. Sin red o si faltó algo: ML Kit en el teléfono
+    final quedan = textos.where((s) => !hecho.containsKey(s)).toList();
+    if (quedan.isNotEmpty) {
+      if (await listo(idioma)) {
+        final t = OnDeviceTranslator(sourceLanguage: TranslateLanguage.spanish, targetLanguage: destino);
+        try {
+          for (final s in quedan) {
+            hecho[s] = await _traducirTexto(t, s);
+            deTelefono++;
+          }
+        } finally {
+          await t.close();
+        }
+      } else if (hecho.isEmpty) {
+        throw Exception('El idioma no está descargado en el teléfono (se baja solo con Wi-Fi)');
+      }
+    }
+
+    _recorrer(copia, (s) => hecho[s] ?? s);
+    copia['idioma'] = idioma;
+    // Para el aviso de la página: 'ia', 'telefono' o 'mixta'
+    copia['traduccion_fuente'] = deTelefono == 0 ? 'ia' : (deIa == 0 ? 'telefono' : 'mixta');
+    return copia;
+  }
+
+  /// Pide la traducción al servidor por partes. Devuelve {original: traducción}.
+  static Future<Map<String, String>> _traducirConIa(List<String> textos, String idioma) async {
+    final salida = <String, String>{};
+    final token = await StorageService.obtenerToken();
+    if (token == null || token.isEmpty) return salida;
+    var i = 0;
+    while (i < textos.length) {
+      final parte = <String>[];
+      var largo = 0;
+      while (i < textos.length && parte.length < 300 && (parte.isEmpty || largo + textos[i].length <= 150000)) {
+        largo += textos[i].length;
+        parte.add(textos[i++]);
+      }
+      try {
+        final r = await http
+            .post(
+              Uri.parse(AppConfig.copiaTraducirEndpoint),
+              headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+              body: jsonEncode({'idioma': idioma, 'textos': parte}),
+            )
+            .timeout(const Duration(seconds: 150));
+        if (r.statusCode != 200) continue;
+        final lista = (jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>)['textos'];
+        if (lista is! List || lista.length != parte.length) continue;
+        for (var k = 0; k < parte.length; k++) {
+          final v = lista[k];
+          if (v is String && v.isNotEmpty) salida[parte[k]] = v;
+        }
+      } catch (_) {
+        // Sin respuesta: ese trozo lo traduce ML Kit
+      }
+    }
+    return salida;
+  }
+
+  /// Aplica `f` a cada texto clínico de la ficha (y lo reemplaza por su resultado).
+  static void _recorrer(Map<String, dynamic> ficha, String Function(String) f) {
+    void campos(Map m, List<String> ks) {
+      for (final k in ks) {
+        if (m[k] is String) m[k] = f(m[k] as String);
+      }
+    }
+
+    final p = ficha['paciente'];
+    if (p is Map) campos(p, camposPaciente);
+    for (final lista in [ficha['eventos'], ficha['eventos_con_indicaciones']]) {
+      if (lista is! List) continue;
+      for (final e in lista) {
+        if (e is! Map) continue;
+        campos(e, camposEvento);
+        final c = e['contenido'];
+        if (c is Map) campos(c, camposContenido);
+      }
+    }
+    final ant = ficha['antecedentes'];
+    if (ant is Map) {
+      for (final lista in ant.values) {
         if (lista is! List) continue;
-        for (final e in lista) {
-          if (e is! Map) continue;
-          for (final k in ['diagnostico', 'especialidad', 'tipo', 'indicaciones']) {
-            if (e[k] is String) e[k] = await trad(e[k]);
-          }
-          final c = e['contenido'];
-          if (c is Map) {
-            for (final k in [
-              'atencion', 'diagnostico', 'receta', 'examenes', 'indicaciones',
-              'orden_kinesiologia', 'indicacion_quirurgica', 'evolucion',
-            ]) {
-              if (c[k] is String) c[k] = await trad(c[k]);
-            }
-          }
+        for (final a in lista) {
+          if (a is Map) campos(a, const ['descripcion']);
         }
       }
-      final ant = copia['antecedentes'];
-      if (ant is Map) {
-        for (final lista in ant.values) {
-          if (lista is! List) continue;
-          for (final a in lista) {
-            if (a is Map && a['descripcion'] is String) a['descripcion'] = await trad(a['descripcion']);
-          }
-        }
+    }
+    final rec = ficha['recordatorios'];
+    if (rec is List) {
+      for (final r in rec) {
+        if (r is Map) campos(r, camposRecordatorio);
       }
-      final rec = copia['recordatorios'];
-      if (rec is List) {
-        for (final r in rec) {
-          if (r is! Map) continue;
-          for (final k in ['dosis', 'indicaciones', 'notas']) {
-            if (r[k] is String) r[k] = await trad(r[k]);
-          }
-        }
-      }
-      copia['idioma'] = idioma;
-      return copia;
-    } finally {
-      await t.close();
     }
   }
 
