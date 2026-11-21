@@ -60,6 +60,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(if (hayLlave) "release" else "debug")
+            // Flutter reduce el código (R8) en release: estas reglas evitan que
+            // borre clases de ML Kit (traducción sin internet) y de plugins.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

@@ -48,6 +48,9 @@ class TraduccionService {
 
   static bool _preparando = false;
 
+  /// Qué pasó con la traducción por IA en el último intento (para diagnosticar)
+  static String _estadoIa = '-';
+
   /// Baja (solo con Wi-Fi) los modelos que falten: español + en/de/fr.
   static Future<void> prepararIdiomas() async {
     if (_preparando) return;
@@ -117,6 +120,7 @@ class TraduccionService {
 
     // 2. Con red: IA al instante (no se guarda nada)
     final faltan = textos.where((s) => !hecho.containsKey(s)).toList();
+    _estadoIa = 'sin red';
     if (faltan.isNotEmpty && await http.hayInternet()) {
       final rut = ((ficha['paciente'] as Map?)?['rut'] ?? '').toString();
       final ia = await _traducirConIa(faltan, idioma, rut);
@@ -124,28 +128,42 @@ class TraduccionService {
       deIa += ia.length;
     }
 
-    // 3. Sin red o si faltó algo: ML Kit en el teléfono
+    // 3. Sin red o si faltó algo: ML Kit en el teléfono. Si ML Kit falla,
+    //    esos textos quedan en el original (nunca se cae toda la traducción).
     final quedan = textos.where((s) => !hecho.containsKey(s)).toList();
+    String? errorTelefono;
     if (quedan.isNotEmpty) {
       if (await listo(idioma)) {
-        final t = OnDeviceTranslator(sourceLanguage: TranslateLanguage.spanish, targetLanguage: destino);
+        OnDeviceTranslator? t;
         try {
+          t = OnDeviceTranslator(sourceLanguage: TranslateLanguage.spanish, targetLanguage: destino);
           for (final s in quedan) {
             hecho[s] = await _traducirTexto(t, s);
             deTelefono++;
           }
+        } catch (e) {
+          errorTelefono = e.toString();
         } finally {
-          await t.close();
+          try {
+            await t?.close();
+          } catch (_) {}
         }
-      } else if (hecho.isEmpty) {
-        throw Exception('El idioma no está descargado en el teléfono (se baja solo con Wi-Fi)');
+      } else {
+        errorTelefono = 'idioma no descargado';
       }
+    }
+    if (hecho.isEmpty && textos.isNotEmpty) {
+      // Nada se pudo traducir: el médico ve el original. El detalle ayuda a
+      // saber qué falló (IA y teléfono).
+      throw Exception('El teléfono no pudo traducir (IA: $_estadoIa; teléfono: ${errorTelefono ?? '-'})');
     }
 
     _recorrer(copia, (s) => hecho[s] ?? s);
     copia['idioma'] = idioma;
     // Para el aviso de la página: 'ia', 'telefono' o 'mixta'
     copia['traduccion_fuente'] = deTelefono == 0 ? 'ia' : (deIa == 0 ? 'telefono' : 'mixta');
+    // Textos que quedaron en el original (falló la IA y el teléfono para esos)
+    copia['traduccion_incompleta'] = textos.length - hecho.length;
     return copia;
   }
 
@@ -155,7 +173,11 @@ class TraduccionService {
   static Future<Map<String, String>> _traducirConIa(List<String> textos, String idioma, String rutPaciente) async {
     final salida = <String, String>{};
     final token = await StorageService.obtenerToken();
-    if (token == null || token.isEmpty) return salida;
+    if (token == null || token.isEmpty) {
+      _estadoIa = 'sin sesión';
+      return salida;
+    }
+    _estadoIa = 'sin respuesta';
     var i = 0;
     while (i < textos.length) {
       final parte = <String>[];
@@ -176,16 +198,23 @@ class TraduccionService {
               }),
             )
             .timeout(const Duration(seconds: 150));
-        if (r.statusCode == 403) break; // sin permiso de IA: el resto con ML Kit
-        if (r.statusCode != 200) continue;
+        if (r.statusCode == 403) {
+          _estadoIa = 'el paciente no permite IA (403)';
+          break; // sin permiso de IA: el resto con ML Kit
+        }
+        if (r.statusCode != 200) {
+          _estadoIa = 'servidor ${r.statusCode}';
+          continue;
+        }
         final lista = (jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>)['textos'];
         if (lista is! List || lista.length != parte.length) continue;
         for (var k = 0; k < parte.length; k++) {
           final v = lista[k];
           if (v is String && v.isNotEmpty) salida[parte[k]] = v;
         }
-      } catch (_) {
-        // Sin respuesta: ese trozo lo traduce ML Kit
+        _estadoIa = 'ok';
+      } catch (e) {
+        _estadoIa = 'error: $e'; // ese trozo lo traduce ML Kit
       }
     }
     return salida;
