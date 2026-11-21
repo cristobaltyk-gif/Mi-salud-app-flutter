@@ -1301,7 +1301,7 @@ async function traducirFicha(){if(!yo)return;
  $('avisoTrad').hidden=false;$('avisoTxt').textContent=t('traduciendo');$('btnOriginal').hidden=true;
  try{const j=await post('/api/idioma',{idioma:LANG});fichaTrad[LANG]=j.ficha||{};verOriginal=false;ficha=fichaTrad[LANG];mostrarAviso();pintarPaciente()}
  catch(x){$('avisoTxt').textContent=t('err_traducir')+' '+x.message;ficha=fichaOriginal}}
-function mostrarAviso(){$('avisoTrad').hidden=false;$('avisoTxt').textContent=verOriginal?'':t((fichaTrad[LANG]||{}).traduccion_fuente==='telefono'?'traducida':'traducida_ia');
+function mostrarAviso(){$('avisoTrad').hidden=false;$('avisoTxt').textContent=verOriginal?'':t('traducida');
  $('btnOriginal').hidden=false;$('btnOriginal').textContent=verOriginal?t('ver_traduccion'):t('ver_original')}
 function alternarOriginal(){verOriginal=!verOriginal;ficha=verOriginal?fichaOriginal:(fichaTrad[LANG]||fichaOriginal);mostrarAviso();pintarPaciente();
  if(!$('cajon').hidden)cerrarCajon()}

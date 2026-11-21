@@ -229,7 +229,7 @@ class ConsultaSinConexionService {
           );
         }
         _cambios.add(null);
-        return _responder(res, 200, {'ficha': TraduccionService.sinTraducciones(_ficha!)});
+        return _responder(res, 200, {'ficha': _ficha});
       }
       if (req.method == 'POST' && ruta == '/api/idioma') {
         final b = await _cuerpo(req);

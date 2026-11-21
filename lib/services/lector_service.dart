@@ -293,7 +293,7 @@ class SesionLector {
       await terminar(avisar: false);
       return true;
     }
-    await _enviar({'tipo': 'ficha', 'ficha': TraduccionService.sinTraducciones(ficha)});
+    await _enviar({'tipo': 'ficha', 'ficha': ficha});
     estado = 'activa';
     _cambios.add(null);
     return true;

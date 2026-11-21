@@ -100,9 +100,6 @@ class CopiaCifradaService {
         'aad': aad,
         'nonce': nonce,
         'cifrado': cifrado,
-        // false: la traducción para el médico (en/de/fr) aún no estaba
-        // completa; se vuelve a pedir antes de las 24 horas.
-        'traducciones_completas': datos['traducciones_completas'] ?? true,
       }),
       flush: true,
     );
@@ -121,9 +118,8 @@ class CopiaCifradaService {
         final archivo = await StorageService.archivoCopia(rut: rutCuidado);
         final meta = jsonDecode(await archivo.readAsString()) as Map<String, dynamic>;
         final generado = DateTime.tryParse((meta['generado_at'] as String?) ?? '');
-        final edad = generado == null ? null : DateTime.now().toUtc().difference(generado.toUtc());
-        final faltaTraduccion = meta['traducciones_completas'] == false;
-        if (edad != null && edad < (faltaTraduccion ? const Duration(minutes: 10) : _vigencia)) {
+        if (generado != null &&
+            DateTime.now().toUtc().difference(generado.toUtc()) < _vigencia) {
           return;
         }
       }
