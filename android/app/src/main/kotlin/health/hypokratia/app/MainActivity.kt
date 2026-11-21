@@ -22,6 +22,11 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // Nombre del equipo para la lista de teléfonos de confianza (p. ej. "Xiaomi Redmi Note 13")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "misalud/equipo")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "modelo") result.success(nombreEquipo()) else result.notImplemented()
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "misalud/red_local")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -30,6 +35,13 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun nombreEquipo(): String {
+        val marca = (Build.MANUFACTURER ?: "").trim().replaceFirstChar { it.uppercase() }
+        val modelo = (Build.MODEL ?: "").trim()
+        val nombre = if (modelo.startsWith(marca, ignoreCase = true)) modelo else "$marca $modelo"
+        return nombre.trim().take(80)
     }
 
     private fun iniciar(result: MethodChannel.Result) {

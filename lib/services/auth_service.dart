@@ -28,6 +28,7 @@
 library;
 
 import 'dart:io' show Platform;
+import 'package:flutter/services.dart';
 import '../i18n/idioma.dart';
 
 import 'dart:convert';
@@ -56,10 +57,26 @@ class ResultadoLogin {
 }
 
 class AuthService {
-  static Map<String, String> get _dispositivo => {
-        'tipo': 'app',
-        'nombre_dispositivo': Platform.isAndroid ? 'Teléfono Android' : (Platform.isIOS ? 'iPhone' : 'Teléfono'),
-      };
+  /// Nombre real del equipo (p. ej. "Xiaomi Redmi Note 13") para la lista de
+  /// teléfonos de confianza y la auditoría: así se ve si la cuenta se abrió en
+  /// otro teléfono. Lo informa el propio teléfono (no es prueba de identidad).
+  static String? _nombreEquipo;
+  static const _canalEquipo = MethodChannel('misalud/equipo');
+
+  static Future<Map<String, String>> _dispositivo() async {
+    if (_nombreEquipo == null) {
+      String? modelo;
+      if (Platform.isAndroid) {
+        try {
+          modelo = await _canalEquipo.invokeMethod<String>('modelo');
+        } catch (_) {}
+      }
+      _nombreEquipo = (modelo != null && modelo.trim().isNotEmpty)
+          ? modelo.trim()
+          : (Platform.isAndroid ? 'Teléfono Android' : (Platform.isIOS ? 'iPhone' : 'Teléfono'));
+    }
+    return {'tipo': 'app', 'nombre_dispositivo': _nombreEquipo!};
+  }
 
   static Future<Paciente> _guardar(Map<String, dynamic> body) async {
     await StorageService.guardarSesion(
@@ -121,7 +138,7 @@ class AuthService {
         'password': password,
         'soporta_codigo': true,
         'llave_dispositivo': await StorageService.obtenerLlave(),
-        ..._dispositivo,
+        ...await _dispositivo(),
       }),
     );
 
@@ -141,7 +158,7 @@ class AuthService {
     final res = await http.post(
       Uri.parse(AppConfig.loginCodigoEndpoint),
       headers: _headersJson,
-      body: jsonEncode({'desafio': desafio, 'codigo': codigo, ..._dispositivo}),
+      body: jsonEncode({'desafio': desafio, 'codigo': codigo, ...await _dispositivo()}),
     );
     if (res.statusCode != 200) {
       throw AuthException(res.statusCode, _detailDe(res));
@@ -179,7 +196,7 @@ class AuthService {
     final res = await http.post(
       Uri.parse(AppConfig.vincularEndpoint),
       headers: {..._headersJson, 'Authorization': 'Bearer $token'},
-      body: jsonEncode({'password': password, ..._dispositivo}),
+      body: jsonEncode({'password': password, ...await _dispositivo()}),
     );
     if (res.statusCode != 200) {
       throw AuthException(res.statusCode, _detailDe(res));
