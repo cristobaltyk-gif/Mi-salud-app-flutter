@@ -2295,4 +2295,114 @@ const Map<String, Map<String, String>> textos = {
     'de': 'Weiter',
     'fr': 'Continuer',
   },
+  'Al menos {0} caracteres': {
+    'en': 'At least {0} characters',
+    'de': 'Mindestens {0} Zeichen',
+    'fr': 'Au moins {0} caractères',
+  },
+  'Una mayúscula': {
+    'en': 'One uppercase letter',
+    'de': 'Ein Großbuchstabe',
+    'fr': 'Une majuscule',
+  },
+  'Una minúscula': {
+    'en': 'One lowercase letter',
+    'de': 'Ein Kleinbuchstabe',
+    'fr': 'Une minuscule',
+  },
+  'Un número': {
+    'en': 'One number',
+    'de': 'Eine Zahl',
+    'fr': 'Un chiffre',
+  },
+  'Un carácter especial (! @ # \$ % …)': {
+    'en': 'One special character (! @ # \$ % …)',
+    'de': 'Ein Sonderzeichen (! @ # \$ % …)',
+    'fr': 'Un caractère spécial (! @ # \$ % …)',
+  },
+  'No es una clave común ni contiene tu RUT o nombre': {
+    'en': 'Not a common password and doesn\'t contain your RUT or name',
+    'de': 'Kein gängiges Passwort und enthält weder Ihre RUT noch Ihren Namen',
+    'fr': 'Pas un mot de passe courant et ne contient ni votre RUT ni votre nom',
+  },
+  'Tu clave se cambió. Entra con tu clave nueva.': {
+    'en': 'Your password was changed. Sign in with your new password.',
+    'de': 'Ihr Passwort wurde geändert. Melden Sie sich mit Ihrem neuen Passwort an.',
+    'fr': 'Votre mot de passe a été modifié. Connectez-vous avec votre nouveau mot de passe.',
+  },
+  'Ver clave': {
+    'en': 'Show password',
+    'de': 'Passwort anzeigen',
+    'fr': 'Afficher le mot de passe',
+  },
+  'Ocultar clave': {
+    'en': 'Hide password',
+    'de': 'Passwort verbergen',
+    'fr': 'Masquer le mot de passe',
+  },
+  'Muy débil': {
+    'en': 'Very weak',
+    'de': 'Sehr schwach',
+    'fr': 'Très faible',
+  },
+  'Débil': {
+    'en': 'Weak',
+    'de': 'Schwach',
+    'fr': 'Faible',
+  },
+  'Regular': {
+    'en': 'Fair',
+    'de': 'Mittel',
+    'fr': 'Moyen',
+  },
+  'Buena': {
+    'en': 'Good',
+    'de': 'Gut',
+    'fr': 'Bon',
+  },
+  'Segura': {
+    'en': 'Strong',
+    'de': 'Sicher',
+    'fr': 'Sûr',
+  },
+  'Cambia tu clave': {
+    'en': 'Change your password',
+    'de': 'Ändern Sie Ihr Passwort',
+    'fr': 'Changez votre mot de passe',
+  },
+  'Por tu seguridad, tu clave actual ya no cumple las reglas de clave segura. Crea una nueva para seguir.': {
+    'en': 'For your security, your current password no longer meets the secure password rules. Create a new one to continue.',
+    'de': 'Zu Ihrer Sicherheit erfüllt Ihr aktuelles Passwort die Regeln für sichere Passwörter nicht mehr. Erstellen Sie ein neues, um fortzufahren.',
+    'fr': 'Pour votre sécurité, votre mot de passe actuel ne respecte plus les règles de mot de passe sécurisé. Créez-en un nouveau pour continuer.',
+  },
+  'Contraseña nueva': {
+    'en': 'New password',
+    'de': 'Neues Passwort',
+    'fr': 'Nouveau mot de passe',
+  },
+  'Repite la contraseña': {
+    'en': 'Repeat the password',
+    'de': 'Passwort wiederholen',
+    'fr': 'Répétez le mot de passe',
+  },
+  '✓ Las contraseñas coinciden': {
+    'en': '✓ Passwords match',
+    'de': '✓ Die Passwörter stimmen überein',
+    'fr': '✓ Les mots de passe correspondent',
+  },
+  'Las contraseñas no coinciden': {
+    'en': 'Passwords do not match',
+    'de': 'Die Passwörter stimmen nicht überein',
+    'fr': 'Les mots de passe ne correspondent pas',
+  },
+  'La clave nueva debe ser distinta de la actual.': {
+    'en': 'The new password must be different from the current one.',
+    'de': 'Das neue Passwort muss sich vom aktuellen unterscheiden.',
+    'fr': 'Le nouveau mot de passe doit être différent de l\'actuel.',
+  },
+  'Cambiar clave': {
+    'en': 'Change password',
+    'de': 'Passwort ändern',
+    'fr': 'Changer le mot de passe',
+  },
 };

@@ -78,7 +78,14 @@ class AuthService {
     return {'tipo': 'app', 'nombre_dispositivo': _nombreEquipo!};
   }
 
+  /// La clave con que entró no cumple la regla de clave segura (o es
+  /// temporal): antes de seguir se pide una nueva (CambiarClaveScreen).
+  static bool debeCambiarClave = false;
+  static List<String?> nombresSesion = const [];
+
   static Future<Paciente> _guardar(Map<String, dynamic> body) async {
+    debeCambiarClave = body['debe_cambiar_clave'] == true;
+    nombresSesion = [body['nombre'] as String?, body['apellido'] as String?];
     await StorageService.guardarSesion(
       token: body['token'],
       rut: body['rut'],
@@ -203,6 +210,25 @@ class AuthService {
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     await StorageService.guardarLlave(body['llave_dispositivo'] as String?);
+  }
+
+  /// POST /api/auth/cambiar-password — el servidor exige la regla de clave
+  /// segura, cierra todas las sesiones y quita los teléfonos de confianza:
+  /// aquí se borra la sesión y la llave, y hay que entrar con la clave nueva.
+  static Future<void> cambiarPassword(String actual, String nueva) async {
+    final token = await StorageService.obtenerToken();
+    final res = await http.post(
+      Uri.parse(AppConfig.cambiarPasswordEndpoint),
+      headers: {..._headersJson, 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'password_actual': actual, 'nueva_password': nueva}),
+    );
+    if (res.statusCode != 200) {
+      throw AuthException(res.statusCode, _detailDe(res));
+    }
+    debeCambiarClave = false;
+    await StorageService.cerrarSesion();
+    await StorageService.guardarLlave(null);
+    await StorageService.guardarBiometria(false);
   }
 
   /// "Salir": anula la sesión en el backend (si falla, igual se sale). La llave

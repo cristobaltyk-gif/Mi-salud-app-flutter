@@ -1,5 +1,7 @@
 /// lib/screens/login_screen.dart — v1.2
 ///
+/// v1.4: si el servidor responde debe_cambiar_clave (clave débil o temporal),
+/// antes de entrar se pide una clave nueva (CambiarClaveScreen).
 /// v1.3: teléfono nuevo → código de 6 dígitos que llega al correo (fase
 /// "código" en esta misma tarjeta). Al entrar, si el teléfono tiene huella
 /// y aún no se le preguntó, ofrece "Entrar con huella" (DesbloquearScreen).
@@ -20,6 +22,7 @@ import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import '../services/storage_service.dart';
 import 'activar_cuenta_screen.dart';
+import 'cambiar_clave_screen.dart';
 import 'dashboard_screen.dart';
 import 'desbloquear_screen.dart';
 
@@ -166,6 +169,19 @@ class _LoginScreenState extends State<LoginScreen> {
     // no había sesión guardada, así que el token FCM real nunca
     // llegó al backend. Ahora que el login fue exitoso y hay un JWT
     // guardado, reintentamos el registro del token.
+    if (AuthService.debeCambiarClave) {
+      // Clave débil o temporal: primero una nueva (sin entrar al inicio)
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => CambiarClaveScreen(
+          claveActual: _passwordController.text,
+          rut: _rutController.text.trim(),
+          nombres: AuthService.nombresSesion,
+        )),
+        (route) => false,
+      );
+      return;
+    }
     await FcmService.registrarTokenSiHaySesion();
     // La huella se ofrece al llegar al inicio (DashboardScreen)
     if (!mounted) return;
