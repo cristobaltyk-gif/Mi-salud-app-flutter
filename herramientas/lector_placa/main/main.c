@@ -86,7 +86,7 @@ static esp_err_t iniciar_red_usb(void)
     esp_netif_set_mac(s_netif, mac_placa);
 
     // Sin puerta de enlace ni DNS: el PC no manda su internet por la placa
-    dhcps_offer_t sin_router = 0;
+    uint8_t sin_router = 0;   // dhcps_offer_t: 0 = no ofrecer router
     esp_netif_dhcps_option(s_netif, ESP_NETIF_OP_SET, ESP_NETIF_ROUTER_SOLICITATION_ADDRESS,
                            &sin_router, sizeof(sin_router));
     uint32_t arriendo = 1;   // minutos
