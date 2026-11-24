@@ -15,7 +15,13 @@
  * normal (si lo tiene) y solo habla con la placa en 172.29.77.x.
  *
  * Basado en el ejemplo de Espressif examples/network/sta2eth (usb_ncm_iface.c).
- * Siguientes pruebas: abrir la página sola (teclado USB) y Bluetooth con la app.
+ * v3: la página se abre sola. La placa además es un teclado USB: cuando el PC
+ * recibe su dirección, escribe Windows+R → "msedge 172.29.77.1" → Enter.
+ * Se usa Edge porque viene en todo Windows 10/11, y solo letras, números,
+ * punto y espacio, que están en la misma tecla en teclados español e inglés.
+ * Se abre una sola vez por enchufada (al desenchufar la placa se apaga).
+ *
+ * Siguiente prueba: Bluetooth con la app.
  */
 #include <string.h>
 #include <stdlib.h>
@@ -29,6 +35,8 @@
 #include "dhcpserver/dhcpserver_options.h"
 #include "lwip/esp_netif_net_stack.h"
 #include "tusb.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "lector";
 static esp_netif_t *s_netif = NULL;
@@ -67,14 +75,38 @@ static const tusb_desc_device_t descriptor_equipo = {
     .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
     .idVendor           = 0x303A,               // Espressif
     .idProduct          = 0x4A01,               // Lector HypokratIA
-    .bcdDevice          = 0x0200,
+    .bcdDevice          = 0x0300,               // cambia si cambian las interfaces
     .iManufacturer      = 0x01,
     .iProduct           = 0x02,
     .iSerialNumber      = 0x03,
     .bNumConfigurations = 0x01,
 };
 
-#define ITF_RED            0                   // la red es la única interfaz USB
+// Interfaces: red (2) + teclado (1)
+enum { ITF_RED = 0, ITF_RED_DATOS, ITF_TECLADO, ITF_TOTAL };
+enum { STR_IDIOMA = 0, STR_FABRICANTE, STR_PRODUCTO, STR_SERIE, STR_RED, STR_MAC, STR_TECLADO, STR_TOTAL };
+
+// STR_MAC (5) lo llena el driver de red con la MAC: debe ser el mismo índice
+// que usa esp_tinyusb (sin CDC ni MSC: idioma, fabricante, producto, serie, red, MAC)
+static const char *textos_usb[STR_TOTAL] = {
+    (char[]){0x09, 0x04}, "HypokratIA", "Lector HypokratIA", "HK0001",
+    "Red del lector", "", "Teclado del lector",
+};
+
+static const uint8_t informe_teclado[] = { TUD_HID_REPORT_DESC_KEYBOARD() };
+
+#define CONFIG_LARGO (TUD_CONFIG_DESC_LEN + TUD_CDC_NCM_DESC_LEN + TUD_HID_DESC_LEN)
+static const uint8_t descriptor_config[] = {
+    TUD_CONFIG_DESCRIPTOR(1, ITF_TOTAL, 0, CONFIG_LARGO, 0, 100),
+    TUD_CDC_NCM_DESCRIPTOR(ITF_RED, STR_RED, STR_MAC, 0x81, 64, 0x02, 0x82, 64, CFG_TUD_NET_MTU),
+    TUD_HID_DESCRIPTOR(ITF_TECLADO, STR_TECLADO, HID_ITF_PROTOCOL_KEYBOARD, sizeof(informe_teclado), 0x83, 8, 10),
+};
+
+uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) { return informe_teclado; }
+uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type,
+                               uint8_t *buffer, uint16_t reqlen) { return 0; }
+void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type,
+                           uint8_t const *buffer, uint16_t bufsize) {}
 #define MS_OS_20_LARGO     0xB2
 #define BOS_LARGO          (TUD_BOS_DESC_LEN + TUD_BOS_MICROSOFT_OS_DESC_LEN)
 
@@ -120,6 +152,9 @@ static esp_err_t iniciar_red_usb(void)
 {
     const tinyusb_config_t tusb_cfg = {
         .device_descriptor = &descriptor_equipo,
+        .string_descriptor = textos_usb,
+        .string_descriptor_count = STR_TOTAL,
+        .configuration_descriptor = descriptor_config,
         .external_phy = false,
     };
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
@@ -161,13 +196,61 @@ static esp_err_t iniciar_red_usb(void)
     uint8_t sin_router = 0;   // dhcps_offer_t: 0 = no ofrecer router
     esp_netif_dhcps_option(s_netif, ESP_NETIF_OP_SET, ESP_NETIF_ROUTER_SOLICITATION_ADDRESS,
                            &sin_router, sizeof(sin_router));
-    uint32_t arriendo = 1;   // minutos
+    uint32_t arriendo = 120;   // minutos
     esp_netif_dhcps_option(s_netif, ESP_NETIF_OP_SET, IP_ADDRESS_LEASE_TIME,
                            &arriendo, sizeof(arriendo));
 
     esp_netif_action_start(s_netif, 0, 0, 0);
     ESP_LOGI(TAG, "Red USB lista: http://172.29.77.1");
     return ESP_OK;
+}
+
+/* ── Teclado: abre la página sola ─────────────────────────────────────── */
+
+static volatile bool s_pc_con_direccion = false;
+
+static void pc_recibio_direccion(void *arg, esp_event_base_t base, int32_t id, void *datos)
+{
+    s_pc_con_direccion = true;
+}
+
+static void tecla(uint8_t modificador, uint8_t codigo)
+{
+    uint8_t teclas[6] = { codigo, 0, 0, 0, 0, 0 };
+    for (int i = 0; i < 50 && !tud_hid_ready(); i++) vTaskDelay(pdMS_TO_TICKS(2));
+    tud_hid_keyboard_report(0, modificador, teclas);
+    vTaskDelay(pdMS_TO_TICKS(25));
+    for (int i = 0; i < 50 && !tud_hid_ready(); i++) vTaskDelay(pdMS_TO_TICKS(2));
+    tud_hid_keyboard_report(0, 0, NULL);
+    vTaskDelay(pdMS_TO_TICKS(25));
+}
+
+// Solo minúsculas, números, punto y espacio (iguales en teclado español e inglés)
+static void escribir(const char *texto)
+{
+    for (const char *c = texto; *c; c++) {
+        uint8_t k = 0;
+        if (*c >= 'a' && *c <= 'z') k = HID_KEY_A + (*c - 'a');
+        else if (*c >= '1' && *c <= '9') k = HID_KEY_1 + (*c - '1');
+        else if (*c == '0') k = HID_KEY_0;
+        else if (*c == '.') k = HID_KEY_PERIOD;
+        else if (*c == ' ') k = HID_KEY_SPACE;
+        if (k) tecla(0, k);
+    }
+}
+
+static void tarea_abrir_pagina(void *arg)
+{
+    // Espera a que Windows tenga la red de la placa lista
+    while (!(tud_mounted() && s_pc_con_direccion)) vTaskDelay(pdMS_TO_TICKS(200));
+    vTaskDelay(pdMS_TO_TICKS(1500));
+    ESP_LOGI(TAG, "Abriendo la página en el PC");
+    tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);     // Windows + R (Ejecutar)
+    vTaskDelay(pdMS_TO_TICKS(900));
+    escribir("msedge 172.29.77.1");
+    vTaskDelay(pdMS_TO_TICKS(150));
+    tecla(0, HID_KEY_ENTER);
+    vTaskDelete(NULL);
 }
 
 /* ── Página ───────────────────────────────────────────────────────────── */
@@ -209,6 +292,9 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED,
+                                               pc_recibio_direccion, NULL));
     ESP_ERROR_CHECK(iniciar_red_usb());
     iniciar_pagina();
+    xTaskCreate(tarea_abrir_pagina, "abrir_pagina", 4096, NULL, 5, NULL);
 }

@@ -3,6 +3,8 @@ CONFIG_IDF_TARGET="esp32s3"
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 # Red por USB: el PC ve la placa como tarjeta de red (NCM, sin drivers)
 CONFIG_TINYUSB_NET_MODE_NCM=y
+# Teclado USB: abre la página sola al enchufar
+CONFIG_TINYUSB_HID_COUNT=1
 CONFIG_TINYUSB_TASK_AFFINITY_CPU0=y
 CONFIG_TINYUSB_INIT_IN_DEFAULT_TASK=y
 # Mensajes por el puerto "COM" (UART), así el puerto "USB" queda libre para la red
