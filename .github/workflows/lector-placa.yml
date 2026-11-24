@@ -1,0 +1,37 @@
+# Arma el programa de la placa del Lector (ESP32-S3) cada vez que cambia
+# herramientas/lector_placa y lo publica en Releases → "Lector HypokratIA (placa)".
+# Se carga en la placa desde Chrome con https://espressif.github.io/esptool-js/
+name: Lector HypokratIA (placa)
+
+on:
+  push:
+    branches: [main]
+    paths: ["herramientas/lector_placa/**", ".github/workflows/lector-placa.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  placa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilar (ESP-IDF 5.3)
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3.1
+          target: esp32s3
+          path: herramientas/lector_placa
+          command: idf.py build && cd build && esptool.py --chip esp32s3 merge_bin -o lector-placa.bin @flash_args
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lector-placa
+          name: Lector HypokratIA (placa)
+          body: |
+            Programa para la placa ESP32-S3 del Lector. Bajar **lector-placa.bin**.
+            Cargarlo desde Chrome en https://espressif.github.io/esptool-js/ (dirección 0x0),
+            con la placa conectada por su puerto **COM**.
+          files: herramientas/lector_placa/build/lector-placa.bin
+          make_latest: false

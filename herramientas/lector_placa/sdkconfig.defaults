@@ -1,0 +1,9 @@
+# Placa ESP32-S3 N16R8 (16 MB de flash)
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+# Red por USB: el PC ve la placa como tarjeta de red (NCM, sin drivers)
+CONFIG_TINYUSB_NET_MODE_NCM=y
+CONFIG_TINYUSB_TASK_AFFINITY_CPU0=y
+CONFIG_TINYUSB_INIT_IN_DEFAULT_TASK=y
+# Mensajes por el puerto "COM" (UART), así el puerto "USB" queda libre para la red
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
