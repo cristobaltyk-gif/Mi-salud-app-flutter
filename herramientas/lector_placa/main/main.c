@@ -30,6 +30,15 @@
  *   · La ficha vive solo en la memoria de la placa y se borra al terminar.
  *   · La página solo responde por la red USB (172.29.77.1) y con Host/Origin
  *     propios.
+ *
+ * v5: · Escribe mucho más rápido (el teclado informa cada 1 ms): la ventana
+ *       "Ejecutar" apenas parpadea.
+ *     · Se actualiza solo: http://172.29.77.1/actualizar → elegir el
+ *       lector-placa.bin nuevo → listo (sin BOOT, RST ni ESP Tool). Solo
+ *       sin una consulta en curso. Dos espacios de programa (ota_0/ota_1):
+ *       si el nuevo no arranca, vuelve al anterior.
+ *       PENDIENTE antes de vender: aceptar solo programas firmados por
+ *       HypokratIA (firma en GitHub Actions).
  */
 #include <string.h>
 #include <stdlib.h>
@@ -56,6 +65,7 @@
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_hs.h"
 #include "freertos/semphr.h"
+#include "esp_ota_ops.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -120,7 +130,7 @@ static const uint8_t informe_teclado[] = { TUD_HID_REPORT_DESC_KEYBOARD() };
 static const uint8_t descriptor_config[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_TOTAL, 0, CONFIG_LARGO, 0, 100),
     TUD_CDC_NCM_DESCRIPTOR(ITF_RED, STR_RED, STR_MAC, 0x81, 64, 0x02, 0x82, 64, CFG_TUD_NET_MTU),
-    TUD_HID_DESCRIPTOR(ITF_TECLADO, STR_TECLADO, HID_ITF_PROTOCOL_KEYBOARD, sizeof(informe_teclado), 0x83, 8, 10),
+    TUD_HID_DESCRIPTOR(ITF_TECLADO, STR_TECLADO, HID_ITF_PROTOCOL_KEYBOARD, sizeof(informe_teclado), 0x83, 8, 1),
 };
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) { return informe_teclado; }
@@ -232,7 +242,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.0"
+#define VERSION        "placa-1.1"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -247,12 +257,10 @@ static void pc_recibio_direccion(void *arg, esp_event_base_t base, int32_t id, v
 static void tecla(uint8_t modificador, uint8_t codigo)
 {
     uint8_t teclas[6] = { codigo, 0, 0, 0, 0, 0 };
-    for (int i = 0; i < 50 && !tud_hid_ready(); i++) vTaskDelay(pdMS_TO_TICKS(2));
+    for (int i = 0; i < 100 && !tud_hid_ready(); i++) vTaskDelay(1);
     tud_hid_keyboard_report(0, modificador, teclas);
-    vTaskDelay(pdMS_TO_TICKS(20));
-    for (int i = 0; i < 50 && !tud_hid_ready(); i++) vTaskDelay(pdMS_TO_TICKS(2));
+    for (int i = 0; i < 100 && !tud_hid_ready(); i++) vTaskDelay(1);
     tud_hid_keyboard_report(0, 0, NULL);
-    vTaskDelay(pdMS_TO_TICKS(20));
 }
 
 // Solo minúsculas, números, punto y espacio (misma tecla en teclado español e inglés)
@@ -274,9 +282,8 @@ static void tarea_abrir_pagina(void *arg)
     if (s_es_windows) {
         ESP_LOGI(TAG, "Abriendo la página (Windows)");
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);          // Ejecutar
-        vTaskDelay(pdMS_TO_TICKS(700));
+        vTaskDelay(pdMS_TO_TICKS(400));
         escribir("msedge " DIRECCION);
-        vTaskDelay(pdMS_TO_TICKS(100));
         tecla(0, HID_KEY_ENTER);
     } else {
         ESP_LOGI(TAG, "Abriendo la página (Mac)");
@@ -1119,12 +1126,101 @@ static esp_err_t w_idioma(httpd_req_t *req)
     return e;
 }
 
+/* ── Actualizar el lector desde la página ─────────────────────────────── */
+
+static const char PAGINA_ACTUALIZAR[] =
+    "<!doctype html><html lang='es'><head><meta charset='utf-8'><title>Actualizar lector</title>"
+    "<style>body{font-family:system-ui,Segoe UI,sans-serif;background:#f0f4fb;color:#0f235a;display:flex;"
+    "justify-content:center;align-items:center;height:100vh;margin:0}.c{background:#fff;padding:36px 44px;"
+    "border-radius:18px;box-shadow:0 8px 30px #0f235a22;max-width:440px}button{background:#1B3B8C;color:#fff;"
+    "border:0;border-radius:10px;padding:12px 22px;font-size:15px;cursor:pointer}button:disabled{opacity:.5}"
+    "#m{margin-top:14px;font-weight:600}</style></head><body><div class='c'><h2>Actualizar el lector</h2>"
+    "<p>Versión actual: <b>" VERSION "</b></p><p>Elige el archivo <b>lector-placa.bin</b> nuevo.</p>"
+    "<p><input type='file' id='f' accept='.bin'></p><button id='b' onclick='subir()'>Actualizar</button>"
+    "<div id='m'></div></div><script>"
+    "async function subir(){const f=document.getElementById('f').files[0],m=document.getElementById('m'),"
+    "b=document.getElementById('b');if(!f){m.textContent='Elige el archivo primero';return}"
+    "b.disabled=true;m.style.color='#0f235a';m.textContent='Actualizando… no desenchufes el lector';"
+    "try{const r=await fetch('/api/actualizar',{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:f});"
+    "const j=await r.json();if(!r.ok)throw new Error(j.detail||'Error');m.style.color='#16a34a';"
+    "m.textContent='✓ Listo. El lector se reinicia en unos segundos.'}catch(e){m.style.color='#dc2626';"
+    "m.textContent=e.message;b.disabled=false}}</script></body></html>";
+
+static esp_err_t w_actualizar_pagina(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    httpd_resp_set_type(req, "text/html; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_set_hdr(req, "X-Frame-Options", "DENY");
+    return httpd_resp_send(req, PAGINA_ACTUALIZAR, HTTPD_RESP_USE_STRLEN);
+}
+
+static void tarea_reiniciar(void *arg)
+{
+    vTaskDelay(pdMS_TO_TICKS(1500));
+    esp_restart();
+}
+
+static esp_err_t w_actualizar(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    if (S.estado != E_NINGUNA) return error(req, "409 Conflict", "Hay una consulta en curso; termínala antes de actualizar");
+    const esp_partition_t *destino = esp_ota_get_next_update_partition(NULL);
+    if (!destino) return error(req, "500 Internal Server Error", "El lector no tiene espacio para actualizarse");
+    if (req->content_len < 64 * 1024 || req->content_len > destino->size + 0x20000)
+        return error(req, "400 Bad Request", "Ese archivo no es un programa del lector");
+    esp_ota_handle_t ota;
+    if (esp_ota_begin(destino, OTA_WITH_SEQUENTIAL_WRITES, &ota) != ESP_OK)
+        return error(req, "500 Internal Server Error", "No se pudo empezar la actualización");
+    // Sirve el .bin completo de Releases (arranque + tabla + programa desde 0x20000)
+    // o solo el programa: se reconoce por la tabla de particiones en 0x8000.
+    const size_t CABEZA = 0x8002, PROGRAMA = 0x20000;
+    uint8_t *buf = malloc(CABEZA);
+    if (!buf) { esp_ota_abort(ota); return error(req, "500 Internal Server Error", "Sin memoria"); }
+    size_t total = req->content_len, leido = 0, saltar = 0;
+    bool ok = true;
+    size_t primero = total < CABEZA ? total : CABEZA;
+    while (leido < primero) {
+        int r = httpd_req_recv(req, (char *)buf + leido, primero - leido);
+        if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+        if (r <= 0) { ok = false; break; }
+        leido += r;
+    }
+    if (ok) {
+        bool completo = total > PROGRAMA && buf[0] == 0xE9 && buf[0x8000] == 0xAA && buf[0x8001] == 0x50;
+        if (completo) saltar = PROGRAMA;
+        else if (esp_ota_write(ota, buf, leido) != ESP_OK) ok = false;
+    }
+    while (ok && leido < total) {
+        int r = httpd_req_recv(req, (char *)buf, 4096);
+        if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+        if (r <= 0) { ok = false; break; }
+        if (leido + r > saltar) {
+            size_t desde = leido < saltar ? saltar - leido : 0;
+            if (esp_ota_write(ota, buf + desde, r - desde) != ESP_OK) ok = false;
+        }
+        leido += r;
+    }
+    free(buf);
+    if (!ok) {
+        esp_ota_abort(ota);
+        return error(req, "400 Bad Request", "La actualización se interrumpió; el lector sigue con su versión actual");
+    }
+    if (esp_ota_end(ota) != ESP_OK || esp_ota_set_boot_partition(destino) != ESP_OK)
+        return error(req, "400 Bad Request", "Ese archivo no es un programa válido del lector");
+    ESP_LOGI(TAG, "Actualización lista; reiniciando");
+    responder(req, "200 OK", "{\"ok\":true}");
+    xTaskCreate(tarea_reiniciar, "reiniciar", 2048, NULL, 5, NULL);
+    return ESP_OK;
+}
+
 static void iniciar_pagina(void)
 {
     httpd_handle_t srv = NULL;
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.stack_size = 12288;
-    cfg.max_uri_handlers = 12;
+    cfg.max_uri_handlers = 14;
+    cfg.recv_wait_timeout = 30;
     cfg.lru_purge_enable = true;
     cfg.send_wait_timeout = 30;
     ESP_ERROR_CHECK(httpd_start(&srv, &cfg));
@@ -1137,6 +1233,8 @@ static void iniciar_pagina(void)
         { .uri = "/api/identificar", .method = HTTP_POST, .handler = w_identificar },
         { .uri = "/api/nota",        .method = HTTP_POST, .handler = w_nota },
         { .uri = "/api/idioma",      .method = HTTP_POST, .handler = w_idioma },
+        { .uri = "/actualizar",      .method = HTTP_GET,  .handler = w_actualizar_pagina },
+        { .uri = "/api/actualizar",  .method = HTTP_POST, .handler = w_actualizar },
     };
     for (size_t i = 0; i < sizeof(rutas) / sizeof(rutas[0]); i++) httpd_register_uri_handler(srv, &rutas[i]);
 }
@@ -1165,5 +1263,6 @@ void app_main(void)
     ESP_ERROR_CHECK(nimble_port_init());
     ble_hs_cfg.sync_cb = al_sincronizar;
     nimble_port_freertos_init(tarea_bluetooth);
+    esp_ota_mark_app_valid_cancel_rollback();   // arrancó bien: se queda con esta versión
     ESP_LOGI(TAG, "Lector HypokratIA %s listo", VERSION);
 }
