@@ -15,16 +15,25 @@
  * normal (si lo tiene) y solo habla con la placa en 172.29.77.x.
  *
  * Basado en el ejemplo de Espressif examples/network/sta2eth (usb_ncm_iface.c).
- * v3: la página se abre sola. La placa además es un teclado USB: cuando el PC
- * recibe su dirección, escribe Windows+R → "msedge 172.29.77.1" → Enter.
- * Se usa Edge porque viene en todo Windows 10/11, y solo letras, números,
- * punto y espacio, que están en la misma tecla en teclados español e inglés.
- * Se abre una sola vez por enchufada (al desenchufar la placa se apaga).
+ * v3: la placa además es un teclado USB que abre la página sola.
  *
- * Siguiente prueba: Bluetooth con la app.
+ * v4 (Lector completo, igual al Lector del PC 1.4, la app no cambia):
+ *   · El lector queda siempre enchufado, sin ninguna página abierta.
+ *   · Busca por Bluetooth los teléfonos que comparten su ficha ("HypokratIA"),
+ *     se conecta solo (sin emparejar), intercambia llaves X25519 y todo va
+ *     cifrado con AES-256-GCM (mismo protocolo que herramientas/lector_pc).
+ *   · Cuando el paciente comparte, el lector abre solo la página de atención
+ *     (la misma atencion.html del Lector del PC): en Windows con Windows+R →
+ *     "msedge 172.29.77.1"; en Mac con Cmd+Espacio → Safari. Si la página ya
+ *     está abierta, no escribe nada (la página cambia sola).
+ *   · Código de 4 números en teléfono y página; el médico toca Aceptar.
+ *   · La ficha vive solo en la memoria de la placa y se borra al terminar.
+ *   · La página solo responde por la red USB (172.29.77.1) y con Host/Origin
+ *     propios.
  */
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "esp_log.h"
 #include "esp_event.h"
 #include "esp_netif.h"
@@ -35,6 +44,18 @@
 #include "dhcpserver/dhcpserver_options.h"
 #include "lwip/esp_netif_net_stack.h"
 #include "tusb.h"
+#include "esp_random.h"
+#include "esp_timer.h"
+#include "cJSON.h"
+#include "mbedtls/ecdh.h"
+#include "mbedtls/hkdf.h"
+#include "mbedtls/gcm.h"
+#include "mbedtls/base64.h"
+#include "mbedtls/md.h"
+#include "nimble/nimble_port.h"
+#include "nimble/nimble_port_freertos.h"
+#include "host/ble_hs.h"
+#include "freertos/semphr.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -139,10 +160,14 @@ static const uint8_t descriptor_ms_os_20[] = {
 };
 _Static_assert(sizeof(descriptor_ms_os_20) == MS_OS_20_LARGO, "largo MS OS 2.0");
 
+// Solo Windows pide este descriptor: así el lector sabe qué atajo usar para abrir la página
+static volatile bool s_es_windows = false;
+
 bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *req)
 {
     if (stage != CONTROL_STAGE_SETUP) return true;
     if (req->bmRequestType_bit.type == TUSB_REQ_TYPE_VENDOR && req->bRequest == 1 && req->wIndex == 7) {
+        s_es_windows = true;
         return tud_control_xfer(rhport, req, (void *)(uintptr_t)descriptor_ms_os_20, MS_OS_20_LARGO);
     }
     return false;
@@ -207,7 +232,12 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
+#define VERSION        "placa-1.0"
+#define DIRECCION      "172.29.77.1"
+
 static volatile bool s_pc_con_direccion = false;
+static volatile int64_t s_ultimo_sondeo = 0;     // la página abierta consulta /api/estado cada 1 s
+static volatile bool s_abriendo = false;
 
 static void pc_recibio_direccion(void *arg, esp_event_base_t base, int32_t id, void *datos)
 {
@@ -219,13 +249,13 @@ static void tecla(uint8_t modificador, uint8_t codigo)
     uint8_t teclas[6] = { codigo, 0, 0, 0, 0, 0 };
     for (int i = 0; i < 50 && !tud_hid_ready(); i++) vTaskDelay(pdMS_TO_TICKS(2));
     tud_hid_keyboard_report(0, modificador, teclas);
-    vTaskDelay(pdMS_TO_TICKS(25));
+    vTaskDelay(pdMS_TO_TICKS(20));
     for (int i = 0; i < 50 && !tud_hid_ready(); i++) vTaskDelay(pdMS_TO_TICKS(2));
     tud_hid_keyboard_report(0, 0, NULL);
-    vTaskDelay(pdMS_TO_TICKS(25));
+    vTaskDelay(pdMS_TO_TICKS(20));
 }
 
-// Solo minúsculas, números, punto y espacio (iguales en teclado español e inglés)
+// Solo minúsculas, números, punto y espacio (misma tecla en teclado español e inglés)
 static void escribir(const char *texto)
 {
     for (const char *c = texto; *c; c++) {
@@ -241,46 +271,874 @@ static void escribir(const char *texto)
 
 static void tarea_abrir_pagina(void *arg)
 {
-    // Espera a que Windows tenga la red de la placa lista
-    while (!(tud_mounted() && s_pc_con_direccion)) vTaskDelay(pdMS_TO_TICKS(200));
-    vTaskDelay(pdMS_TO_TICKS(1500));
-    ESP_LOGI(TAG, "Abriendo la página en el PC");
-    tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);     // Windows + R (Ejecutar)
-    vTaskDelay(pdMS_TO_TICKS(900));
-    escribir("msedge 172.29.77.1");
-    vTaskDelay(pdMS_TO_TICKS(150));
-    tecla(0, HID_KEY_ENTER);
+    if (s_es_windows) {
+        ESP_LOGI(TAG, "Abriendo la página (Windows)");
+        tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);          // Ejecutar
+        vTaskDelay(pdMS_TO_TICKS(700));
+        escribir("msedge " DIRECCION);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        tecla(0, HID_KEY_ENTER);
+    } else {
+        ESP_LOGI(TAG, "Abriendo la página (Mac)");
+        tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_SPACE);      // Spotlight
+        vTaskDelay(pdMS_TO_TICKS(700));
+        escribir("safari");
+        vTaskDelay(pdMS_TO_TICKS(300));
+        tecla(0, HID_KEY_ENTER);
+        vTaskDelay(pdMS_TO_TICKS(2500));
+        tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_N);          // ventana nueva (dirección lista para escribir)
+        vTaskDelay(pdMS_TO_TICKS(800));
+        escribir(DIRECCION);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        tecla(0, HID_KEY_ENTER);
+    }
+    s_abriendo = false;
     vTaskDelete(NULL);
 }
 
-/* ── Página ───────────────────────────────────────────────────────────── */
-
-static const char PAGINA[] =
-    "<!doctype html><html lang='es'><head><meta charset='utf-8'>"
-    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-    "<title>Lector HypokratIA</title>"
-    "<style>body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:#f0f4fb;"
-    "display:flex;align-items:center;justify-content:center;height:100vh;color:#0f235a}"
-    ".c{background:#fff;padding:40px 48px;border-radius:18px;box-shadow:0 8px 30px #0f235a22;text-align:center}"
-    "h1{margin:0 0 8px}p{color:#334155;margin:6px 0}.ok{color:#16a34a;font-weight:700}</style>"
-    "</head><body><div class='c'><h1>Hola HypokratIA</h1>"
-    "<p class='ok'>✓ El lector está conectado a este computador por USB</p>"
-    "<p>Sin internet, sin programas y sin drivers.</p></div></body></html>";
-
-static esp_err_t pagina_inicio(httpd_req_t *req)
+// Se llama cuando un paciente comparte su ficha
+static void abrir_pagina(void)
 {
+    bool pagina_abierta = (esp_timer_get_time() - s_ultimo_sondeo) < 4000000;
+    if (pagina_abierta || s_abriendo) return;                 // la página cambia sola
+    if (!tud_mounted() || !s_pc_con_direccion) {
+        ESP_LOGW(TAG, "El PC todavía no tiene la red del lector");
+        return;
+    }
+    s_abriendo = true;
+    xTaskCreate(tarea_abrir_pagina, "abrir_pagina", 4096, NULL, 5, NULL);
+}
+
+/* ── Cifrado (igual que lector_pc/lector.py) ─────────────────────────── */
+
+static const uint8_t SAL[] = "hipokratia-lector-1";      // sin el 0 final
+#define SAL_LARGO (sizeof(SAL) - 1)
+
+static int azar(void *p, unsigned char *buf, size_t n) { esp_fill_random(buf, n); return 0; }
+
+static char *b64(const uint8_t *d, size_t n)
+{
+    size_t largo = 0;
+    mbedtls_base64_encode(NULL, 0, &largo, d, n);
+    char *out = malloc(largo + 1);
+    if (!out) return NULL;
+    mbedtls_base64_encode((unsigned char *)out, largo + 1, &largo, d, n);
+    out[largo] = 0;
+    return out;
+}
+
+static uint8_t *de_b64(const char *t, size_t *n)
+{
+    size_t largo = 0;
+    mbedtls_base64_decode(NULL, 0, &largo, (const unsigned char *)t, strlen(t));
+    uint8_t *out = malloc(largo ? largo : 1);
+    if (!out) return NULL;
+    if (mbedtls_base64_decode(out, largo, n, (const unsigned char *)t, strlen(t)) != 0) { free(out); return NULL; }
+    return out;
+}
+
+/* ── La consulta (una a la vez) ──────────────────────────────────────── */
+
+typedef enum { E_NINGUNA = 0, E_HANDSHAKE, E_SOLICITUD, E_ACEPTADA, E_ACTIVA } estado_t;
+static const char *NOMBRE_ESTADO[] = { "espera", "espera", "solicitud", "aceptada", "activa" };
+
+static struct {
+    estado_t estado;
+    uint16_t conn;
+    mbedtls_ecp_group grupo;
+    mbedtls_mpi privada;
+    mbedtls_ecp_point publica;
+    uint8_t clave[32];
+    bool con_clave;
+    char codigo[5];
+    char paciente[96];
+    char *ficha;              // JSON de la ficha (solo en memoria)
+    bool nota_guardada;       // una atención por consulta
+    int sec;
+    int esperando;            // número de la confirmación que se espera
+    cJSON *respuesta;
+} S;
+
+static SemaphoreHandle_t g_mutex, g_resp, g_tx, g_escrito;
+static volatile int g_escrito_estado;
+static uint16_t g_rx_handle, g_tx_handle;
+
+static void terminar_sesion(bool desconectar);
+
+/* Envío por Bluetooth: [4 bytes largo][JSON], en trozos del tamaño que permite el enlace */
+static int al_escribir(uint16_t conn, const struct ble_gatt_error *err, struct ble_gatt_attr *attr, void *arg)
+{
+    g_escrito_estado = err->status;
+    xSemaphoreGive(g_escrito);
+    return 0;
+}
+
+static esp_err_t enviar_bytes(const char *json)
+{
+    size_t n = strlen(json);
+    uint8_t *trama = malloc(n + 4);
+    if (!trama) return ESP_ERR_NO_MEM;
+    trama[0] = n >> 24; trama[1] = n >> 16; trama[2] = n >> 8; trama[3] = n;
+    memcpy(trama + 4, json, n);
+    esp_err_t r = ESP_OK;
+    xSemaphoreTake(g_tx, portMAX_DELAY);
+    uint16_t conn = S.conn;
+    int trozo = ble_att_mtu(conn) - 3;
+    if (trozo > 500) trozo = 500;
+    if (trozo < 20) trozo = 20;
+    for (size_t i = 0; i < n + 4 && r == ESP_OK; i += trozo) {
+        size_t t = (n + 4 - i) < (size_t)trozo ? (n + 4 - i) : (size_t)trozo;
+        xSemaphoreTake(g_escrito, 0);
+        if (ble_gattc_write_flat(conn, g_rx_handle, trama + i, t, al_escribir, NULL) != 0) { r = ESP_FAIL; break; }
+        if (xSemaphoreTake(g_escrito, pdMS_TO_TICKS(10000)) != pdTRUE || g_escrito_estado != 0) r = ESP_FAIL;
+    }
+    xSemaphoreGive(g_tx);
+    free(trama);
+    return r;
+}
+
+static esp_err_t enviar_plano(cJSON *obj)
+{
+    char *j = cJSON_PrintUnformatted(obj);
+    if (!j) return ESP_ERR_NO_MEM;
+    esp_err_t r = enviar_bytes(j);
+    free(j);
+    return r;
+}
+
+static esp_err_t enviar_cifrado(cJSON *obj)
+{
+    char *j = cJSON_PrintUnformatted(obj);
+    if (!j) return ESP_ERR_NO_MEM;
+    size_t n = strlen(j);
+    uint8_t *caja = malloc(12 + n + 16);
+    if (!caja) { free(j); return ESP_ERR_NO_MEM; }
+    esp_fill_random(caja, 12);
+    mbedtls_gcm_context g;
+    mbedtls_gcm_init(&g);
+    mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, S.clave, 256);
+    int e = mbedtls_gcm_crypt_and_tag(&g, MBEDTLS_GCM_ENCRYPT, n, caja, 12, NULL, 0,
+                                      (const uint8_t *)j, caja + 12, 16, caja + 12 + n);
+    mbedtls_gcm_free(&g);
+    free(j);
+    if (e) { free(caja); return ESP_FAIL; }
+    char *t = b64(caja, 12 + n + 16);
+    free(caja);
+    if (!t) return ESP_ERR_NO_MEM;
+    cJSON *env = cJSON_CreateObject();
+    cJSON_AddStringToObject(env, "e", t);
+    free(t);
+    esp_err_t r = enviar_plano(env);
+    cJSON_Delete(env);
+    return r;
+}
+
+static cJSON *descifrar(cJSON *obj)
+{
+    cJSON *e = cJSON_GetObjectItem(obj, "e");
+    if (!cJSON_IsString(e)) return NULL;
+    size_t n = 0;
+    uint8_t *caja = de_b64(e->valuestring, &n);
+    if (!caja || n < 12 + 16) { free(caja); return NULL; }
+    size_t largo = n - 12 - 16;
+    char *plano = malloc(largo + 1);
+    if (!plano) { free(caja); return NULL; }
+    mbedtls_gcm_context g;
+    mbedtls_gcm_init(&g);
+    mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, S.clave, 256);
+    int r = mbedtls_gcm_auth_decrypt(&g, largo, caja, 12, NULL, 0, caja + 12 + largo, 16,
+                                     caja + 12, (uint8_t *)plano);
+    mbedtls_gcm_free(&g);
+    free(caja);
+    if (r) { free(plano); return NULL; }
+    plano[largo] = 0;
+    cJSON *m = cJSON_Parse(plano);
+    free(plano);
+    return m;
+}
+
+static void derivar(const uint8_t secreto[32], const char *info, const uint8_t *pub_tel,
+                    const uint8_t *pub_pc, uint8_t *out, size_t largo)
+{
+    uint8_t i[16 + 64];
+    size_t ni = strlen(info);
+    memcpy(i, info, ni);
+    memcpy(i + ni, pub_tel, 32);
+    memcpy(i + ni + 32, pub_pc, 32);
+    mbedtls_hkdf(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), SAL, SAL_LARGO, secreto, 32,
+                 i, ni + 64, out, largo);
+}
+
+/* El teléfono saluda: intercambio de llaves y código de 4 números */
+static void saludo(cJSON *obj)
+{
+    cJSON *pub = cJSON_GetObjectItem(obj, "pub");
+    if (!cJSON_IsString(pub)) return;
+    size_t n = 0;
+    uint8_t *pub_tel = de_b64(pub->valuestring, &n);
+    if (!pub_tel || n != 32) { free(pub_tel); return; }
+
+    uint8_t pub_pc[32], secreto[32];
+    size_t olen = 0;
+    mbedtls_ecp_point q_tel;
+    mbedtls_mpi z;
+    mbedtls_ecp_point_init(&q_tel);
+    mbedtls_mpi_init(&z);
+    int e = mbedtls_ecp_point_write_binary(&S.grupo, &S.publica, MBEDTLS_ECP_PF_UNCOMPRESSED, &olen, pub_pc, 32);
+    if (!e) e = mbedtls_ecp_point_read_binary(&S.grupo, &q_tel, pub_tel, 32);
+    if (!e) e = mbedtls_ecdh_compute_shared(&S.grupo, &z, &q_tel, &S.privada, azar, NULL);
+    if (!e) e = mbedtls_mpi_write_binary_le(&z, secreto, 32);
+    mbedtls_ecp_point_free(&q_tel);
+    mbedtls_mpi_free(&z);
+    if (e) { ESP_LOGE(TAG, "Intercambio de llaves falló (%d)", e); free(pub_tel); return; }
+
+    uint8_t cod[4];
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    derivar(secreto, "clave", pub_tel, pub_pc, S.clave, 32);
+    derivar(secreto, "codigo", pub_tel, pub_pc, cod, 4);
+    uint32_t c = ((uint32_t)cod[0] << 24 | cod[1] << 16 | cod[2] << 8 | cod[3]) % 10000;
+    snprintf(S.codigo, sizeof(S.codigo), "%04lu", (unsigned long)c);
+    cJSON *nom = cJSON_GetObjectItem(obj, "nombre");
+    const char *nombre = cJSON_IsString(nom) ? nom->valuestring : "";
+    size_t ln = strnlen(nombre, sizeof(S.paciente) - 1);
+    while (ln > 0 && (((uint8_t)nombre[ln]) & 0xC0) == 0x80) ln--;   // no cortar una letra
+    memcpy(S.paciente, nombre, ln);
+    S.paciente[ln] = 0;
+    xSemaphoreGive(g_mutex);
+    memset(secreto, 0, sizeof(secreto));
+    free(pub_tel);
+
+    cJSON *r = cJSON_CreateObject();
+    char *t = b64(pub_pc, 32);
+    cJSON_AddStringToObject(r, "tipo", "hola");
+    cJSON_AddStringToObject(r, "pub", t ? t : "");
+    cJSON_AddStringToObject(r, "equipo", "Lector HypokratIA");
+    cJSON_AddStringToObject(r, "version", VERSION);
+    free(t);
+    enviar_plano(r);
+    cJSON_Delete(r);
+
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    S.con_clave = true;
+    S.estado = E_SOLICITUD;
+    xSemaphoreGive(g_mutex);
+    ESP_LOGI(TAG, "Solicitud de un paciente · código %s", S.codigo);
+    abrir_pagina();
+}
+
+static void recibir(const char *raw)
+{
+    cJSON *obj = cJSON_Parse(raw);
+    if (!obj) return;
+    if (!S.con_clave) {
+        cJSON *tipo = cJSON_GetObjectItem(obj, "tipo");
+        if (cJSON_IsString(tipo) && strcmp(tipo->valuestring, "hola") == 0 && S.estado == E_HANDSHAKE) saludo(obj);
+        cJSON_Delete(obj);
+        return;
+    }
+    cJSON *m = descifrar(obj);
+    cJSON_Delete(obj);
+    if (!m) { ESP_LOGW(TAG, "Mensaje que no se pudo descifrar"); return; }
+    cJSON *tipo = cJSON_GetObjectItem(m, "tipo");
+    const char *t = cJSON_IsString(tipo) ? tipo->valuestring : "";
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    if (strcmp(t, "ficha") == 0 && S.estado == E_ACEPTADA) {
+        cJSON *f = cJSON_GetObjectItem(m, "ficha");
+        free(S.ficha);
+        S.ficha = cJSON_IsObject(f) ? cJSON_PrintUnformatted(f) : strdup("{}");
+        S.estado = E_ACTIVA;
+        ESP_LOGI(TAG, "Ficha recibida (%u bytes)", S.ficha ? (unsigned)strlen(S.ficha) : 0);
+    } else if (strcmp(t, "ok") == 0) {
+        cJSON *n = cJSON_GetObjectItem(m, "n");
+        if (cJSON_IsNumber(n) && n->valueint == S.esperando && S.esperando) {
+            S.respuesta = m;
+            m = NULL;
+            xSemaphoreGive(g_resp);
+        }
+    } else if (strcmp(t, "fin") == 0) {
+        xSemaphoreGive(g_mutex);
+        ESP_LOGI(TAG, "El paciente terminó la consulta");
+        terminar_sesion(true);
+        cJSON_Delete(m);
+        return;
+    }
+    xSemaphoreGive(g_mutex);
+    cJSON_Delete(m);
+}
+
+/* Envía y espera la confirmación del teléfono (notas, accesos, idioma) */
+static cJSON *pedir(cJSON *obj, int segundos)
+{
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    if (S.estado == E_NINGUNA) { xSemaphoreGive(g_mutex); return NULL; }
+    int n = ++S.sec;
+    S.esperando = n;
+    cJSON_Delete(S.respuesta);
+    S.respuesta = NULL;
+    xSemaphoreTake(g_resp, 0);
+    xSemaphoreGive(g_mutex);
+    cJSON_AddNumberToObject(obj, "n", n);
+    cJSON *r = NULL;
+    if (enviar_cifrado(obj) == ESP_OK && xSemaphoreTake(g_resp, pdMS_TO_TICKS(segundos * 1000)) == pdTRUE) {
+        xSemaphoreTake(g_mutex, portMAX_DELAY);
+        r = S.respuesta;
+        S.respuesta = NULL;
+        xSemaphoreGive(g_mutex);
+    }
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    S.esperando = 0;
+    xSemaphoreGive(g_mutex);
+    return r;
+}
+
+static void nueva_sesion(uint16_t conn)
+{
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    S.estado = E_HANDSHAKE;
+    S.conn = conn;
+    S.con_clave = false;
+    S.nota_guardada = false;
+    S.codigo[0] = S.paciente[0] = 0;
+    S.sec = S.esperando = 0;
+    mbedtls_ecp_group_init(&S.grupo);
+    mbedtls_mpi_init(&S.privada);
+    mbedtls_ecp_point_init(&S.publica);
+    mbedtls_ecp_group_load(&S.grupo, MBEDTLS_ECP_DP_CURVE25519);
+    mbedtls_ecp_gen_keypair(&S.grupo, &S.privada, &S.publica, azar, NULL);
+    xSemaphoreGive(g_mutex);
+}
+
+static void terminar_sesion(bool desconectar)
+{
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    if (S.estado == E_NINGUNA) { xSemaphoreGive(g_mutex); return; }
+    uint16_t conn = S.conn;
+    if (S.ficha) {                                            // la ficha sale de la memoria
+        memset(S.ficha, 0, strlen(S.ficha));
+        free(S.ficha);
+        S.ficha = NULL;
+    }
+    memset(S.clave, 0, sizeof(S.clave));
+    mbedtls_ecp_group_free(&S.grupo);
+    mbedtls_mpi_free(&S.privada);
+    mbedtls_ecp_point_free(&S.publica);
+    S.estado = E_NINGUNA;
+    S.con_clave = false;
+    if (S.esperando) xSemaphoreGive(g_resp);                  // libera a quien espera
+    xSemaphoreGive(g_mutex);
+    if (desconectar) ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
+    ESP_LOGI(TAG, "Consulta terminada; ficha borrada");
+}
+
+/* ── Bluetooth: el TELÉFONO se anuncia ("HypokratIA") y el lector lo busca ── */
+
+static const ble_uuid128_t SERVICIO = BLE_UUID128_INIT(0x01, 0xb0, 0x46, 0x50, 0x49, 0x48, 0x0e, 0x9d,
+                                                       0x39, 0x4c, 0x1f, 0x6b, 0x01, 0x00, 0x8a, 0x6e);
+static const ble_uuid128_t CARACT_RX = BLE_UUID128_INIT(0x01, 0xb0, 0x46, 0x50, 0x49, 0x48, 0x0e, 0x9d,
+                                                        0x39, 0x4c, 0x1f, 0x6b, 0x02, 0x00, 0x8a, 0x6e);
+static const ble_uuid128_t CARACT_TX = BLE_UUID128_INIT(0x01, 0xb0, 0x46, 0x50, 0x49, 0x48, 0x0e, 0x9d,
+                                                        0x39, 0x4c, 0x1f, 0x6b, 0x03, 0x00, 0x8a, 0x6e);
+
+static uint8_t s_tipo_dir;
+static uint16_t s_fin_servicio;
+static ble_addr_t s_ultimo;              // teléfono recién atendido: no reconectar por 15 s
+static int64_t s_ultimo_hasta = 0;
+
+/* Lo que llega del teléfono se junta aquí y lo procesa tarea_procesar */
+static SemaphoreHandle_t g_rx_mutex;
+static uint8_t *g_rx = NULL;
+static size_t g_rx_largo = 0, g_rx_cap = 0;
+static TaskHandle_t g_procesador;
+
+static void buscar(void);
+static int evento_gap(struct ble_gap_event *ev, void *arg);
+
+static void tarea_procesar(void *arg)
+{
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        for (;;) {
+            char *msg = NULL;
+            xSemaphoreTake(g_rx_mutex, portMAX_DELAY);
+            if (g_rx_largo >= 4) {
+                uint32_t n = (uint32_t)g_rx[0] << 24 | g_rx[1] << 16 | g_rx[2] << 8 | g_rx[3];
+                if (n > 8 * 1024 * 1024) {
+                    g_rx_largo = 0;
+                } else if (g_rx_largo >= 4 + n) {
+                    msg = malloc(n + 1);
+                    if (msg) { memcpy(msg, g_rx + 4, n); msg[n] = 0; }
+                    memmove(g_rx, g_rx + 4 + n, g_rx_largo - 4 - n);
+                    g_rx_largo -= 4 + n;
+                }
+            }
+            xSemaphoreGive(g_rx_mutex);
+            if (!msg) break;
+            recibir(msg);
+            free(msg);
+        }
+    }
+}
+
+static void agregar_rx(const struct os_mbuf *om)
+{
+    uint16_t n = OS_MBUF_PKTLEN(om);
+    xSemaphoreTake(g_rx_mutex, portMAX_DELAY);
+    if (g_rx_largo + n > g_rx_cap) {
+        size_t cap = g_rx_cap ? g_rx_cap * 2 : 4096;
+        while (cap < g_rx_largo + n) cap *= 2;
+        uint8_t *nuevo = realloc(g_rx, cap);
+        if (!nuevo) { xSemaphoreGive(g_rx_mutex); return; }
+        g_rx = nuevo;
+        g_rx_cap = cap;
+    }
+    uint16_t copiado = 0;
+    ble_hs_mbuf_to_flat(om, g_rx + g_rx_largo, n, &copiado);
+    g_rx_largo += copiado;
+    xSemaphoreGive(g_rx_mutex);
+    xTaskNotifyGive(g_procesador);
+}
+
+static int al_suscribir(uint16_t conn, const struct ble_gatt_error *err, struct ble_gatt_attr *attr, void *arg)
+{
+    if (err->status != 0) { ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM); return 0; }
+    ESP_LOGI(TAG, "Teléfono conectado por Bluetooth; esperando su saludo");
+    return 0;
+}
+
+static int al_descriptor(uint16_t conn, const struct ble_gatt_error *err, uint16_t chr_val,
+                         const struct ble_gatt_dsc *dsc, void *arg)
+{
+    static uint16_t cccd = 0;
+    if (err->status == 0 && dsc && ble_uuid_cmp(&dsc->uuid.u, BLE_UUID16_DECLARE(BLE_GATT_DSC_CLT_CFG_UUID16)) == 0) {
+        cccd = dsc->handle;
+    } else if (err->status == BLE_HS_EDONE) {
+        if (!cccd) { ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM); return 0; }
+        static const uint8_t activar[2] = { 0x01, 0x00 };   // notificaciones
+        ble_gattc_write_flat(conn, cccd, activar, 2, al_suscribir, NULL);
+        cccd = 0;
+    } else if (err->status != 0) {
+        ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
+    }
+    return 0;
+}
+
+static int al_caracteristica(uint16_t conn, const struct ble_gatt_error *err, const struct ble_gatt_chr *chr, void *arg)
+{
+    if (err->status == 0 && chr) {
+        if (ble_uuid_cmp(&chr->uuid.u, &CARACT_RX.u) == 0) g_rx_handle = chr->val_handle;
+        if (ble_uuid_cmp(&chr->uuid.u, &CARACT_TX.u) == 0) g_tx_handle = chr->val_handle;
+    } else if (err->status == BLE_HS_EDONE) {
+        if (!g_rx_handle || !g_tx_handle) { ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM); return 0; }
+        ble_gattc_disc_all_dscs(conn, g_tx_handle, s_fin_servicio, al_descriptor, NULL);
+    } else if (err->status != 0) {
+        ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
+    }
+    return 0;
+}
+
+static int al_servicio(uint16_t conn, const struct ble_gatt_error *err, const struct ble_gatt_svc *svc, void *arg)
+{
+    static uint16_t inicio = 0;
+    if (err->status == 0 && svc) {
+        inicio = svc->start_handle;
+        s_fin_servicio = svc->end_handle;
+    } else if (err->status == BLE_HS_EDONE && inicio) {
+        g_rx_handle = g_tx_handle = 0;
+        ble_gattc_disc_all_chrs(conn, inicio, s_fin_servicio, al_caracteristica, NULL);
+        inicio = 0;
+    } else {
+        ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
+    }
+    return 0;
+}
+
+static int al_mtu(uint16_t conn, const struct ble_gatt_error *err, uint16_t mtu, void *arg)
+{
+    ble_gattc_disc_svc_by_uuid(conn, &SERVICIO.u, al_servicio, NULL);
+    return 0;
+}
+
+static bool anuncia_hipokratia(const struct ble_gap_disc_desc *d)
+{
+    struct ble_hs_adv_fields f;
+    if (ble_hs_adv_parse_fields(&f, d->data, d->length_data) != 0) return false;
+    for (int i = 0; i < f.num_uuids128; i++) {
+        if (ble_uuid_cmp(&f.uuids128[i].u, &SERVICIO.u) == 0) return true;
+    }
+    return false;
+}
+
+static int evento_gap(struct ble_gap_event *ev, void *arg)
+{
+    switch (ev->type) {
+    case BLE_GAP_EVENT_DISC:
+        if (S.estado != E_NINGUNA || !anuncia_hipokratia(&ev->disc)) return 0;
+        if (esp_timer_get_time() < s_ultimo_hasta && ble_addr_cmp(&ev->disc.addr, &s_ultimo) == 0) return 0;
+        ble_gap_disc_cancel();
+        s_ultimo = ev->disc.addr;
+        if (ble_gap_connect(s_tipo_dir, &ev->disc.addr, 15000, NULL, evento_gap, NULL) != 0) buscar();
+        return 0;
+    case BLE_GAP_EVENT_DISC_COMPLETE:
+        if (S.estado == E_NINGUNA) buscar();
+        return 0;
+    case BLE_GAP_EVENT_CONNECT:
+        if (ev->connect.status != 0) { buscar(); return 0; }
+        nueva_sesion(ev->connect.conn_handle);
+        ble_gattc_exchange_mtu(ev->connect.conn_handle, al_mtu, NULL);
+        return 0;
+    case BLE_GAP_EVENT_DISCONNECT:
+        ESP_LOGI(TAG, "Bluetooth desconectado");
+        terminar_sesion(false);
+        s_ultimo_hasta = esp_timer_get_time() + 15000000;
+        xSemaphoreTake(g_rx_mutex, portMAX_DELAY);
+        g_rx_largo = 0;
+        xSemaphoreGive(g_rx_mutex);
+        buscar();
+        return 0;
+    case BLE_GAP_EVENT_NOTIFY_RX:
+        if (ev->notify_rx.attr_handle == g_tx_handle) agregar_rx(ev->notify_rx.om);
+        return 0;
+    default:
+        return 0;
+    }
+}
+
+static void buscar(void)
+{
+    struct ble_gap_disc_params p = { .passive = 0, .filter_duplicates = 0, .itvl = 0x50, .window = 0x30 };
+    int r = ble_gap_disc(s_tipo_dir, BLE_HS_FOREVER, &p, evento_gap, NULL);
+    if (r != 0 && r != BLE_HS_EALREADY) ESP_LOGW(TAG, "No se pudo buscar por Bluetooth (%d)", r);
+}
+
+static void al_sincronizar(void)
+{
+    ble_hs_id_infer_auto(0, &s_tipo_dir);
+    ESP_LOGI(TAG, "Bluetooth listo: buscando teléfonos con HypokratIA cerca");
+    buscar();
+}
+
+static void tarea_bluetooth(void *arg)
+{
+    nimble_port_run();
+    nimble_port_freertos_deinit();
+}
+
+/* ── Página para el médico (solo por la red USB) ─────────────────────── */
+
+extern const char PAGINA_INICIO[] asm("_binary_atencion_html_start");
+extern const char PAGINA_FIN[] asm("_binary_atencion_html_end");
+
+static bool permitido(httpd_req_t *req)
+{
+    char v[64];
+    if (httpd_req_get_hdr_value_str(req, "Host", v, sizeof(v)) != ESP_OK || strcmp(v, DIRECCION) != 0) return false;
+    if (req->method != HTTP_GET) {
+        if (httpd_req_get_hdr_value_str(req, "Origin", v, sizeof(v)) != ESP_OK || strcmp(v, "http://" DIRECCION) != 0)
+            return false;
+    }
+    return true;
+}
+
+static esp_err_t responder(httpd_req_t *req, const char *estado, const char *json)
+{
+    httpd_resp_set_status(req, estado);
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    return httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
+}
+
+static esp_err_t error(httpd_req_t *req, const char *estado, const char *texto)
+{
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddStringToObject(o, "detail", texto);
+    char *j = cJSON_PrintUnformatted(o);
+    esp_err_t r = responder(req, estado, j ? j : "{}");
+    free(j);
+    cJSON_Delete(o);
+    return r;
+}
+
+#define PROHIBIDO(req) do { if (!permitido(req)) { httpd_resp_set_status(req, "403 Forbidden"); \
+                            return httpd_resp_send(req, "", 0); } } while (0)
+#define CON_CONSULTA(req) do { if (S.estado == E_NINGUNA) \
+                            return error(req, "409 Conflict", "No hay una consulta en curso"); } while (0)
+
+static cJSON *leer_json(httpd_req_t *req)
+{
+    if (req->content_len > 256 * 1024) return NULL;
+    char *b = malloc(req->content_len + 1);
+    if (!b) return NULL;
+    size_t leido = 0;
+    while (leido < req->content_len) {
+        int r = httpd_req_recv(req, b + leido, req->content_len - leido);
+        if (r <= 0) { free(b); return NULL; }
+        leido += r;
+    }
+    b[leido] = 0;
+    cJSON *o = cJSON_Parse(b);
+    free(b);
+    return o;
+}
+
+/* RUT chileno válido, o profesional extranjero: EXT-<país>-<registro> */
+static bool rut_valido(const char *rut)
+{
+    char u[48];
+    size_t n = 0;
+    for (const char *c = rut; *c && n < sizeof(u) - 1; c++) u[n++] = toupper((unsigned char)*c);
+    u[n] = 0;
+    while (n && u[n - 1] == ' ') u[--n] = 0;
+    char *p = u;
+    while (*p == ' ') p++;
+    if (strncmp(p, "EXT-", 4) == 0 && isupper((unsigned char)p[4]) && isupper((unsigned char)p[5]) && p[6] == '-') {
+        size_t largo = strlen(p + 7);
+        if (largo < 3 || largo > 30) return false;
+        for (const char *c = p + 7; *c; c++)
+            if (!(isupper((unsigned char)*c) || isdigit((unsigned char)*c) || strchr("./-", *c))) return false;
+        return true;
+    }
+    char limpio[16];
+    size_t m = 0;
+    for (const char *c = p; *c; c++) {
+        if (*c == '.' || *c == ' ') continue;
+        if (m >= sizeof(limpio) - 1) return false;
+        limpio[m++] = *c;
+    }
+    limpio[m] = 0;
+    if (m >= 2 && limpio[m - 2] == '-') { limpio[m - 2] = limpio[m - 1]; limpio[--m] = 0; }
+    if (m < 7 || m > 9) return false;
+    char dv = limpio[m - 1];
+    int suma = 0, mult = 2;
+    for (int i = m - 2; i >= 0; i--) {
+        if (!isdigit((unsigned char)limpio[i])) return false;
+        suma += (limpio[i] - '0') * mult;
+        mult = mult == 7 ? 2 : mult + 1;
+    }
+    int r = 11 - suma % 11;
+    char esperado = r == 11 ? '0' : r == 10 ? 'K' : '0' + r;
+    return dv == esperado;
+}
+
+static bool profesional(cJSON *b, const char **nombre, const char **rut)
+{
+    cJSON *n = cJSON_GetObjectItem(b, "nombre"), *r = cJSON_GetObjectItem(b, "rut");
+    *nombre = cJSON_IsString(n) ? n->valuestring : "";
+    *rut = cJSON_IsString(r) ? r->valuestring : "";
+    size_t ln = strlen(*nombre);
+    while (ln && **nombre == ' ') { (*nombre)++; ln--; }
+    return ln >= 3 && rut_valido(*rut);
+}
+
+static esp_err_t w_pagina(httpd_req_t *req)
+{
+    PROHIBIDO(req);
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, PAGINA, HTTPD_RESP_USE_STRLEN);
+    httpd_resp_set_hdr(req, "X-Frame-Options", "DENY");
+    return httpd_resp_send(req, PAGINA_INICIO, PAGINA_FIN - PAGINA_INICIO - 1);
+}
+
+static esp_err_t w_estado(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    s_ultimo_sondeo = esp_timer_get_time();
+    cJSON *o = cJSON_CreateObject();
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    cJSON_AddStringToObject(o, "estado", NOMBRE_ESTADO[S.estado]);
+    if (S.estado >= E_SOLICITUD) {
+        cJSON_AddStringToObject(o, "paciente", S.paciente);
+        cJSON_AddStringToObject(o, "codigo", S.codigo);
+    }
+    xSemaphoreGive(g_mutex);
+    char *j = cJSON_PrintUnformatted(o);
+    cJSON_Delete(o);
+    esp_err_t r = responder(req, "200 OK", j ? j : "{}");
+    free(j);
+    return r;
+}
+
+static esp_err_t w_aceptar(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    CON_CONSULTA(req);
+    if (S.estado == E_SOLICITUD) {
+        S.estado = E_ACEPTADA;
+        cJSON *m = cJSON_CreateObject();
+        cJSON_AddStringToObject(m, "tipo", "aceptado");
+        enviar_cifrado(m);
+        cJSON_Delete(m);
+        ESP_LOGI(TAG, "El médico aceptó");
+    }
+    return responder(req, "200 OK", "{\"ok\":true}");
+}
+
+static esp_err_t w_rechazar(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    CON_CONSULTA(req);
+    cJSON *m = cJSON_CreateObject();
+    cJSON_AddStringToObject(m, "tipo", "rechazado");
+    enviar_cifrado(m);
+    cJSON_Delete(m);
+    terminar_sesion(true);
+    return responder(req, "200 OK", "{\"ok\":true}");
+}
+
+static esp_err_t w_terminar(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    if (S.estado != E_NINGUNA) {
+        if (S.con_clave) {
+            cJSON *m = cJSON_CreateObject();
+            cJSON_AddStringToObject(m, "tipo", "fin");
+            enviar_cifrado(m);
+            cJSON_Delete(m);
+        }
+        terminar_sesion(true);
+    }
+    return responder(req, "200 OK", "{\"ok\":true}");
+}
+
+static esp_err_t enviar_ficha(httpd_req_t *req, const char *ficha)
+{
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_send_chunk(req, "{\"ficha\":", HTTPD_RESP_USE_STRLEN);
+    size_t n = strlen(ficha);
+    for (size_t i = 0; i < n; i += 4096) {
+        if (httpd_resp_send_chunk(req, ficha + i, (n - i) < 4096 ? (n - i) : 4096) != ESP_OK) return ESP_FAIL;
+    }
+    httpd_resp_send_chunk(req, "}", 1);
+    return httpd_resp_send_chunk(req, NULL, 0);
+}
+
+static esp_err_t w_identificar(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    CON_CONSULTA(req);
+    if (!S.ficha) return error(req, "409 Conflict", "Esperando la ficha del teléfono, intente en unos segundos");
+    cJSON *b = leer_json(req);
+    const char *nombre, *rut;
+    if (!b || !profesional(b, &nombre, &rut)) {
+        cJSON_Delete(b);
+        return error(req, "400 Bad Request", "Ingresa tu nombre completo y un RUT válido");
+    }
+    cJSON *m = cJSON_CreateObject();
+    cJSON_AddStringToObject(m, "tipo", "acceso");
+    cJSON_AddStringToObject(m, "nombre", nombre);
+    cJSON_AddStringToObject(m, "rut", rut);
+    cJSON_Delete(b);
+    cJSON *r = pedir(m, 25);
+    cJSON_Delete(m);
+    if (!r) return error(req, "504 Gateway Timeout", "El teléfono del paciente no respondió");
+    cJSON_Delete(r);
+    xSemaphoreTake(g_mutex, portMAX_DELAY);
+    char *copia = S.ficha ? strdup(S.ficha) : NULL;
+    xSemaphoreGive(g_mutex);
+    if (!copia) return error(req, "409 Conflict", "La consulta terminó");
+    esp_err_t e = enviar_ficha(req, copia);
+    memset(copia, 0, strlen(copia));
+    free(copia);
+    return e;
+}
+
+static esp_err_t w_nota(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    CON_CONSULTA(req);
+    if (S.nota_guardada) return error(req, "409 Conflict", "La atención de esta consulta ya fue guardada");
+    cJSON *b = leer_json(req);
+    const char *nombre, *rut;
+    if (!b || !profesional(b, &nombre, &rut)) {
+        cJSON_Delete(b);
+        return error(req, "400 Bad Request", "Falta tu nombre o RUT");
+    }
+    cJSON *m = cJSON_CreateObject();
+    cJSON_AddStringToObject(m, "tipo", "nota");
+    cJSON_AddStringToObject(m, "nombre", nombre);
+    cJSON_AddStringToObject(m, "rut", rut);
+    cJSON *contenido = cJSON_AddObjectToObject(m, "contenido");
+    cJSON *c = cJSON_GetObjectItem(b, "contenido"), *it;
+    if (cJSON_IsObject(c)) {
+        cJSON_ArrayForEach(it, c) {
+            if (cJSON_IsString(it)) {
+                cJSON_AddStringToObject(contenido, it->string, it->valuestring);
+            } else {
+                char *t = cJSON_PrintUnformatted(it);
+                cJSON_AddStringToObject(contenido, it->string, t ? t : "");
+                free(t);
+            }
+        }
+    }
+    cJSON_Delete(b);
+    cJSON *r = pedir(m, 25);
+    cJSON_Delete(m);
+    if (!r) return error(req, "504 Gateway Timeout", "El teléfono del paciente no respondió; la nota NO se guardó");
+    cJSON *ok = cJSON_GetObjectItem(r, "ok");
+    if (cJSON_IsFalse(ok)) {
+        cJSON *d = cJSON_GetObjectItem(r, "detail");
+        esp_err_t e = error(req, "400 Bad Request", cJSON_IsString(d) ? d->valuestring : "El teléfono no pudo guardar la nota");
+        cJSON_Delete(r);
+        return e;
+    }
+    cJSON_Delete(r);
+    S.nota_guardada = true;
+    return responder(req, "200 OK", "{\"ok\":true}");
+}
+
+static esp_err_t w_idioma(httpd_req_t *req)
+{
+    PROHIBIDO(req);
+    CON_CONSULTA(req);
+    cJSON *b = leer_json(req);
+    cJSON *i = b ? cJSON_GetObjectItem(b, "idioma") : NULL;
+    const char *idioma = cJSON_IsString(i) ? i->valuestring : "";
+    if (strcmp(idioma, "en") && strcmp(idioma, "de") && strcmp(idioma, "fr")) {
+        cJSON_Delete(b);
+        return error(req, "400 Bad Request", "Idioma no disponible");
+    }
+    cJSON *m = cJSON_CreateObject();
+    cJSON_AddStringToObject(m, "tipo", "idioma");
+    cJSON_AddStringToObject(m, "idioma", idioma);
+    cJSON_Delete(b);
+    cJSON *r = pedir(m, 240);
+    cJSON_Delete(m);
+    if (!r) return error(req, "504 Gateway Timeout", "El teléfono no respondió a tiempo");
+    cJSON *f = cJSON_GetObjectItem(r, "ficha"), *ok = cJSON_GetObjectItem(r, "ok");
+    if (cJSON_IsFalse(ok) || !cJSON_IsObject(f)) {
+        cJSON *d = cJSON_GetObjectItem(r, "detail");
+        esp_err_t e = error(req, "400 Bad Request", cJSON_IsString(d) ? d->valuestring : "El teléfono no pudo traducir");
+        cJSON_Delete(r);
+        return e;
+    }
+    char *j = cJSON_PrintUnformatted(f);
+    cJSON_Delete(r);
+    if (!j) return error(req, "500 Internal Server Error", "Sin memoria");
+    esp_err_t e = enviar_ficha(req, j);
+    free(j);
+    return e;
 }
 
 static void iniciar_pagina(void)
 {
     httpd_handle_t srv = NULL;
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
+    cfg.stack_size = 12288;
+    cfg.max_uri_handlers = 12;
+    cfg.lru_purge_enable = true;
+    cfg.send_wait_timeout = 30;
     ESP_ERROR_CHECK(httpd_start(&srv, &cfg));
-    const httpd_uri_t inicio = { .uri = "/", .method = HTTP_GET, .handler = pagina_inicio };
-    httpd_register_uri_handler(srv, &inicio);
+    const httpd_uri_t rutas[] = {
+        { .uri = "/",                .method = HTTP_GET,  .handler = w_pagina },
+        { .uri = "/api/estado",      .method = HTTP_GET,  .handler = w_estado },
+        { .uri = "/api/aceptar",     .method = HTTP_POST, .handler = w_aceptar },
+        { .uri = "/api/rechazar",    .method = HTTP_POST, .handler = w_rechazar },
+        { .uri = "/api/terminar",    .method = HTTP_POST, .handler = w_terminar },
+        { .uri = "/api/identificar", .method = HTTP_POST, .handler = w_identificar },
+        { .uri = "/api/nota",        .method = HTTP_POST, .handler = w_nota },
+        { .uri = "/api/idioma",      .method = HTTP_POST, .handler = w_idioma },
+    };
+    for (size_t i = 0; i < sizeof(rutas) / sizeof(rutas[0]); i++) httpd_register_uri_handler(srv, &rutas[i]);
 }
 
 void app_main(void)
@@ -290,11 +1148,22 @@ void app_main(void)
         nvs_flash_erase();
         nvs_flash_init();
     }
+    g_mutex = xSemaphoreCreateMutex();
+    g_tx = xSemaphoreCreateMutex();
+    g_rx_mutex = xSemaphoreCreateMutex();
+    g_resp = xSemaphoreCreateBinary();
+    g_escrito = xSemaphoreCreateBinary();
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED,
                                                pc_recibio_direccion, NULL));
     ESP_ERROR_CHECK(iniciar_red_usb());
     iniciar_pagina();
-    xTaskCreate(tarea_abrir_pagina, "abrir_pagina", 4096, NULL, 5, NULL);
+
+    xTaskCreate(tarea_procesar, "procesar", 12288, NULL, 5, &g_procesador);
+    ESP_ERROR_CHECK(nimble_port_init());
+    ble_hs_cfg.sync_cb = al_sincronizar;
+    nimble_port_freertos_init(tarea_bluetooth);
+    ESP_LOGI(TAG, "Lector HypokratIA %s listo", VERSION);
 }

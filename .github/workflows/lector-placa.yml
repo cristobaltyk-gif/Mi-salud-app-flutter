@@ -6,7 +6,7 @@ name: Lector HypokratIA (placa)
 on:
   push:
     branches: [main]
-    paths: ["herramientas/lector_placa/**", ".github/workflows/lector-placa.yml"]
+    paths: ["herramientas/lector_placa/**", "herramientas/lector_pc/atencion.html", ".github/workflows/lector-placa.yml"]
   workflow_dispatch:
 
 permissions:
