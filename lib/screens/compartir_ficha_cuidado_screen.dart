@@ -48,8 +48,9 @@ import '../services/storage_service.dart';
 
 class CompartirFichaCuidadoScreen extends StatefulWidget {
   final String rutPaciente;
+  final String modoInicial; // 'qr' | 'email'
 
-  const CompartirFichaCuidadoScreen({super.key, required this.rutPaciente});
+  const CompartirFichaCuidadoScreen({super.key, required this.rutPaciente, this.modoInicial = 'qr'});
 
   @override
   State<CompartirFichaCuidadoScreen> createState() => _CompartirFichaCuidadoScreenState();
@@ -65,7 +66,7 @@ class _CompartirFichaCuidadoScreenState extends State<CompartirFichaCuidadoScree
   bool _enviando = false;
   String? _error;
   String? _exito;
-  String _modo = 'qr'; // 'qr' | 'email'
+  late String _modo = widget.modoInicial; // 'qr' | 'email'
   LinkGenerado? _linkActivo;
   int? _linkActivoId;
   final _emailController = TextEditingController();

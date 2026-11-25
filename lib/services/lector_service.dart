@@ -250,8 +250,8 @@ class SesionLector {
 
   /// Espera a que el PC del médico se conecte, intercambia llaves y deja el
   /// código listo para comparar. false = ningún lector llegó a tiempo.
-  Future<bool> conectar() async {
-    _canal = await LectorService.esperarConexion();
+  Future<bool> conectar({Duration limite = const Duration(seconds: 60)}) async {
+    _canal = await LectorService.esperarConexion(limite: limite);
     if (_canal == null) return false;
     _canal!.entrada.listen(_recibirBytes, onDone: _cerrado, onError: (_) => _cerrado());
 

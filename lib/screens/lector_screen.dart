@@ -1,4 +1,14 @@
-/// lib/screens/lector_screen.dart — v1.1
+/// lib/screens/lector_screen.dart — v1.2
+///
+/// v1.2: es la pantalla de "Autorizar" SIEMPRE (con o sin internet). El
+/// paciente solo acepta y pone la huella; después la app decide sola:
+///   1. Busca el Lector HypokratIA (15 s): "Acerque su teléfono al lector".
+///   2. Si no aparece y hay internet → muestra el QR solo (enlace de un uso,
+///      3 h) y SIGUE buscando: si el lector aparece, pasa a él y anula el QR.
+///      Abajo, último recurso: "¿El médico no puede escanear? Enviar por email".
+///   3. Sin lector ni internet → explica que con el Lector se puede, y sigue
+///      buscando.
+///   Si el teléfono no tiene la ficha guardada y hay internet, va directo al QR.
 ///
 /// v1.1: el teléfono se anuncia y el PC del médico lo encuentra solo; ya no
 /// hay lista para elegir.
@@ -19,6 +29,12 @@ import 'package:flutter/material.dart';
 import '../services/biometria_service.dart';
 import '../services/copia_cifrada_service.dart';
 import '../services/lector_service.dart';
+import '../services/http_sesion.dart' as http;
+import '../services/acceso_medico_service.dart';
+import '../models/acceso_medico.dart';
+import '../config/app_config.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'compartir_ficha_cuidado_screen.dart';
 import 'consulta_sin_conexion_screen.dart';
 
 class LectorScreen extends StatefulWidget {
@@ -40,11 +56,64 @@ class _LectorScreenState extends State<LectorScreen> {
   SesionLector? _sesion;
   StreamSubscription<void>? _sub;
 
+  // Paso 2 y 3 (sin lector a los 15 s)
+  static const _esperaLector = Duration(seconds: 15);
+  Timer? _reloj;
+  bool _sinLector = false;      // pasaron los 15 s sin lector
+  bool? _conInternet;           // null: revisando
+  LinkGenerado? _link;
+  String? _errorQr;
+
   @override
   void dispose() {
+    _reloj?.cancel();
     _sub?.cancel();
     _sesion?.terminar();
     super.dispose();
+  }
+
+  // A los 15 s sin lector: QR si hay internet; si no, el aviso
+  Future<void> _sinLectorTodavia() async {
+    if (!mounted || _paso != 'buscando') return;
+    setState(() => _sinLector = true);
+    final red = await http.hayInternet();
+    if (!mounted || _paso != 'buscando') return;
+    setState(() => _conInternet = red);
+    if (red) await _generarQr();
+  }
+
+  Future<void> _generarQr() async {
+    try {
+      final link = await AccesoMedicoService.generarLink(rutPaciente: widget.rutPaciente);
+      if (!mounted) return;
+      setState(() { _link = link; _errorQr = null; });
+    } catch (e) {
+      if (mounted) setState(() => _errorQr = e.toString());
+    }
+  }
+
+  // Llegó el lector con un QR ya generado: se anula ese QR (no queda abierto)
+  Future<void> _anularQr() async {
+    final link = _link;
+    if (link == null) return;
+    _link = null;
+    try {
+      final links = await AccesoMedicoService.misLinks(rutPaciente: widget.rutPaciente);
+      for (final l in links) {
+        if (l.estado == EstadoAccesoMedico.pendiente) {
+          await AccesoMedicoService.revocarLink(l.id, rutPaciente: widget.rutPaciente);
+          break;   // el recién creado es el primero (más nuevo)
+        }
+      }
+    } catch (_) {
+      // Sin red o ya usado: el enlace vence solo
+    }
+  }
+
+  void _irAlQr({String modo = 'qr'}) {
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => CompartirFichaCuidadoScreen(rutPaciente: widget.rutPaciente, modoInicial: modo),
+    ));
   }
 
   Future<void> _comenzar() async {
@@ -60,6 +129,11 @@ class _LectorScreenState extends State<LectorScreen> {
         pedirHuella: false,
       );
     } on CopiaException catch (e) {
+      // Sin ficha guardada en el teléfono no hay lector; con internet, el QR
+      if (await http.hayInternet()) {
+        if (mounted) _irAlQr();
+        return;
+      }
       setState(() => _error = trp('{0} Abre la ficha una vez con internet para guardarla en el teléfono.', [e.mensaje]));
       return;
     }
@@ -71,13 +145,27 @@ class _LectorScreenState extends State<LectorScreen> {
     final s = SesionLector(rutPaciente: widget.rutPaciente, ficha: _ficha!, aceptadaAt: _aceptadaAt!);
     _sub?.cancel();
     _sub = s.cambios.listen((_) {
-      if (mounted && s.estado != 'conectando') setState(() => _paso = 'sesion');
+      if (mounted && s.estado != 'conectando') {
+        _reloj?.cancel();
+        _anularQr();
+        setState(() => _paso = 'sesion');
+      }
     });
-    setState(() { _sesion = s; _paso = 'buscando'; _error = null; });
+    setState(() {
+      _sesion = s; _paso = 'buscando'; _error = null;
+      _sinLector = false; _conInternet = null; _errorQr = null;
+    });
+    _reloj?.cancel();
+    _reloj = Timer(_esperaLector, _sinLectorTodavia);
     try {
-      final llego = await s.conectar();
+      // Sigue buscando el lector mientras se muestra el QR o el aviso
+      final llego = await s.conectar(limite: const Duration(minutes: 10));
       if (!mounted) return;
-      if (!llego) setState(() => _paso = 'nadie');
+      if (!llego) {
+        _reloj?.cancel();
+        // Con el QR a la vista no se interrumpe: el médico puede estar usándolo
+        if (_link == null) setState(() => _paso = 'nadie');
+      }
     } catch (e) {
       await s.terminar(avisar: false);
       if (mounted) setState(() { _paso = 'nadie'; _error = e.toString(); });
@@ -116,7 +204,7 @@ class _LectorScreenState extends State<LectorScreen> {
       ]);
 
   Widget _vistaAceptar() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _titulo(tr('Sin internet: compartir con el computador del médico')),
+        _titulo(tr('Compartir tu ficha con el médico'), Icons.medical_information),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -126,12 +214,12 @@ class _LectorScreenState extends State<LectorScreen> {
           ),
           child: Text(
             widget.esPropia
-                ? tr('Voy a mostrar mi ficha clínica a un profesional de la salud sin conexión a internet. Lo hago '
-                    'por mi propia decisión y bajo mi responsabilidad. Sé que su identidad se verificará en el RNPI '
-                    'cuando vuelva la conexión, y que su nota no entrará a mi ficha hasta esa verificación.')
-                : tr('Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud sin conexión '
-                    'a internet, bajo mi responsabilidad como su cuidador. Sé que su identidad se verificará en el '
-                    'RNPI cuando vuelva la conexión, y que su nota no entrará a la ficha hasta esa verificación.'),
+                ? tr('Voy a mostrar mi ficha clínica a un profesional de la salud. Lo hago por mi propia decisión y '
+                    'bajo mi responsabilidad. Sé que su identidad se verificará en el RNPI y que su nota no entrará '
+                    'a mi ficha hasta esa verificación.')
+                : tr('Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud, bajo mi '
+                    'responsabilidad como su cuidador. Sé que su identidad se verificará en el RNPI y que su nota '
+                    'no entrará a la ficha hasta esa verificación.'),
             style: const TextStyle(fontSize: 14, height: 1.4),
           ),
         ),
@@ -146,22 +234,76 @@ class _LectorScreenState extends State<LectorScreen> {
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: _morado),
           onPressed: _acepta ? _comenzar : null,
-          child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Confirmar con huella y buscar'))),
+          child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text(tr('Confirmar con huella'))),
         ),
       ]);
 
-  Widget _vistaBuscando() => Column(children: [
-        _titulo(tr('Esperando al computador del médico…')),
+  Widget _vistaBuscando() {
+    // 1. Buscando el lector (primeros 15 s)
+    if (!_sinLector || _conInternet == null) {
+      return Column(children: [
+        _titulo(tr('Acerque su teléfono al lector del médico')),
         const CircularProgressIndicator(),
         const SizedBox(height: 14),
-        Text(tr('Mantén el teléfono cerca del computador, con el Bluetooth encendido.'),
-            textAlign: TextAlign.center),
+        Text(tr('Mantén el teléfono cerca, con el Bluetooth encendido.'), textAlign: TextAlign.center),
       ]);
+    }
+    // 2. Sin lector, con internet: el QR solo
+    if (_conInternet == true) {
+      final url = _link == null ? null : '${AppConfig.misaludWebUrl}/medico/acceso/${_link!.token}';
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _titulo(tr('Muestre este código al médico'), Icons.qr_code_2),
+        if (url != null)
+          Center(child: QrImageView(data: url, size: 220))
+        else if (_errorQr != null) ...[
+          Text(_errorQr!, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFFB91C1C))),
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: _generarQr, child: Text(tr('Intentar de nuevo'))),
+        ] else
+          const Center(child: CircularProgressIndicator()),
+        const SizedBox(height: 12),
+        Text(tr('El médico lo escanea con la cámara de su teléfono. Sirve una sola vez.'),
+            textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(width: 8),
+          Flexible(child: Text(tr('Si el médico tiene el Lector HypokratIA, se conectará solo.'),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+        ]),
+        const SizedBox(height: 18),
+        TextButton(
+          onPressed: () => _irAlQr(modo: 'email'),
+          child: Text(tr('¿El médico no puede escanear? Enviar por email'), style: const TextStyle(fontSize: 13)),
+        ),
+      ]);
+    }
+    // 3. Sin lector ni internet
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _titulo(tr('No hay un lector cerca ni internet'), Icons.wifi_off),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(12)),
+        child: Text(
+          tr('Con el Lector HypokratIA el médico puede ver tu ficha aunque no haya internet. '
+              'Pregúntale si tiene uno o acerca el teléfono a su lector.'),
+          textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+      ),
+      const SizedBox(height: 16),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+        const SizedBox(width: 8),
+        Flexible(child: Text(tr('Sigo buscando el lector…'),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+      ]),
+    ]);
+  }
 
   Widget _vistaNadie() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _titulo(tr('No se encontró el computador del médico')),
+        _titulo(tr('No se encontró el lector del médico')),
         Text(
-          tr('Verifica que el programa Lector HypokratIA esté abierto en el computador y que el Bluetooth del '
+          tr('Verifica que el Lector HypokratIA esté enchufado al computador y que el Bluetooth del '
           'teléfono esté encendido.'),
           textAlign: TextAlign.center,
         ),

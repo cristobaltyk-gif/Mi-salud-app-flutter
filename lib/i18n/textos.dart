@@ -2405,4 +2405,79 @@ const Map<String, Map<String, String>> textos = {
     'de': 'Passwort ändern',
     'fr': 'Changer le mot de passe',
   },
+  'Compartir tu ficha con el médico': {
+    'en': 'Share your record with the doctor',
+    'de': 'Ihre Akte mit dem Arzt teilen',
+    'fr': 'Partager votre dossier avec le médecin',
+  },
+  'Voy a mostrar mi ficha clínica a un profesional de la salud. Lo hago por mi propia decisión y bajo mi responsabilidad. Sé que su identidad se verificará en el RNPI y que su nota no entrará a mi ficha hasta esa verificación.': {
+    'en': 'I am going to show my medical record to a health professional. I do so by my own decision and under my responsibility. I know their identity will be verified in the RNPI and that their note will not enter my record until that verification.',
+    'de': 'Ich zeige meine Krankenakte einer medizinischen Fachkraft. Ich tue dies aus eigener Entscheidung und auf eigene Verantwortung. Ich weiß, dass ihre Identität im RNPI überprüft wird und ihre Notiz erst nach dieser Prüfung in meine Akte aufgenommen wird.',
+    'fr': 'Je vais montrer mon dossier médical à un professionnel de santé. Je le fais de ma propre décision et sous ma responsabilité. Je sais que son identité sera vérifiée dans le RNPI et que sa note n\'entrera pas dans mon dossier avant cette vérification.',
+  },
+  'Voy a mostrar la ficha clínica de la persona que cuido a un profesional de la salud, bajo mi responsabilidad como su cuidador. Sé que su identidad se verificará en el RNPI y que su nota no entrará a la ficha hasta esa verificación.': {
+    'en': 'I am going to show the medical record of the person I care for to a health professional, under my responsibility as their caregiver. I know their identity will be verified in the RNPI and that their note will not enter the record until that verification.',
+    'de': 'Ich zeige die Krankenakte der von mir betreuten Person einer medizinischen Fachkraft, unter meiner Verantwortung als Betreuer. Ich weiß, dass ihre Identität im RNPI überprüft wird und ihre Notiz erst nach dieser Prüfung in die Akte aufgenommen wird.',
+    'fr': 'Je vais montrer le dossier médical de la personne dont je m\'occupe à un professionnel de santé, sous ma responsabilité d\'aidant. Je sais que son identité sera vérifiée dans le RNPI et que sa note n\'entrera pas dans le dossier avant cette vérification.',
+  },
+  'Confirmar con huella': {
+    'en': 'Confirm with fingerprint',
+    'de': 'Mit Fingerabdruck bestätigen',
+    'fr': 'Confirmer avec l\'empreinte',
+  },
+  'Acerque su teléfono al lector del médico': {
+    'en': 'Bring your phone close to the doctor\'s reader',
+    'de': 'Halten Sie Ihr Telefon an das Lesegerät des Arztes',
+    'fr': 'Approchez votre téléphone du lecteur du médecin',
+  },
+  'Mantén el teléfono cerca, con el Bluetooth encendido.': {
+    'en': 'Keep the phone close, with Bluetooth on.',
+    'de': 'Halten Sie das Telefon in der Nähe, mit eingeschaltetem Bluetooth.',
+    'fr': 'Gardez le téléphone à proximité, avec le Bluetooth activé.',
+  },
+  'Muestre este código al médico': {
+    'en': 'Show this code to the doctor',
+    'de': 'Zeigen Sie diesen Code dem Arzt',
+    'fr': 'Montrez ce code au médecin',
+  },
+  'El médico lo escanea con la cámara de su teléfono. Sirve una sola vez.': {
+    'en': 'The doctor scans it with their phone camera. It works only once.',
+    'de': 'Der Arzt scannt ihn mit der Kamera seines Telefons. Er gilt nur einmal.',
+    'fr': 'Le médecin le scanne avec l\'appareil photo de son téléphone. Il ne sert qu\'une fois.',
+  },
+  'Si el médico tiene el Lector HypokratIA, se conectará solo.': {
+    'en': 'If the doctor has the HypokratIA Reader, it will connect automatically.',
+    'de': 'Wenn der Arzt das HypokratIA-Lesegerät hat, verbindet es sich automatisch.',
+    'fr': 'Si le médecin a le Lecteur HypokratIA, il se connectera automatiquement.',
+  },
+  '¿El médico no puede escanear? Enviar por email': {
+    'en': 'Can\'t the doctor scan it? Send by email',
+    'de': 'Kann der Arzt nicht scannen? Per E-Mail senden',
+    'fr': 'Le médecin ne peut pas scanner ? Envoyer par e-mail',
+  },
+  'No hay un lector cerca ni internet': {
+    'en': 'No reader nearby and no internet',
+    'de': 'Kein Lesegerät in der Nähe und kein Internet',
+    'fr': 'Aucun lecteur à proximité ni internet',
+  },
+  'Con el Lector HypokratIA el médico puede ver tu ficha aunque no haya internet. Pregúntale si tiene uno o acerca el teléfono a su lector.': {
+    'en': 'With the HypokratIA Reader the doctor can see your record even without internet. Ask if they have one, or bring your phone close to their reader.',
+    'de': 'Mit dem HypokratIA-Lesegerät kann der Arzt Ihre Akte auch ohne Internet sehen. Fragen Sie, ob er eines hat, oder halten Sie Ihr Telefon an sein Lesegerät.',
+    'fr': 'Avec le Lecteur HypokratIA, le médecin peut voir votre dossier même sans internet. Demandez-lui s\'il en a un ou approchez votre téléphone de son lecteur.',
+  },
+  'Sigo buscando el lector…': {
+    'en': 'Still looking for the reader…',
+    'de': 'Suche weiter nach dem Lesegerät…',
+    'fr': 'Je cherche toujours le lecteur…',
+  },
+  'No se encontró el lector del médico': {
+    'en': 'The doctor\'s reader was not found',
+    'de': 'Das Lesegerät des Arztes wurde nicht gefunden',
+    'fr': 'Le lecteur du médecin est introuvable',
+  },
+  'Verifica que el Lector HypokratIA esté enchufado al computador y que el Bluetooth del teléfono esté encendido.': {
+    'en': 'Check that the HypokratIA Reader is plugged into the computer and that the phone\'s Bluetooth is on.',
+    'de': 'Prüfen Sie, ob das HypokratIA-Lesegerät am Computer angeschlossen und Bluetooth am Telefon eingeschaltet ist.',
+    'fr': 'Vérifiez que le Lecteur HypokratIA est branché à l\'ordinateur et que le Bluetooth du téléphone est activé.',
+  },
 };
