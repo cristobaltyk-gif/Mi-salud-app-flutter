@@ -1,4 +1,4 @@
-/// lib/services/http_sesion.dart — v1.2
+/// lib/services/http_sesion.dart — v1.3
 ///
 /// Sesión vencida → pantalla de inicio de sesión (antes: "error" y
 /// "Reintentar" para siempre, sin volver a pedir la contraseña).
@@ -24,6 +24,12 @@
 ///    Es un http.ClientException, así que los que ya atrapaban ese error
 ///    (la ficha, que cae a la copia guardada) siguen funcionando igual.
 ///
+/// 5. v1.3 — Modo sin red: si la sesión venció y no hay internet, la huella
+///    abre igual el inicio normal (DesbloquearScreen) con la ficha guardada
+///    en el teléfono (SesionVencida.sinRed = true). Mientras tanto no se
+///    cierra la sesión: cada minuto se revisa si volvió la red y, si volvió,
+///    se renueva sola con la llave del teléfono (sin pedir nada).
+///
 /// 3. SesionVencida.tokenVencido(token): lee la fecha de vencimiento del
 ///    JWT sin llamar al servidor (al abrir la app y al volver a ella).
 library;
@@ -38,6 +44,7 @@ import '../screens/login_screen.dart';
 import '../screens/desbloquear_screen.dart';
 import '../config/app_config.dart';
 import 'navigation_service.dart';
+import 'auth_service.dart' show AuthService, AuthException;
 import 'storage_service.dart';
 
 export 'package:http/http.dart' hide get, post, put, patch, delete;
@@ -103,6 +110,28 @@ Future<bool> hayInternet() async {
 class SesionVencida {
   static bool _cerrando = false;
 
+  /// Entró sin red con la huella (sesión vencida): se renueva al volver la red.
+  static bool sinRed = false;
+  static bool _renovando = false;
+
+  static Future<void> _renovarSiVolvioLaRed() async {
+    if (_renovando) return;
+    _renovando = true;
+    try {
+      if (!await hayInternet()) return;
+      await AuthService.renovar();
+      sinRed = false;
+    } on AuthException {
+      // Llave anulada o rechazada: vuelve la contraseña
+      sinRed = false;
+      await cerrar();
+    } catch (_) {
+      // Sigue sin red: se reintenta en el próximo minuto
+    } finally {
+      _renovando = false;
+    }
+  }
+
   /// true si el JWT ya venció (o vence en menos de 30 s) o no se puede leer.
   static bool tokenVencido(String? token) {
     if (token == null || token.isEmpty) return true;
@@ -135,6 +164,10 @@ class SesionVencida {
 
   /// Si hay sesión guardada y ya venció, la cierra. Devuelve true si la cerró.
   static Future<bool> revisar() async {
+    if (sinRed) {
+      await _renovarSiVolvioLaRed();
+      return false;
+    }
     final token = await StorageService.obtenerToken();
     if (token == null || token.isEmpty) return false;
     if (!tokenVencido(token)) return false;
@@ -144,6 +177,11 @@ class SesionVencida {
 
   /// Borra la sesión (no los recordatorios) y vuelve al inicio de sesión.
   static Future<void> cerrar() async {
+    if (sinRed) {
+      // Volvió la red con la sesión vencida: se renueva sola
+      unawaited(_renovarSiVolvioLaRed());
+      return;
+    }
     if (_cerrando) return;
     _cerrando = true;
     try {

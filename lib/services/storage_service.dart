@@ -57,6 +57,11 @@ class StorageService {
     return prefs.getString(AppConfig.prefsNombreKey);
   }
 
+  /// Modo sin red (sesión vencida y sin internet): el RUT sale de la ficha
+  /// guardada en el teléfono para que el inicio funcione igual.
+  static Future<void> guardarRut(String rut) =>
+      _secure.write(key: AppConfig.prefsRutKey, value: rut);
+
   static Future<bool> haySesionGuardada() async {
     final token = await obtenerToken();
     return token != null && token.isNotEmpty;

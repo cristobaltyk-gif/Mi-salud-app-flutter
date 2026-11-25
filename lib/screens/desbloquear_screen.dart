@@ -1,4 +1,4 @@
-/// lib/screens/desbloquear_screen.dart — v1.0
+/// lib/screens/desbloquear_screen.dart — v1.2
 ///
 /// Entrar con huella o rostro (o el PIN del teléfono):
 ///  - renovar:  la sesión venció → huella → sesión nueva sin contraseña
@@ -8,6 +8,10 @@
 /// "Usar mi contraseña" lleva al inicio de sesión de siempre.
 /// v1.1: sin red, la huella abre directo la ficha guardada en el teléfono
 /// (copia cifrada), sin pedir nada más.
+/// v1.2: sin red abre el INICIO NORMAL (todas las pestañas: la ficha desde
+/// la copia guardada, Autorizar → Compartir sin conexión / lector, etc.);
+/// lo que necesita internet muestra su aviso. Al volver la red la sesión se
+/// renueva sola (SesionVencida.sinRed).
 library;
 
 import 'package:flutter/material.dart';
@@ -18,7 +22,6 @@ import '../services/copia_cifrada_service.dart';
 import '../services/http_sesion.dart' show SesionVencida;
 import '../services/storage_service.dart';
 import 'dashboard_screen.dart';
-import 'ficha_screen.dart' show ConsultasScreen;
 import 'login_screen.dart';
 
 class DesbloquearScreen extends StatefulWidget {
@@ -83,29 +86,31 @@ class _DesbloquearScreenState extends State<DesbloquearScreen> {
       }
       setState(() => _error = e.mensaje);
     } catch (_) {
-      // Sin red: la huella ya confirmó quién es; abre la ficha guardada en el teléfono
-      if (await _abrirCopiaGuardada()) return;
+      // Sin red: la huella ya confirmó quién es; abre el inicio con la ficha guardada
+      if (await _entrarSinRed()) return;
       if (mounted) setState(() => _error = tr('No se pudo conectar. Revisa tu conexión e intenta de nuevo.'));
     } finally {
       if (mounted) setState(() => _ocupado = false);
     }
   }
 
-  Future<bool> _abrirCopiaGuardada() async {
+  Future<bool> _entrarSinRed() async {
     try {
       if (!await CopiaCifradaService.hayCopia()) return false;
-      final resumen = await CopiaCifradaService.leer(pedirHuella: false);
+      final ficha = await CopiaCifradaService.leerJson(pedirHuella: false);
+      final rut = ((ficha['paciente'] as Map?)?['rut'] ?? '').toString();
+      if (rut.isEmpty) return false;
+      await StorageService.guardarRut(rut);
+      SesionVencida.sinRed = true;
       if (!mounted) return true;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ConsultasScreen(
-            resumen: resumen,
-            onExplicar: (ctx) => ScaffoldMessenger.of(ctx).showSnackBar(
-              SnackBar(content: Text(tr('Esto necesita conexión'))),
-            ),
-          ),
-        ),
-      );
+      if (widget.bloqueo && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          (route) => false,
+        );
+      }
       return true;
     } catch (_) {
       return false;

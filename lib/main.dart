@@ -148,7 +148,7 @@ class _MiSaludAppState extends State<MiSaludApp> with WidgetsBindingObserver {
   Future<void> _alVolver(DateTime? desde) async {
     final largo = desde != null && DateTime.now().difference(desde) >= _bloqueoTras;
     final token = await StorageService.obtenerToken();
-    final conSesion = token != null && token.isNotEmpty;
+    final conSesion = (token != null && token.isNotEmpty) || SesionVencida.sinRed;
     if (largo && conSesion && !DesbloquearScreen.abierta && await StorageService.puedeUsarHuella()) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(builder: (_) => const DesbloquearScreen(bloqueo: true)),
