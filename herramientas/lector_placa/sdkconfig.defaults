@@ -32,3 +32,11 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# Firma de HypokratIA (nivel 1): cada versión sale firmada con la llave privada
+# (secreto LECTOR_FIRMA_KEY en GitHub) y el lector solo acepta actualizaciones
+# firmadas con esa misma llave. No graba nada permanente en el chip.
+CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT=y
+CONFIG_SECURE_SIGNED_APPS_RSA_SCHEME=y
+CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT=y
+CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=y
+CONFIG_SECURE_BOOT_SIGNING_KEY="secure_boot_signing_key.pem"

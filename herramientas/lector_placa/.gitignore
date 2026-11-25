@@ -3,3 +3,6 @@ managed_components/
 sdkconfig
 sdkconfig.old
 dependencies.lock
+# Llave privada de firma: solo existe dentro de GitHub Actions (nunca en el repo)
+secure_boot_signing_key.pem
+*.pem

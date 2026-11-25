@@ -37,8 +37,10 @@
  *       lector-placa.bin nuevo → listo (sin BOOT, RST ni ESP Tool). Solo
  *       sin una consulta en curso. Dos espacios de programa (ota_0/ota_1):
  *       si el nuevo no arranca, vuelve al anterior.
- *       PENDIENTE antes de vender: aceptar solo programas firmados por
- *       HypokratIA (firma en GitHub Actions).
+ * v6: · Solo acepta actualizaciones firmadas por HypokratIA (llave privada
+ *       en el secreto LECTOR_FIRMA_KEY de GitHub; firma RSA-3072). Un archivo
+ *       sin firma o firmado con otra llave se rechaza.
+ *       Pendiente para fabricar: arranque seguro + memoria cifrada (nivel 2).
  */
 #include <string.h>
 #include <stdlib.h>
@@ -242,7 +244,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.1"
+#define VERSION        "placa-1.2"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -1206,7 +1208,12 @@ static esp_err_t w_actualizar(httpd_req_t *req)
         esp_ota_abort(ota);
         return error(req, "400 Bad Request", "La actualización se interrumpió; el lector sigue con su versión actual");
     }
-    if (esp_ota_end(ota) != ESP_OK || esp_ota_set_boot_partition(destino) != ESP_OK)
+    esp_err_t fin = esp_ota_end(ota);    // aquí se revisa la firma de HypokratIA
+    if (fin != ESP_OK) {
+        ESP_LOGW(TAG, "Actualización rechazada (%s)", esp_err_to_name(fin));
+        return error(req, "400 Bad Request", "Ese archivo no es un programa del lector firmado por HypokratIA");
+    }
+    if (esp_ota_set_boot_partition(destino) != ESP_OK)
         return error(req, "400 Bad Request", "Ese archivo no es un programa válido del lector");
     ESP_LOGI(TAG, "Actualización lista; reiniciando");
     responder(req, "200 OK", "{\"ok\":true}");

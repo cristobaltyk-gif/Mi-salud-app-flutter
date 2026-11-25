@@ -17,6 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Llave de firma de HypokratIA
+        env:
+          LLAVE: ${{ secrets.LECTOR_FIRMA_KEY }}
+        run: |
+          if [ -z "$LLAVE" ]; then
+            echo "::error::Falta el secreto LECTOR_FIRMA_KEY (llave de firma del lector)"; exit 1
+          fi
+          printf '%s\n' "$LLAVE" > herramientas/lector_placa/secure_boot_signing_key.pem
       - name: Compilar (ESP-IDF 5.3)
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -24,6 +32,9 @@ jobs:
           target: esp32s3
           path: herramientas/lector_placa
           command: idf.py build && cd build && esptool.py --chip esp32s3 merge_bin -o lector-placa.bin @flash_args
+      - name: Borrar la llave
+        if: always()
+        run: sudo rm -f herramientas/lector_placa/secure_boot_signing_key.pem
       - name: Publicar en Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -31,7 +42,8 @@ jobs:
           name: Lector HypokratIA (placa)
           body: |
             Programa para la placa ESP32-S3 del Lector. Bajar **lector-placa.bin**.
-            Cargarlo desde Chrome en https://espressif.github.io/esptool-js/ (dirección 0x0),
-            con la placa conectada por su puerto **COM**.
+            Lector ya cargado: abrir http://172.29.77.1/actualizar y elegir este archivo.
+            Lector nuevo: cargarlo desde Chrome en https://espressif.github.io/esptool-js/ (dirección 0x0).
+            Firmado por HypokratIA: el lector rechaza archivos sin esta firma.
           files: herramientas/lector_placa/build/lector-placa.bin
           make_latest: false
