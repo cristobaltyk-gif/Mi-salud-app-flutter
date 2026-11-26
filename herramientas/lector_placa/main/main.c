@@ -439,7 +439,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.6"
+#define VERSION        "placa-1.5"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -559,7 +559,6 @@ static struct {
     char codigo[5];
     char paciente[96];
     char *permiso;            // permiso de consulta (transcribir / ordenar), si el teléfono tenía internet
-    char *enlace;             // con internet: enlace de la atención normal en línea (como el QR)
     bool pidio_certificado;
     char *ficha;              // JSON de la ficha (solo en memoria)
     bool nota_guardada;       // una atención por consulta
@@ -764,11 +763,6 @@ static void recibir(const char *raw)
             m = NULL;
             xSemaphoreGive(g_resp);
         }
-    } else if (strcmp(t, "enlace") == 0) {
-        cJSON *u = cJSON_GetObjectItem(m, "url");
-        free(S.enlace);
-        S.enlace = (cJSON_IsString(u) && strncmp(u->valuestring, "https://", 8) == 0) ? strdup(u->valuestring) : NULL;
-        ESP_LOGI(TAG, "Enlace en línea recibido");
     } else if (strcmp(t, "permiso") == 0) {
         cJSON *p = cJSON_GetObjectItem(m, "permiso"), *ahora = cJSON_GetObjectItem(m, "ahora");
         free(S.permiso);
@@ -874,8 +868,6 @@ static void terminar_sesion(bool desconectar)
     mbedtls_ecp_point_free(&S.publica);
     free(S.permiso);
     S.permiso = NULL;
-    free(S.enlace);
-    S.enlace = NULL;
     S.pidio_certificado = false;
     S.estado = E_NINGUNA;
     S.con_clave = false;
@@ -1211,7 +1203,6 @@ static esp_err_t w_estado(httpd_req_t *req)
     cJSON_AddStringToObject(o, "estado", NOMBRE_ESTADO[S.estado]);
     cJSON_AddBoolToObject(o, "https", s_cert != NULL);
     if (S.permiso && S.estado >= E_ACEPTADA) cJSON_AddStringToObject(o, "permiso", S.permiso);
-    if (S.enlace && S.estado >= E_ACEPTADA) cJSON_AddStringToObject(o, "enlace", S.enlace);
     if (S.estado >= E_SOLICITUD) {
         cJSON_AddStringToObject(o, "paciente", S.paciente);
         cJSON_AddStringToObject(o, "codigo", S.codigo);

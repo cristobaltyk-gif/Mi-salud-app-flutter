@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "1.6"
+VERSION = "1.5"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -119,7 +119,6 @@ class Sesion:
         self.codigo = ""
         self.paciente = ""
         self.permiso: Optional[str] = None   # permiso de consulta (transcribir / ordenar)
-        self.enlace: Optional[str] = None    # con internet: atención normal en línea (como el QR)
         self.ficha: Optional[Dict[str, Any]] = None
         self.esperas: Dict[int, asyncio.Future] = {}
         self.nota_guardada = False   # una atención por consulta (igual que la Ficha)
@@ -192,10 +191,6 @@ class Sesion:
             # no pide certificado; su página es local y ya es "segura")
             self.permiso = m.get("permiso") if isinstance(m.get("permiso"), str) else None
             log("permiso de consulta recibido")
-        elif tipo == "enlace":
-            u = m.get("url")
-            self.enlace = u if isinstance(u, str) and u.startswith("https://") else None
-            log("enlace en línea recibido")
         elif tipo == "fin":
             log("el paciente terminó la consulta")
             terminar_sesion(self)
@@ -357,8 +352,6 @@ async def w_estado(_):
     r = {"estado": s.estado, "paciente": s.paciente, "codigo": s.codigo}
     if s.permiso and s.estado in ("aceptada", "activa"):
         r["permiso"] = s.permiso
-    if s.enlace and s.estado in ("aceptada", "activa"):
-        r["enlace"] = s.enlace
     return web.json_response(r)
 
 

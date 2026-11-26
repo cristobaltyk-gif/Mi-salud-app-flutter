@@ -31,7 +31,6 @@ import 'storage_service.dart';
 import 'http_sesion.dart' as red;
 import '../config/app_config.dart';
 import 'traduccion_service.dart';
-import 'acceso_medico_service.dart';
 
 const String _servicioBle = '6e8a0001-6b1f-4c39-9d0e-48495046b001';
 const String _caractRx = '6e8a0002-6b1f-4c39-9d0e-48495046b001'; // teléfono → PC
@@ -301,7 +300,6 @@ class SesionLector {
     estado = 'activa';
     _cambios.add(null);
     unawaited(_enviarPermiso());
-    unawaited(_enviarEnlace());
     return true;
   }
 
@@ -325,42 +323,6 @@ class SesionLector {
       await _enviar({'tipo': 'permiso', 'permiso': _permiso, 'usos': d['usos'], 'ahora': d['ahora']});
     } catch (_) {
       // Sin permiso: dictar y ordenar quedan apagados en el lector
-    }
-  }
-
-  // ── Con internet: la atención normal en línea ──
-  // El teléfono crea el mismo enlace del QR y se lo pasa al lector. Si el PC
-  // también tiene internet, la página del lector abre esa atención (dictado,
-  // Claude, guardado directo en la ficha). Si no, sigue la consulta sin red.
-  String? _tokenEnlace;
-
-  Future<void> _enviarEnlace() async {
-    try {
-      if (!await red.hayInternet() || _clave == null) return;
-      final link = await AccesoMedicoService.generarLink(rutPaciente: rutPaciente)
-          .timeout(const Duration(seconds: 15));
-      _tokenEnlace = link.token;
-      await _enviar({'tipo': 'enlace', 'url': '${AppConfig.misaludWebUrl}/medico/acceso/${link.token}'});
-    } catch (_) {
-      // Sin enlace: la consulta sigue por el lector, como sin internet
-    }
-  }
-
-  // Al terminar, el enlace se anula: el médico ya no entra con él
-  Future<void> _anularEnlace() async {
-    final token = _tokenEnlace;
-    if (token == null) return;
-    _tokenEnlace = null;
-    try {
-      final links = await AccesoMedicoService.misLinks(rutPaciente: rutPaciente);
-      for (final l in links) {
-        if (l.token == token) {
-          await AccesoMedicoService.revocarLink(l.id, rutPaciente: rutPaciente);
-          break;
-        }
-      }
-    } catch (_) {
-      // Sin red: el enlace vence solo
     }
   }
 
@@ -433,7 +395,6 @@ class SesionLector {
       } catch (_) {}
     }
     _accesoPorRut.clear();
-    unawaited(_anularEnlace());
     try {
       await _canal?.cerrar();
     } catch (_) {}
