@@ -1379,11 +1379,56 @@ function mostrarEstado(j){window._ultimoEstado=j;
  $('solicitud').hidden=j.estado!=='solicitud';
  if(j.estado==='solicitud'){$('solNombre').textContent=j.paciente||'Un paciente';$('solCodigo').textContent=j.codigo||''}
  if(j.estado==='aceptada'||j.estado==='activa'){if(!yo)$('ident').hidden=false}else $('ident').hidden=true;
- if(j.estado==='espera')reiniciar()}
+ if(j.estado==='espera'){reiniciar();if(dictando)alternarDictado()}}
 async function sondeo(){try{const r=await fetch('/api/estado');const j=await r.json();
- if(j.estado!==estadoPrevio){estadoPrevio=j.estado;mostrarEstado(j)}}catch(e){}setTimeout(sondeo,1000)}
+ if(j.estado!==estadoPrevio){estadoPrevio=j.estado;mostrarEstado(j)}
+ if((j.permiso||null)!==permiso){permiso=j.permiso||null;herramientasIA()}}catch(e){}setTimeout(sondeo,1000)}
+
+// ── Dictar y Ordenar con Claude: solo con página segura (https o el PC
+//    mismo), internet en el PC y el permiso de la consulta que trajo el
+//    teléfono del paciente ("transcribir" / "ordenar"). Si no, apagados. ──
+const API_MISALUD='https://portal-api.hipokratia.health';
+let permiso=null,dictando=false,reconocedor=null,ordenando=false;
+Object.assign(I18N.es,{dictar:'Dictar',detener:'Detener dictado',ordenar:'Ordenar con Claude',ordenando:'Ordenando…',ia_sin_red:'Dictar y ordenar necesitan internet en este computador',ia_sin_permiso:'Dictar y ordenar se activan cuando el teléfono del paciente tiene internet',ia_sin_https:'Este lector aún no tiene dirección segura: el dictado se activa sola cuando la tenga',err_ordenar:'No se pudo ordenar. Intenta de nuevo.',err_micro:'No hay acceso al micrófono. Revisa el permiso del navegador.'});
+Object.assign(I18N.en,{dictar:'Dictate',detener:'Stop dictation',ordenar:'Organize with Claude',ordenando:'Organizing…',ia_sin_red:'Dictation and organizing need internet on this computer',ia_sin_permiso:'Dictation and organizing turn on when the patient’s phone has internet',ia_sin_https:'This reader has no secure address yet: dictation turns on by itself once it does',err_ordenar:'Could not organize. Try again.',err_micro:'No microphone access. Check the browser permission.'});
+Object.assign(I18N.de,{dictar:'Diktieren',detener:'Diktat beenden',ordenar:'Mit Claude ordnen',ordenando:'Wird geordnet…',ia_sin_red:'Diktat und Ordnen brauchen Internet auf diesem Computer',ia_sin_permiso:'Diktat und Ordnen werden aktiv, wenn das Telefon des Patienten Internet hat',ia_sin_https:'Dieses Lesegerät hat noch keine sichere Adresse: das Diktat wird automatisch aktiv, sobald es eine hat',err_ordenar:'Ordnen nicht möglich. Bitte erneut versuchen.',err_micro:'Kein Mikrofonzugriff. Prüfen Sie die Browserberechtigung.'});
+Object.assign(I18N.fr,{dictar:'Dicter',detener:'Arrêter la dictée',ordenar:'Organiser avec Claude',ordenando:'Organisation…',ia_sin_red:'La dictée et l’organisation nécessitent internet sur cet ordinateur',ia_sin_permiso:'La dictée et l’organisation s’activent quand le téléphone du patient a internet',ia_sin_https:'Ce lecteur n’a pas encore d’adresse sécurisée : la dictée s’activera d’elle-même',err_ordenar:'Impossible d’organiser. Réessayez.',err_micro:'Pas d’accès au micro. Vérifiez l’autorisation du navigateur.'});
+function usosPermiso(){try{const c=permiso.split('.')[0].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(c+'==='.slice((c.length+3)%4))).usos||[]}catch(e){return []}}
+function herramientasIA(){const usos=permiso?usosPermiso():[];const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ const red=navigator.onLine,seguro=window.isSecureContext;
+ const pDictar=!!SR&&seguro&&red&&usos.includes('transcribir'),pOrdenar=red&&usos.includes('ordenar');
+ $('btnDictar').disabled=!pDictar&&!dictando;$('btnOrdenar').disabled=!pOrdenar||ordenando;
+ $('txtDictar').textContent=t(dictando?'detener':'dictar');$('txtOrdenar').textContent=t(ordenando?'ordenando':'ordenar');
+ $('btnDictar').classList.toggle('da-tool-btn--recording',dictando);
+ const aviso=!red?'ia_sin_red':!permiso?'ia_sin_permiso':(!seguro&&usos.includes('transcribir'))?'ia_sin_https':'';
+ $('avisoIA').textContent=aviso?t(aviso):'';$('avisoIA').hidden=!aviso}
+const IDIOMA_VOZ={es:'es-CL',en:'en-US',de:'de-DE',fr:'fr-FR'};
+function alternarDictado(){if(dictando){dictando=false;try{reconocedor&&reconocedor.stop()}catch(e){}herramientasIA();return}
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;dictando=true;herramientasIA();escuchar(SR)}
+function escuchar(SR){const r=new SR();reconocedor=r;r.lang=IDIOMA_VOZ[LANG]||'es-CL';r.continuous=true;r.interimResults=false;
+ r.onresult=e=>{let txt='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)txt+=e.results[i][0].transcript.trim()+' ';
+  if(txt){const a=$('atencion');a.value=(a.value?a.value.trimEnd()+' ':'')+txt.trim()}};
+ r.onerror=e=>{if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){dictando=false;$('msg').className='hk-msg hk-err';$('msg').textContent=t('err_micro');herramientasIA()}};
+ r.onend=()=>{if(dictando)setTimeout(()=>{if(dictando)escuchar(SR)},300)};
+ try{r.start()}catch(e){}}
+async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!texto||!permiso||ordenando)return;
+ if(dictando)alternarDictado();ordenando=true;herramientasIA();const m=$('msg');m.textContent='';
+ try{const r=await fetch(API_MISALUD+'/api/lector/ordenar',{method:'POST',headers:{'Content-Type':'application/json','X-Permiso-Consulta':permiso},body:JSON.stringify({text:texto})});
+  if(!r.ok)throw new Error();const d=await r.json();
+  $('atencion').value=d.atencion||texto;$('diagnostico').value=d.diagnostico||'';$('examenes').value=d.examenes||'';
+  $('indicaciones').value=d.indicaciones||'';$('orden_kinesiologia').value=d.ordenKinesica||'';$('indicacion_quirurgica').value=d.indicacionQuirurgica||'';
+  if((d.medicamentosEstructurados||[]).length){meds=d.medicamentosEstructurados.map(x=>({medicamento:x.medicamento||'',dosis:x.dosis||'',frecuencia_horas:x.frecuencia_horas??'',duracion_dias:x.duracion_dias??'',cronico:!!x.cronico}));pintarMeds()}
+ }catch(e){m.className='hk-msg hk-err';m.textContent=t('err_ordenar')}
+ finally{ordenando=false;herramientasIA()}}
+(function(){const caja=document.querySelector('.da-tools');const icMic='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>';
+ const icIA='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/></svg>';
+ caja.insertAdjacentHTML('beforeend','<button class="da-tool-btn" id="btnDictar" onclick="alternarDictado()" disabled><span class="da-tool-icon">'+icMic+'</span><span id="txtDictar"></span></button>'
+  +'<button class="da-tool-btn da-tool-btn--claude" id="btnOrdenar" onclick="ordenarConClaude()" disabled><span class="da-tool-icon">'+icIA+'</span><span id="txtOrdenar"></span></button>'
+  +'<p id="avisoIA" class="da-tools-label" style="text-transform:none;letter-spacing:0;font-weight:500;line-height:1.35" hidden></p>');
+ addEventListener('online',herramientasIA);addEventListener('offline',herramientasIA);herramientasIA()})();
 (function(){const h=document.querySelector('.da-main-header');const b=document.createElement('button');
  b.className='da-btn-cancel';b.dataset.i='terminar';b.textContent=t('terminar');b.style.marginLeft='auto';b.onclick=terminarConsulta;h.appendChild(b)})();
+const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA()};
 aplicarIdioma();
 sondeo();
 </script></body></html>

@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "1.4"
+VERSION = "1.5"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -118,6 +118,7 @@ class Sesion:
         self.clave: Optional[AESGCM] = None
         self.codigo = ""
         self.paciente = ""
+        self.permiso: Optional[str] = None   # permiso de consulta (transcribir / ordenar)
         self.ficha: Optional[Dict[str, Any]] = None
         self.esperas: Dict[int, asyncio.Future] = {}
         self.nota_guardada = False   # una atención por consulta (igual que la Ficha)
@@ -185,6 +186,11 @@ class Sesion:
             fut = self.esperas[m["n"]]
             if not fut.done():
                 fut.set_result(m)
+        elif tipo == "permiso":
+            # El teléfono tenía internet: dictar y ordenar en la página (el PC
+            # no pide certificado; su página es local y ya es "segura")
+            self.permiso = m.get("permiso") if isinstance(m.get("permiso"), str) else None
+            log("permiso de consulta recibido")
         elif tipo == "fin":
             log("el paciente terminó la consulta")
             terminar_sesion(self)
@@ -343,7 +349,10 @@ async def w_estado(_):
     s = ACTUAL
     if s is None or s.estado == "handshake":
         return web.json_response({"estado": "espera"})
-    return web.json_response({"estado": s.estado, "paciente": s.paciente, "codigo": s.codigo})
+    r = {"estado": s.estado, "paciente": s.paciente, "codigo": s.codigo}
+    if s.permiso and s.estado in ("aceptada", "activa"):
+        r["permiso"] = s.permiso
+    return web.json_response(r)
 
 
 async def w_aceptar(_):
