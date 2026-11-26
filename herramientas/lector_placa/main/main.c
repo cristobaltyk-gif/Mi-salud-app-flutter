@@ -100,6 +100,7 @@ static char s_dominio[64];                // p. ej. "k3x7q2m9ab.lector.hipokrati
 static char *s_llave_pem = NULL;          // PEM de la llave privada (P-256)
 static char *s_cert = NULL;               // cadena PEM del certificado vigente (o NULL)
 static int64_t s_cert_vence = 0;          // segundos Unix (notAfter)
+static const char *s_cert_estado = "sin certificado";   // para /api/estado (diagnóstico)
 static volatile bool s_cert_nuevo = false;   // se instaló uno nuevo: reiniciar al terminar la consulta
 
 static int azar_id(void *p, unsigned char *buf, size_t n) { esp_fill_random(buf, n); return 0; }
@@ -127,6 +128,34 @@ static esp_err_t nvs_guardar(const char *clave, const char *valor)
     if (r == ESP_OK) r = nvs_commit(h);
     nvs_close(h);
     return r;
+}
+
+// El certificado (cadena completa de Let's Encrypt) puede pasar los 4000
+// bytes que acepta nvs_set_str: se guarda como blob (con su \0 final).
+static esp_err_t nvs_guardar_blob(const char *clave, const char *valor)
+{
+    nvs_handle_t h;
+    esp_err_t r = nvs_open("lector", NVS_READWRITE, &h);
+    if (r != ESP_OK) return r;
+    r = nvs_set_blob(h, clave, valor, strlen(valor) + 1);
+    if (r == ESP_OK) r = nvs_commit(h);
+    nvs_close(h);
+    return r;
+}
+
+static char *nvs_leer_blob(const char *clave)
+{
+    nvs_handle_t h;
+    if (nvs_open("lector", NVS_READONLY, &h) != ESP_OK) return NULL;
+    size_t n = 0;
+    char *v = NULL;
+    if (nvs_get_blob(h, clave, NULL, &n) == ESP_OK && n > 1) {
+        v = malloc(n);
+        if (v && nvs_get_blob(h, clave, v, &n) != ESP_OK) { free(v); v = NULL; }
+        if (v) v[n - 1] = 0;
+    }
+    nvs_close(h);
+    return v;
 }
 
 static int64_t dias_desde_civil(int y, int m, int d)   // días desde 1970-01-01
@@ -189,9 +218,10 @@ static void cargar_identidad(void)
     }
     // Certificado: si hay uno y es de esta llave, se usa https
     if (s_llave_pem) {
-        char *cert = nvs_leer("cert");
-        if (cert && cert_valido(cert, &s_cert_vence)) s_cert = cert;
-        else free(cert);
+        char *cert = nvs_leer_blob("certpem");
+        if (!cert) cert = nvs_leer("cert");               // versiones anteriores
+        if (cert && cert_valido(cert, &s_cert_vence)) { s_cert = cert; s_cert_estado = "ok"; }
+        else { if (cert) s_cert_estado = "certificado guardado no sirve"; free(cert); }
     }
     ESP_LOGI(TAG, "Lector %s · %s", s_dominio, s_cert ? "con certificado (https)" : "sin certificado todavía (http)");
 }
@@ -439,7 +469,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.8"
+#define VERSION        "placa-1.9"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -791,11 +821,19 @@ static void recibir(const char *raw)
         cJSON *c = cJSON_GetObjectItem(m, "certificado");
         xSemaphoreGive(g_mutex);
         int64_t vence = 0;
-        if (cJSON_IsString(c) && cert_valido(c->valuestring, &vence) && nvs_guardar("cert", c->valuestring) == ESP_OK) {
-            s_cert_nuevo = true;                         // se activa al terminar la consulta
-            ESP_LOGI(TAG, "Certificado nuevo guardado");
+        esp_err_t g = ESP_FAIL;
+        if (!cJSON_IsString(c)) {
+            cJSON *e = cJSON_GetObjectItem(m, "error");
+            s_cert_estado = cJSON_IsString(e) ? "el servidor no lo emitió" : "no llegó el certificado";
+        } else if (!cert_valido(c->valuestring, &vence)) {
+            s_cert_estado = "certificado recibido no corresponde a la llave";
+        } else if ((g = nvs_guardar_blob("certpem", c->valuestring)) != ESP_OK) {
+            s_cert_estado = "no se pudo guardar el certificado";
+            ESP_LOGW(TAG, "NVS: %s", esp_err_to_name(g));
         } else {
-            ESP_LOGW(TAG, "El certificado recibido no sirve");
+            s_cert_nuevo = true;                         // se activa al terminar la consulta
+            s_cert_estado = "guardado: se activa al terminar la consulta";
+            ESP_LOGI(TAG, "Certificado nuevo guardado (%u bytes)", (unsigned)strlen(c->valuestring));
         }
         cJSON_Delete(m);
         return;
@@ -1202,6 +1240,7 @@ static esp_err_t w_estado(httpd_req_t *req)
     xSemaphoreTake(g_mutex, portMAX_DELAY);
     cJSON_AddStringToObject(o, "estado", NOMBRE_ESTADO[S.estado]);
     cJSON_AddBoolToObject(o, "https", s_cert != NULL);
+    cJSON_AddStringToObject(o, "certificado", s_cert_estado);
     if (S.permiso && S.estado >= E_ACEPTADA) cJSON_AddStringToObject(o, "permiso", S.permiso);
     if (S.estado >= E_SOLICITUD) {
         cJSON_AddStringToObject(o, "paciente", S.paciente);
@@ -1533,6 +1572,7 @@ static void iniciar_pagina(void)
             return;
         }
         ESP_LOGE(TAG, "No partió https; se usa http");
+        s_cert_estado = "https no partió";
         free(s_cert);
         s_cert = NULL;
     }
