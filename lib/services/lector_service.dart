@@ -270,6 +270,7 @@ class SesionLector {
   /// código listo para comparar. false = ningún lector llegó a tiempo.
   /// La consulta en curso (una sola a la vez en el teléfono)
   static SesionLector? actual;
+  String? _idNota;   // la atención guardada en esta consulta (para Modificar)
   bool _terminada = false;
 
   Future<bool> conectar({Duration limite = const Duration(seconds: 60)}) async {
@@ -417,6 +418,11 @@ class SesionLector {
 
   Future<void> terminar({bool avisar = true}) async {
     _terminada = true;
+    // Terminó la consulta: la atención ya no se modifica y puede enviarse
+    if (_idNota != null && NotasOfflineService.retenida == _idNota) {
+      NotasOfflineService.retenida = null;
+      unawaited(NotasOfflineService.enviarPendientes());
+    }
     if (identical(actual, this)) actual = null;
     if (_canal == null) await LectorService.cancelarEspera();
     if (avisar && _clave != null) {
@@ -483,21 +489,31 @@ class SesionLector {
         await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': true});
         break;
       case 'nota':
-        if (notas > 0) {
-          // Una atención por consulta, igual que en la Ficha
+        // Una atención por consulta, igual que en la Ficha; "Modificar" la
+        // reemplaza mientras siga en el teléfono (hasta Terminar)
+        final reemplazar = m['reemplazar'] == true;
+        if (notas > 0 && !reemplazar) {
           await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': false, 'detail': 'La atención de esta consulta ya fue guardada'});
+          break;
+        }
+        final anterior = _idNota;
+        if (reemplazar && (anterior == null || !await NotasOfflineService.pendiente(anterior))) {
+          await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': false, 'detail': 'La atención ya fue enviada a la ficha; no se puede modificar aquí'});
           break;
         }
         try {
           final c = (m['contenido'] as Map?) ?? {};
-          await NotasOfflineService.guardar(
+          _idNota = await NotasOfflineService.guardar(
             rutPaciente: rutPaciente,
             medicoRut: (m['rut'] as String? ?? '').trim(),
             medicoNombre: (m['nombre'] as String? ?? '').trim(),
             aceptadaAt: aceptadaAt,
-            contenido: {for (final k in NotasOfflineService.campos) k: (c[k] ?? '').toString()},
+            formato: '2',
+            reemplaza: reemplazar ? anterior : null,
+            contenido: {for (final k in NotasOfflineService.camposV2) k: (c[k] ?? '').toString()},
           );
-          notas++;
+          NotasOfflineService.retenida = _idNota;
+          if (!reemplazar) notas++;
           _cambios.add(null);
           await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': true});
         } catch (_) {

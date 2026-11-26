@@ -60,7 +60,7 @@ async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{meth
 async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
 function reiniciar(){yo=null;ficha={};fichaOriginal={};fichaTrad={};verOriginal=false;$('avisoTrad').hidden=true;$('esExt').checked=false;$('campoRut').hidden=false;$('campoExt').hidden=true;guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
  for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';
- $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML=''}
+ $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML='';cie10=[];cieAbierto=false;antCambios={agregar:[],archivar:[]};modificando=false;$('btnGuardar').hidden=false;$('btnModificar').hidden=true;pintarCie10()}
 function mostrarEstado(j){window._ultimoEstado=j;
  $('espera').hidden=j.estado!=='espera';
  $('solicitud').hidden=j.estado!=='solicitud';
@@ -81,7 +81,7 @@ Object.assign(I18N.en,{detener_ordenar:'Stop and organize',reordenar:'✨ Organi
 Object.assign(I18N.de,{detener_ordenar:'Stoppen und ordnen',reordenar:'✨ Erneut ordnen',sin_texto:'Bitte zuerst die Behandlung schreiben oder diktieren.',dictar:'Diktieren',detener:'Diktat beenden',ordenar:'Mit Claude ordnen',ordenando:'Wird geordnet…',ia_sin_red:'Diktat und Ordnen brauchen Internet auf diesem Computer',ia_sin_permiso:'Diktat und Ordnen werden aktiv, wenn das Telefon des Patienten Internet hat',ia_sin_https:'Dieses Lesegerät hat noch keine sichere Adresse: das Diktat wird automatisch aktiv, sobald es eine hat',err_ordenar:'Ordnen nicht möglich. Bitte erneut versuchen.',err_micro:'Kein Mikrofonzugriff. Prüfen Sie die Browserberechtigung.'});
 Object.assign(I18N.fr,{detener_ordenar:'Arrêter et organiser',reordenar:'✨ Réorganiser',sin_texto:'Écrivez ou dictez d’abord la consultation.',dictar:'Dicter',detener:'Arrêter la dictée',ordenar:'Organiser avec Claude',ordenando:'Organisation…',ia_sin_red:'La dictée et l’organisation nécessitent internet sur cet ordinateur',ia_sin_permiso:'La dictée et l’organisation s’activent quand le téléphone du patient a internet',ia_sin_https:'Ce lecteur n’a pas encore d’adresse sécurisée : la dictée s’activera d’elle-même',err_ordenar:'Impossible d’organiser. Réessayez.',err_micro:'Pas d’accès au micro. Vérifiez l’autorisation du navigateur.'});
 function usosPermiso(){try{const c=permiso.split('.')[0].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(c+'==='.slice((c.length+3)%4))).usos||[]}catch(e){return []}}
-function herramientasIA(){const usos=permiso?usosPermiso():[];const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function herramientasIA(){setTimeout(()=>{if(!cieAbierto)pintarCie10()},0);const usos=permiso?usosPermiso():[];const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  const red=navigator.onLine,seguro=window.isSecureContext;
  const pDictar=!!SR&&seguro&&red&&usos.includes('transcribir'),pOrdenar=red&&usos.includes('ordenar');
  $('btnDictar').disabled=(!pDictar&&!dictando)||ordenando;
@@ -101,6 +101,10 @@ function escuchar(SR){const r=new SR();reconocedor=r;r.lang=IDIOMA_VOZ[LANG]||'e
  r.onerror=e=>{if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){dictando=false;$('msg').className='hk-msg hk-err';$('msg').textContent=t('err_micro');herramientasIA()}};
  r.onend=()=>{if(dictando)setTimeout(()=>{if(dictando)escuchar(SR)},300)};
  try{r.start()}catch(e){}}
+// CIE-10: buscar en la lista oficial (con internet y el permiso de la consulta)
+window.puedeCie10=()=>!!permiso&&navigator.onLine;
+window.buscarCie10=async q=>{const r=await fetch(API_MISALUD+'/api/lector/cie10?q='+encodeURIComponent(q),{headers:{'X-Permiso-Consulta':permiso}});
+ return r.ok?((await r.json()).resultados||[]):[]};
 async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!permiso||ordenando)return;
  if(!texto){const m=$('msg');m.className='hk-msg err';m.textContent=t('sin_texto');$('atencion').focus();return}
  if(dictando){dictando=false;try{reconocedor&&reconocedor.stop()}catch(e){}}ordenando=true;herramientasIA();const m=$('msg');m.textContent='';
@@ -108,6 +112,7 @@ async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!per
   if(!r.ok)throw new Error();const d=await r.json();
   $('atencion').value=d.atencion||texto;$('diagnostico').value=d.diagnostico||'';$('examenes').value=d.examenes||'';
   $('indicaciones').value=d.indicaciones||'';$('orden_kinesiologia').value=d.ordenKinesica||'';$('indicacion_quirurgica').value=d.indicacionQuirurgica||'';
+  if(Array.isArray(d.diagnosticoCie10)&&d.diagnosticoCie10.length){cie10=d.diagnosticoCie10.slice(0,5).map(c=>({codigo:c.codigo,descripcion:c.descripcion}));pintarCie10()}
   if((d.medicamentosEstructurados||[]).length){meds=d.medicamentosEstructurados.map(x=>({medicamento:x.medicamento||'',dosis:x.dosis||'',frecuencia_horas:x.frecuencia_horas??'',duracion_dias:x.duracion_dias??'',cronico:!!x.cronico}));pintarMeds()}
  }catch(e){m.className='hk-msg hk-err';m.textContent=t('err_ordenar')}
  finally{ordenando=false;herramientasIA()}}
@@ -173,7 +178,7 @@ const _guardar=guardar;guardar=async function(){await _guardar();if(!guardado)re
  let h='<p class="hk-tarjeta-sub">'+esc(t('imprimir_entregar'))+' '+esc(t('doc_firma'))+'</p><button class="hk-doc" '+b+'border:none;background:#1B3B8C;color:#fff" onclick="emitir(\\'imprimir\\',docsAtencion())">🖨️ '+esc(t('imprimir_todo'))+' ('+docs.length+')</button>';
  for(const d of docs)h+='<button class="hk-doc" '+b+'border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a;text-align:left" onclick="emitir(\\'imprimir\\',[documentoDe(\\''+d.tipo+'\\')].filter(Boolean))">🖨️ '+esc(t('doc_'+d.tipo))+'</button>';
  caja.innerHTML=h;herramientasDoc();emitir('email',docs)};
-const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc()};
+const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc();pintarCie10()};
 aplicarIdioma();
 sondeo();
 '''

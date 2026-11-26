@@ -33,6 +33,14 @@ class NotasOfflineService {
     'atencion', 'diagnostico', 'indicaciones', 'receta', 'examenes',
     'orden_kinesiologia', 'indicacion_quirurgica', 'medicamentos',
   ];
+  /// Formato "2" (Lector HypokratIA): + CIE-10 del diagnóstico y cambios de
+  /// antecedentes, ambos como texto JSON. Mismo orden que CAMPOS_V2 en la Ficha.
+  static const List<String> camposV2 = [...campos, 'diagnostico_cie10', 'antecedentes'];
+  static List<String> camposDe(String? formato) => formato == '2' ? camposV2 : campos;
+
+  /// Nota de la consulta en curso en el lector: no se envía mientras el
+  /// médico todavía puede modificarla (hasta que el paciente toca Terminar).
+  static String? retenida;
   static bool _enviando = false;
 
   static String _idLocal() {
@@ -42,15 +50,16 @@ class NotasOfflineService {
 
   static Future<String> calcularSello(Map<String, dynamic> n) async {
     final contenido = (n['contenido'] as Map?) ?? {};
+    final formato = (n['formato'] as String?) ?? _formatoSello;
     final partes = <String>[
-      _formatoSello,
+      formato,
       n['id_local'] as String,
       n['rut_paciente'] as String,
       n['medico_rut'] as String,
       n['medico_nombre'] as String,
       n['escrita_at'] as String,
       (n['aceptada_at'] as String?) ?? '',
-      for (final c in campos) (contenido[c] as String?) ?? '',
+      for (final c in camposDe(formato)) (contenido[c] as String?) ?? '',
     ];
     final texto = partes.map((p) => '${utf8.encode(p).length}:$p').join();
     final hash = await Sha256().hash(utf8.encode(texto));
@@ -64,22 +73,31 @@ class NotasOfflineService {
     required String medicoNombre,
     required DateTime aceptadaAt,
     required Map<String, String> contenido,
+    String formato = '1',
+    String? reemplaza,
   }) async {
+    final cs = camposDe(formato);
     final nota = <String, dynamic>{
+      if (formato != '1') 'formato': formato,
       'id_local': _idLocal(),
       'rut_paciente': rutPaciente,
       'medico_rut': medicoRut.trim(),
       'medico_nombre': medicoNombre.trim(),
       'escrita_at': DateTime.now().toUtc().toIso8601String(),
       'aceptada_at': aceptadaAt.toUtc().toIso8601String(),
-      'contenido': {for (final c in campos) c: c == 'medicamentos' ? (contenido[c] ?? '[]') : (contenido[c] ?? '').trim()},
+      'contenido': {for (final c in cs) c: c == 'medicamentos' ? (contenido[c] ?? '[]') : (contenido[c] ?? '').trim()},
     };
     nota['sello'] = await calcularSello(nota);
     final notas = await StorageService.obtenerNotasOffline();
+    if (reemplaza != null) notas.removeWhere((n) => n['id_local'] == reemplaza);
     notas.add(nota);
     await StorageService.guardarNotasOffline(notas);
     return nota['id_local'] as String;
   }
+
+  /// ¿La nota sigue en el teléfono (no enviada a la ficha)?
+  static Future<bool> pendiente(String idLocal) async =>
+      (await StorageService.obtenerNotasOffline()).any((n) => n['id_local'] == idLocal);
 
   static Future<int> cantidadPendientes() async => (await StorageService.obtenerNotasOffline()).length;
 
@@ -151,6 +169,7 @@ class NotasOfflineService {
 
       final listas = <String>{}; // enviadas (o rechazadas por alteradas)
       for (final nota in notas) {
+        if (nota['id_local'] == retenida) continue; // consulta en curso: aún se puede modificar
         try {
           final res = await http.post(
             Uri.parse(AppConfig.notasOfflineEndpoint),

@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "2.2"
+VERSION = "2.3"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)
@@ -403,15 +403,17 @@ async def w_identificar(req):
 
 async def w_nota(req):
     s = _sesion_activa()
-    if s.nota_guardada:
-        return _error("La atención de esta consulta ya fue guardada", 409)
     b = await req.json()
+    reemplazar = bool(b.get("reemplazar"))   # "Modificar": reemplaza la atención de esta consulta
+    if s.nota_guardada and not reemplazar:
+        return _error("La atención de esta consulta ya fue guardada", 409)
     nombre, rut = str(b.get("nombre") or "").strip(), str(b.get("rut") or "").strip()
     if len(nombre) < 3 or not rut_valido(rut):
         return _error("Falta tu nombre o RUT")
     contenido = {k: str(v) for k, v in (b.get("contenido") or {}).items()}
     try:
-        r = await s.pedir({"tipo": "nota", "nombre": nombre, "rut": rut, "contenido": contenido})
+        r = await s.pedir({"tipo": "nota", "nombre": nombre, "rut": rut, "contenido": contenido,
+                           "reemplazar": reemplazar and s.nota_guardada})
     except (asyncio.TimeoutError, asyncio.CancelledError):
         return _error("El teléfono del paciente no respondió; la nota NO se guardó", 504)
     if not r.get("ok", True):

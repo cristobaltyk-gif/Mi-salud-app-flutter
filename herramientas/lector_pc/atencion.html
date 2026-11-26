@@ -1116,10 +1116,11 @@
     <div class="da-tools">
       <p class="da-tools-label" data-i="herramientas">Herramientas</p>
       <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span data-i="historial">Ver historial</span></button>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span data-i="antecedentes">Antecedentes</span></button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span data-i="editar_ant">Editar antecedentes</span></button>
     </div>
     <div class="da-sidebar-actions">
       <button class="da-btn-cancel" onclick="limpiar()" data-i="cancelar">Cancelar</button>
+      <button class="da-btn-modify" id="btnModificar" onclick="guardar()" data-i="modificar" hidden>Modificar</button>
       <button class="da-btn-save" id="btnGuardar" onclick="guardar()" data-i="guardar">Guardar</button>
     </div>
   </aside>
@@ -1131,7 +1132,8 @@
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_atencion">Atención</span></div>
         <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…" data-ip="ph_atencion"></textarea></section>
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_diagnostico">Diagnóstico</span></div>
-        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea></section>
+        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea>
+        <div class="cie10" id="cie10"></div></section>
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_receta">Receta</span></div>
         <div class="da-medicamentos-editor">
           <p class="da-medicamentos-vacio" id="medVacio" data-i="sin_meds">Sin medicamentos agregados. Usa "Ordenar con Claude" o agrega uno manualmente.</p>
@@ -1172,6 +1174,7 @@
     <p class="hk-tarjeta-sub" id="guardadaTxt" data-i="guardada_s">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
     <div id="guardadaDocs"></div>
     <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()" data-i="terminar">Terminar consulta</button>
+    <button class="hk-boton" id="guardadaMod" onclick="modificarAtencion()" data-i="modificar" style="background:#fff;color:#1e293b;border:1px solid #e2e8f0;margin-top:8px">Modificar</button>
   </div>
 </div>
 <div class="hk-velo" id="velo" hidden onclick="cerrarCajon()"></div>
@@ -1288,6 +1291,38 @@ async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponen
  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(td(j.detail||'Error'));return j}
 function edad(f){if(!f)return '—';const [a,m,d]=String(f).slice(0,10).split('-').map(Number);const h=new Date();
  return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' '+t('anios')}
+Object.assign(I18N.es,{editar_ant:'Editar antecedentes',modificar:'Modificar',modificada:'Atención modificada',cie_sin:'Sin código',cie_agregar:'+ Agregar',cie_otro:'+ Otro',cie_ph:'Busca por código (M16) o palabras (coxartrosis)…',cie_buscando:'Buscando…',cie_nada:'Sin resultados',ant_nuevo:'Agregar antecedente',ant_desc:'Descripción',ant_fecha:'Fecha de inicio (opcional)',ant_agregar:'Agregar',ant_archivar:'Archivar',ant_deshacer:'Deshacer',ant_pend:'Se guarda con la atención',ant_nuevo_tag:'Nuevo',ant_falta:'Escriba la descripción'});
+Object.assign(I18N.en,{editar_ant:'Edit background',modificar:'Modify',modificada:'Encounter modified',cie_sin:'No code',cie_agregar:'+ Add',cie_otro:'+ Another',cie_ph:'Search by code (M16) or words (coxarthrosis)…',cie_buscando:'Searching…',cie_nada:'No results',ant_nuevo:'Add background item',ant_desc:'Description',ant_fecha:'Start date (optional)',ant_agregar:'Add',ant_archivar:'Archive',ant_deshacer:'Undo',ant_pend:'Saved with the encounter',ant_nuevo_tag:'New',ant_falta:'Enter the description'});
+Object.assign(I18N.de,{editar_ant:'Vorgeschichte bearbeiten',modificar:'Ändern',modificada:'Behandlung geändert',cie_sin:'Kein Code',cie_agregar:'+ Hinzufügen',cie_otro:'+ Weiterer',cie_ph:'Suche nach Code (M16) oder Wörtern…',cie_buscando:'Suche…',cie_nada:'Keine Ergebnisse',ant_nuevo:'Eintrag hinzufügen',ant_desc:'Beschreibung',ant_fecha:'Beginn (optional)',ant_agregar:'Hinzufügen',ant_archivar:'Archivieren',ant_deshacer:'Rückgängig',ant_pend:'Wird mit der Behandlung gespeichert',ant_nuevo_tag:'Neu',ant_falta:'Bitte Beschreibung eingeben'});
+Object.assign(I18N.fr,{editar_ant:'Modifier les antécédents',modificar:'Modifier',modificada:'Consultation modifiée',cie_sin:'Aucun code',cie_agregar:'+ Ajouter',cie_otro:'+ Autre',cie_ph:'Rechercher par code (M16) ou mots…',cie_buscando:'Recherche…',cie_nada:'Aucun résultat',ant_nuevo:'Ajouter un antécédent',ant_desc:'Description',ant_fecha:'Date de début (optionnelle)',ant_agregar:'Ajouter',ant_archivar:'Archiver',ant_deshacer:'Annuler',ant_pend:'Enregistré avec la consultation',ant_nuevo_tag:'Nouveau',ant_falta:'Saisissez la description'});
+// ── CIE-10 del diagnóstico (igual que la Ficha). Buscar necesita internet:
+//    el lector define buscarCie10(); sin él solo se ven/quitan los códigos.
+let cie10=[],cieAbierto=false,cieRes=[],cieBuscando=false,cieTimer=null;
+window.buscarCie10=window.buscarCie10||null;
+function pintarCie10(){const caja=$('cie10');if(!caja)return;const puede=typeof window.puedeCie10==='function'&&window.puedeCie10();
+ let h='<div class="cie10-etiquetas"><span class="cie10-titulo">CIE-10</span>'+cie10.map((c,i)=>'<span class="cie10-etiqueta" title="'+esc(c.descripcion)+'"><strong>'+esc(c.codigo)+'</strong> '+esc(c.descripcion)+'<button type="button" onclick="quitarCie10('+i+')">✕</button></span>').join('');
+ if(!cie10.length&&!cieAbierto)h+='<span class="cie10-vacio">'+t('cie_sin')+'</span>';
+ if(!cieAbierto&&puede&&cie10.length<5)h+='<button type="button" class="cie10-agregar" onclick="abrirCie10()">'+t(cie10.length?'cie_otro':'cie_agregar')+'</button>';
+ h+='</div>';
+ if(cieAbierto){h+='<div class="cie10-buscador"><input id="cieQ" placeholder="'+esc(t('cie_ph'))+'" oninput="tecleaCie10(this.value)" onkeydown="if(event.key===\'Escape\')cerrarCie10();if(event.key===\'Enter\'&&cieRes[0]){event.preventDefault();agregarCie10(0)}"><button type="button" class="cie10-cerrar" onclick="cerrarCie10()">'+t('cancelar')+'</button><ul class="cie10-resultados" id="cieLista"></ul></div>'}
+ caja.innerHTML=h;if(cieAbierto){const q=$('cieQ');q.value=window._cieQ||'';q.focus();pintarResCie10()}}
+function pintarResCie10(){const l=$('cieLista');if(!l)return;const q=(window._cieQ||'').trim();
+ l.innerHTML=(cieBuscando&&!cieRes.length?'<li class="cie10-info">'+t('cie_buscando')+'</li>':'')+(!cieBuscando&&!cieRes.length&&q.length>=2?'<li class="cie10-info">'+t('cie_nada')+'</li>':'')+
+  cieRes.map((r,i)=>'<li><button type="button" onclick="agregarCie10('+i+')"><strong>'+esc(r.codigo)+'</strong> '+esc(r.descripcion)+'</button></li>').join('');l.hidden=!l.innerHTML}
+function abrirCie10(){cieAbierto=true;window._cieQ='';cieRes=[];pintarCie10()}
+function cerrarCie10(){cieAbierto=false;window._cieQ='';cieRes=[];pintarCie10()}
+function quitarCie10(i){cie10.splice(i,1);pintarCie10()}
+function agregarCie10(i){const r=cieRes[i];if(r&&!cie10.some(c=>c.codigo===r.codigo)&&cie10.length<5)cie10.push({codigo:r.codigo,descripcion:r.descripcion});cerrarCie10()}
+function tecleaCie10(v){window._cieQ=v;clearTimeout(cieTimer);if(v.trim().length<2||!window.buscarCie10){cieRes=[];pintarResCie10();return}
+ cieTimer=setTimeout(async()=>{cieBuscando=true;pintarResCie10();try{cieRes=await window.buscarCie10(v.trim())}catch(e){cieRes=[]}cieBuscando=false;pintarResCie10()},250)}
+// ── Editar antecedentes (igual que la Ficha: agregar y archivar). Los cambios
+//    viajan con la atención y entran a la ficha con la misma verificación.
+let antCambios={agregar:[],archivar:[]};
+function agregarAnt(){const d=$('antDesc').value.trim();if(!d){$('antErr').textContent=t('ant_falta');return}
+ antCambios.agregar.push({categoria:$('antCat').value,descripcion:d,fecha_inicio:$('antFecha').value||null});verAntecedentes()}
+function quitarAntNuevo(i){antCambios.agregar.splice(i,1);verAntecedentes()}
+function archivarAnt(id){const k=antCambios.archivar.indexOf(id);if(k<0)antCambios.archivar.push(id);else antCambios.archivar.splice(k,1);verAntecedentes()}
+function cambiosAntTexto(){return antCambios.agregar.length||antCambios.archivar.length?JSON.stringify(antCambios):''}
 // Nombre como en la Ficha: "Cristóbal Huerta", no en mayúsculas
 function nombrePropio(s){return String(s||'').toLowerCase().replace(/(^|[\s-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase())}
 function reloj(){const h=new Date();$('pFecha').textContent=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('pHora').textContent=h.toTimeString().slice(0,5)}
@@ -1299,7 +1334,7 @@ function idProfesional(){
 function pintarPaciente(){const p=ficha.paciente||{};
  const nombre=[p.nombre,p.apellido_paterno,p.apellido_materno].filter(Boolean).join(' ');
  $('pNombre').textContent=nombre;$('pRut').textContent=p.rut||'';$('avatar').textContent=(nombre||'P').charAt(0).toUpperCase();
- $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—';pintarResumen()}
+ $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—';pintarResumen();pintarCie10()}
 // Resumen de antecedentes siempre visible, igual que en la Ficha (alergias, medicamentos habituales, enfermedades crónicas)
 Object.assign(I18N.es,{res_t:'Antecedentes clínicos',r_alergia:'Alergias',r_medicamento_habitual:'Medicamentos habituales',r_enfermedad_cronica:'Enfermedades crónicas',v_alergia:'SIN ALERGIAS CONOCIDAS',v_medicamento_habitual:'Sin medicamentos registrados',v_enfermedad_cronica:'Sin enfermedades crónicas registradas'});
 Object.assign(I18N.en,{res_t:'Clinical background',r_alergia:'Allergies',r_medicamento_habitual:'Regular medications',r_enfermedad_cronica:'Chronic conditions',v_alergia:'NO KNOWN ALLERGIES',v_medicamento_habitual:'No medications recorded',v_enfermedad_cronica:'No chronic conditions recorded'});
@@ -1358,10 +1393,19 @@ function detalleHistorial(i){const ev=ficha.eventos||[];const e=ev[i];
  $('cajonCuerpo').innerHTML=h+'</div>'}
 function verAntecedentes(){const a=ficha.antecedentes||{};const ks=Object.keys(a).filter(x=>(a[x]||[]).length);
  const n=ks.reduce((t,x)=>t+a[x].length,0);
- $('cajonTitulo').innerHTML='<p class="hk-t1">'+t('antecedentes')+'</p><p class="hk-t2">'+n+' '+t('a_registrados')+'</p>';
- if(!ks.length){$('cajonCuerpo').innerHTML='<div class="hk-vacio">'+t('a_vacio')+'</div>';return}
- $('cajonCuerpo').innerHTML=ks.map(x=>{const em=(CATEGORIAS[x]||['','📋'])[1];const l=CATEGORIAS[x]?t('cat_'+x):x.replace(/_/g,' ');
-  return '<div class="hk-cat"><p class="hk-cat-l">'+em+' '+esc(l)+'</p>'+a[x].map(i=>'<div class="hk-item">'+esc(i.descripcion)+'</div>').join('')+'</div>'}).join('')}
+ $('cajonTitulo').innerHTML='<p class="hk-t1">'+t('editar_ant')+'</p><p class="hk-t2">'+n+' '+t('a_registrados')+'</p>';
+ const bt='style="border:1px solid #e2e8f0;background:#fff;border-radius:8px;padding:3px 9px;font-size:11px;cursor:pointer;margin-left:8px;flex-shrink:0"';
+ let h=!ks.length&&!antCambios.agregar.length?'<div class="hk-vacio">'+t('a_vacio')+'</div>':'';
+ h+=ks.map(x=>{const em=(CATEGORIAS[x]||['','📋'])[1];const l=CATEGORIAS[x]?t('cat_'+x):x.replace(/_/g,' ');
+  return '<div class="hk-cat"><p class="hk-cat-l">'+em+' '+esc(l)+'</p>'+a[x].map(i=>{const arch=i.id!=null&&antCambios.archivar.includes(i.id);
+   return '<div class="hk-item" style="display:flex;align-items:center;justify-content:space-between'+(arch?';text-decoration:line-through;opacity:.5':'')+'"><span>'+esc(i.descripcion)+'</span>'+(i.id!=null?'<button '+bt+' onclick="archivarAnt('+Number(i.id)+')">'+t(arch?'ant_deshacer':'ant_archivar')+'</button>':'')+'</div>'}).join('')+'</div>'}).join('');
+ if(antCambios.agregar.length)h+='<div class="hk-cat"><p class="hk-cat-l">✚ '+t('ant_nuevo_tag')+' · '+t('ant_pend')+'</p>'+antCambios.agregar.map((x,i)=>'<div class="hk-item" style="display:flex;align-items:center;justify-content:space-between"><span>'+(CATEGORIAS[x.categoria]||['','📋'])[1]+' '+esc(x.descripcion)+'</span><button '+bt+' onclick="quitarAntNuevo('+i+')">✕</button></div>').join('')+'</div>';
+ const st='width:100%;box-sizing:border-box;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;margin-bottom:8px';
+ h+='<div style="padding:14px 20px 20px;border-top:1px solid #f1f5f9"><p class="hk-cat-l">'+t('ant_nuevo')+'</p>'+
+  '<select id="antCat" style="'+st+'">'+Object.keys(CATEGORIAS).map(k=>'<option value="'+k+'">'+CATEGORIAS[k][1]+' '+esc(t('cat_'+k))+'</option>').join('')+'</select>'+
+  '<input id="antDesc" style="'+st+'" placeholder="'+esc(t('ant_desc'))+'"><input id="antFecha" type="date" style="'+st+'" title="'+esc(t('ant_fecha'))+'">'+
+  '<p id="antErr" style="color:#b91c1c;font-size:12px;margin:0 0 6px"></p><button class="hk-boton" onclick="agregarAnt()">'+t('ant_agregar')+'</button></div>';
+ $('cajonCuerpo').innerHTML=h}
 function abrir(que){if(que==='historial')listaHistorial();else verAntecedentes();abrirCajon()}
 function sanear(){return meds.filter(m=>m.medicamento&&m.medicamento.trim()).map(m=>({medicamento:m.medicamento.trim(),dosis:(m.dosis||'').trim(),
  frecuencia_horas:m.frecuencia_horas===''||m.frecuencia_horas==null?null:parseInt(m.frecuencia_horas,10),
@@ -1384,15 +1428,21 @@ function setCronico(i,v){meds[i].cronico=v;if(v)meds[i].duracion_dias='';pintarM
 function agregarMed(){meds.push({medicamento:'',dosis:'',frecuencia_horas:'',duracion_dias:'',cronico:false});pintarMeds()}
 function quitarMed(i){meds.splice(i,1);pintarMeds()}
 const CAMPOS=['atencion','diagnostico','indicaciones','examenes','orden_kinesiologia','indicacion_quirurgica'];
-function limpiar(){for(const c of CAMPOS)$(c).value='';meds=[];pintarMeds();$('msg').textContent=''}
+function limpiar(){for(const c of CAMPOS)$(c).value='';meds=[];pintarMeds();cie10=[];cieAbierto=false;pintarCie10();if(!guardado){antCambios={agregar:[],archivar:[]}}$('msg').textContent=''}
 let guardado=false;
-async function guardar(){if(guardado)return;const m=$('msg');m.className='hk-msg';m.textContent='';
+let modificando=false;
+async function guardar(){if(guardado&&!modificando)return;const m=$('msg');m.className='hk-msg';m.textContent='';
  const contenido={};for(const c of CAMPOS)contenido[c]=$(c).value;contenido.receta=recetaTxt();contenido.medicamentos=JSON.stringify(sanear());
- try{$('btnGuardar').disabled=true;await post('/api/nota',{...yo,contenido});guardado=true;$('guardada').hidden=false}
- catch(x){$('btnGuardar').disabled=false;m.className='hk-msg err';m.textContent=x.message}}
+ contenido.diagnostico_cie10=JSON.stringify(cie10);contenido.antecedentes=cambiosAntTexto();
+ const b=modificando?$('btnModificar'):$('btnGuardar');
+ try{b.disabled=true;await post('/api/nota',{...yo,contenido,reemplazar:modificando});const era=modificando;guardado=true;modificando=false;
+  $('guardadaTxt').textContent=era?t('modificada'):t('guardada_s');$('guardada').hidden=false;b.disabled=false}
+ catch(x){b.disabled=false;m.className='hk-msg err';m.textContent=x.message}}
+// Modificar (como la Ficha): la atención sigue en el teléfono hasta Terminar
+function modificarAtencion(){modificando=true;$('guardada').hidden=true;$('btnGuardar').hidden=true;$('btnModificar').hidden=false}
 function terminarDesdeGuardada(){if(typeof terminarConsulta==='function')terminarConsulta();else{$('guardadaTxt').textContent=t('terminada');$('guardadaBtn').hidden=true}}
 document.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'}));
-pintarMeds();
+pintarMeds();pintarCie10();
 aplicarIdioma();
 
 // ── Lector HypokratIA (programa en el PC) ──
@@ -1402,7 +1452,7 @@ async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{meth
 async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
 function reiniciar(){yo=null;ficha={};fichaOriginal={};fichaTrad={};verOriginal=false;$('avisoTrad').hidden=true;$('esExt').checked=false;$('campoRut').hidden=false;$('campoExt').hidden=true;guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
  for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';
- $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML=''}
+ $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML='';cie10=[];cieAbierto=false;antCambios={agregar:[],archivar:[]};modificando=false;$('btnGuardar').hidden=false;$('btnModificar').hidden=true;pintarCie10()}
 function mostrarEstado(j){window._ultimoEstado=j;
  $('espera').hidden=j.estado!=='espera';
  $('solicitud').hidden=j.estado!=='solicitud';
@@ -1423,7 +1473,7 @@ Object.assign(I18N.en,{detener_ordenar:'Stop and organize',reordenar:'✨ Organi
 Object.assign(I18N.de,{detener_ordenar:'Stoppen und ordnen',reordenar:'✨ Erneut ordnen',sin_texto:'Bitte zuerst die Behandlung schreiben oder diktieren.',dictar:'Diktieren',detener:'Diktat beenden',ordenar:'Mit Claude ordnen',ordenando:'Wird geordnet…',ia_sin_red:'Diktat und Ordnen brauchen Internet auf diesem Computer',ia_sin_permiso:'Diktat und Ordnen werden aktiv, wenn das Telefon des Patienten Internet hat',ia_sin_https:'Dieses Lesegerät hat noch keine sichere Adresse: das Diktat wird automatisch aktiv, sobald es eine hat',err_ordenar:'Ordnen nicht möglich. Bitte erneut versuchen.',err_micro:'Kein Mikrofonzugriff. Prüfen Sie die Browserberechtigung.'});
 Object.assign(I18N.fr,{detener_ordenar:'Arrêter et organiser',reordenar:'✨ Réorganiser',sin_texto:'Écrivez ou dictez d’abord la consultation.',dictar:'Dicter',detener:'Arrêter la dictée',ordenar:'Organiser avec Claude',ordenando:'Organisation…',ia_sin_red:'La dictée et l’organisation nécessitent internet sur cet ordinateur',ia_sin_permiso:'La dictée et l’organisation s’activent quand le téléphone du patient a internet',ia_sin_https:'Ce lecteur n’a pas encore d’adresse sécurisée : la dictée s’activera d’elle-même',err_ordenar:'Impossible d’organiser. Réessayez.',err_micro:'Pas d’accès au micro. Vérifiez l’autorisation du navigateur.'});
 function usosPermiso(){try{const c=permiso.split('.')[0].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(c+'==='.slice((c.length+3)%4))).usos||[]}catch(e){return []}}
-function herramientasIA(){const usos=permiso?usosPermiso():[];const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function herramientasIA(){setTimeout(()=>{if(!cieAbierto)pintarCie10()},0);const usos=permiso?usosPermiso():[];const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  const red=navigator.onLine,seguro=window.isSecureContext;
  const pDictar=!!SR&&seguro&&red&&usos.includes('transcribir'),pOrdenar=red&&usos.includes('ordenar');
  $('btnDictar').disabled=(!pDictar&&!dictando)||ordenando;
@@ -1443,6 +1493,10 @@ function escuchar(SR){const r=new SR();reconocedor=r;r.lang=IDIOMA_VOZ[LANG]||'e
  r.onerror=e=>{if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){dictando=false;$('msg').className='hk-msg hk-err';$('msg').textContent=t('err_micro');herramientasIA()}};
  r.onend=()=>{if(dictando)setTimeout(()=>{if(dictando)escuchar(SR)},300)};
  try{r.start()}catch(e){}}
+// CIE-10: buscar en la lista oficial (con internet y el permiso de la consulta)
+window.puedeCie10=()=>!!permiso&&navigator.onLine;
+window.buscarCie10=async q=>{const r=await fetch(API_MISALUD+'/api/lector/cie10?q='+encodeURIComponent(q),{headers:{'X-Permiso-Consulta':permiso}});
+ return r.ok?((await r.json()).resultados||[]):[]};
 async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!permiso||ordenando)return;
  if(!texto){const m=$('msg');m.className='hk-msg err';m.textContent=t('sin_texto');$('atencion').focus();return}
  if(dictando){dictando=false;try{reconocedor&&reconocedor.stop()}catch(e){}}ordenando=true;herramientasIA();const m=$('msg');m.textContent='';
@@ -1450,6 +1504,7 @@ async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!per
   if(!r.ok)throw new Error();const d=await r.json();
   $('atencion').value=d.atencion||texto;$('diagnostico').value=d.diagnostico||'';$('examenes').value=d.examenes||'';
   $('indicaciones').value=d.indicaciones||'';$('orden_kinesiologia').value=d.ordenKinesica||'';$('indicacion_quirurgica').value=d.indicacionQuirurgica||'';
+  if(Array.isArray(d.diagnosticoCie10)&&d.diagnosticoCie10.length){cie10=d.diagnosticoCie10.slice(0,5).map(c=>({codigo:c.codigo,descripcion:c.descripcion}));pintarCie10()}
   if((d.medicamentosEstructurados||[]).length){meds=d.medicamentosEstructurados.map(x=>({medicamento:x.medicamento||'',dosis:x.dosis||'',frecuencia_horas:x.frecuencia_horas??'',duracion_dias:x.duracion_dias??'',cronico:!!x.cronico}));pintarMeds()}
  }catch(e){m.className='hk-msg hk-err';m.textContent=t('err_ordenar')}
  finally{ordenando=false;herramientasIA()}}
@@ -1515,7 +1570,7 @@ const _guardar=guardar;guardar=async function(){await _guardar();if(!guardado)re
  let h='<p class="hk-tarjeta-sub">'+esc(t('imprimir_entregar'))+' '+esc(t('doc_firma'))+'</p><button class="hk-doc" '+b+'border:none;background:#1B3B8C;color:#fff" onclick="emitir(\'imprimir\',docsAtencion())">🖨️ '+esc(t('imprimir_todo'))+' ('+docs.length+')</button>';
  for(const d of docs)h+='<button class="hk-doc" '+b+'border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a;text-align:left" onclick="emitir(\'imprimir\',[documentoDe(\''+d.tipo+'\')].filter(Boolean))">🖨️ '+esc(t('doc_'+d.tipo))+'</button>';
  caja.innerHTML=h;herramientasDoc();emitir('email',docs)};
-const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc()};
+const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc();pintarCie10()};
 aplicarIdioma();
 sondeo();
 </script></body></html>

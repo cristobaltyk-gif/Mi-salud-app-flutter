@@ -21,10 +21,11 @@
     <div class="da-tools">
       <p class="da-tools-label" data-i="herramientas">Herramientas</p>
       <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span data-i="historial">Ver historial</span></button>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span data-i="antecedentes">Antecedentes</span></button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span data-i="editar_ant">Editar antecedentes</span></button>
     </div>
     <div class="da-sidebar-actions">
       <button class="da-btn-cancel" onclick="limpiar()" data-i="cancelar">Cancelar</button>
+      <button class="da-btn-modify" id="btnModificar" onclick="guardar()" data-i="modificar" hidden>Modificar</button>
       <button class="da-btn-save" id="btnGuardar" onclick="guardar()" data-i="guardar">Guardar</button>
     </div>
   </aside>
@@ -36,7 +37,8 @@
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_atencion">Atención</span></div>
         <textarea class="da-textarea" id="atencion" rows="6" placeholder="Anamnesis, motivo de consulta, evolución…" data-ip="ph_atencion"></textarea></section>
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_diagnostico">Diagnóstico</span></div>
-        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea></section>
+        <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea>
+        <div class="cie10" id="cie10"></div></section>
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_receta">Receta</span></div>
         <div class="da-medicamentos-editor">
           <p class="da-medicamentos-vacio" id="medVacio" data-i="sin_meds">Sin medicamentos agregados. Usa "Ordenar con Claude" o agrega uno manualmente.</p>
@@ -77,6 +79,7 @@
     <p class="hk-tarjeta-sub" id="guardadaTxt" data-i="guardada_s">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
     <div id="guardadaDocs"></div>
     <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()" data-i="terminar">Terminar consulta</button>
+    <button class="hk-boton" id="guardadaMod" onclick="modificarAtencion()" data-i="modificar" style="background:#fff;color:#1e293b;border:1px solid #e2e8f0;margin-top:8px">Modificar</button>
   </div>
 </div>
 <div class="hk-velo" id="velo" hidden onclick="cerrarCajon()"></div>

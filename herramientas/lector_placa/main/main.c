@@ -469,7 +469,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-2.2"
+#define VERSION        "placa-2.3"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -1378,8 +1378,13 @@ static esp_err_t w_nota(httpd_req_t *req)
 {
     PROHIBIDO(req);
     CON_CONSULTA(req);
-    if (S.nota_guardada) return error(req, "409 Conflict", "La atención de esta consulta ya fue guardada");
     cJSON *b = leer_json(req);
+    // "Modificar": reemplaza la atención de esta consulta (el teléfono la tiene hasta Terminar)
+    bool reemplazar = b && cJSON_IsTrue(cJSON_GetObjectItem(b, "reemplazar"));
+    if (S.nota_guardada && !reemplazar) {
+        cJSON_Delete(b);
+        return error(req, "409 Conflict", "La atención de esta consulta ya fue guardada");
+    }
     const char *nombre, *rut;
     if (!b || !profesional(b, &nombre, &rut)) {
         cJSON_Delete(b);
@@ -1389,6 +1394,7 @@ static esp_err_t w_nota(httpd_req_t *req)
     cJSON_AddStringToObject(m, "tipo", "nota");
     cJSON_AddStringToObject(m, "nombre", nombre);
     cJSON_AddStringToObject(m, "rut", rut);
+    if (reemplazar && S.nota_guardada) cJSON_AddTrueToObject(m, "reemplazar");
     cJSON *contenido = cJSON_AddObjectToObject(m, "contenido");
     cJSON *c = cJSON_GetObjectItem(b, "contenido"), *it;
     if (cJSON_IsObject(c)) {
