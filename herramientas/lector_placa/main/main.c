@@ -469,7 +469,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.9"
+#define VERSION        "placa-2.0"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -596,6 +596,7 @@ static struct {
     int esperando;            // número de la confirmación que se espera
     cJSON *respuesta;
 } S;
+static volatile int64_t s_estado_desde = 0;   // cuándo entró la consulta a su estado actual (µs)
 
 static SemaphoreHandle_t g_mutex, g_resp, g_tx, g_escrito;
 static volatile int g_escrito_estado;
@@ -759,6 +760,7 @@ static void saludo(cJSON *obj)
     xSemaphoreTake(g_mutex, portMAX_DELAY);
     S.con_clave = true;
     S.estado = E_SOLICITUD;
+    s_estado_desde = esp_timer_get_time();
     xSemaphoreGive(g_mutex);
     ESP_LOGI(TAG, "Solicitud de un paciente · código %s", S.codigo);
     abrir_pagina();
@@ -785,6 +787,7 @@ static void recibir(const char *raw)
         free(S.ficha);
         S.ficha = cJSON_IsObject(f) ? cJSON_PrintUnformatted(f) : strdup("{}");
         S.estado = E_ACTIVA;
+        s_estado_desde = esp_timer_get_time();
         ESP_LOGI(TAG, "Ficha recibida (%u bytes)", S.ficha ? (unsigned)strlen(S.ficha) : 0);
     } else if (strcmp(t, "ok") == 0) {
         cJSON *n = cJSON_GetObjectItem(m, "n");
@@ -877,6 +880,7 @@ static void nueva_sesion(uint16_t conn)
 {
     xSemaphoreTake(g_mutex, portMAX_DELAY);
     S.estado = E_HANDSHAKE;
+    s_estado_desde = esp_timer_get_time();
     S.conn = conn;
     S.con_clave = false;
     S.nota_guardada = false;
@@ -917,6 +921,36 @@ static void terminar_sesion(bool desconectar)
         ESP_LOGI(TAG, "Reiniciando para usar el certificado nuevo");
         vTaskDelay(pdMS_TO_TICKS(1500));
         esp_restart();
+    }
+}
+
+/* Vigilante: ninguna conexión queda colgada. Si el teléfono se fue (salió de
+ * la app, perdió el Bluetooth) o la página del médico se cerró, el lector
+ * corta solo y vuelve a esperar pacientes. */
+static void tarea_vigilante(void *arg)
+{
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        int64_t ahora = esp_timer_get_time();
+        int estado = S.estado;
+        int64_t en_estado = (ahora - s_estado_desde) / 1000000;
+        int64_t sin_pagina = (ahora - s_ultimo_sondeo) / 1000000;
+        const char *motivo = NULL;
+        if (estado == E_HANDSHAKE && en_estado > 30) motivo = "el teléfono no completó la conexión";
+        else if (estado == E_SOLICITUD && en_estado > 200) motivo = "nadie aceptó la solicitud";
+        else if (estado == E_ACEPTADA && en_estado > 120) motivo = "el teléfono no envió la ficha";
+        else if (estado == E_ACTIVA && sin_pagina > 600) motivo = "la página del médico está cerrada";
+        else if (estado == E_ACTIVA && en_estado > 3 * 3600) motivo = "pasaron 3 horas";
+        if (motivo) {
+            ESP_LOGW(TAG, "Se corta la conexión: %s", motivo);
+            if (S.con_clave) {
+                cJSON *m = cJSON_CreateObject();
+                cJSON_AddStringToObject(m, "tipo", "fin");
+                enviar_cifrado(m);
+                cJSON_Delete(m);
+            }
+            terminar_sesion(true);
+        }
     }
 }
 
@@ -1260,6 +1294,7 @@ static esp_err_t w_aceptar(httpd_req_t *req)
     CON_CONSULTA(req);
     if (S.estado == E_SOLICITUD) {
         S.estado = E_ACEPTADA;
+        s_estado_desde = esp_timer_get_time();
         cJSON *m = cJSON_CreateObject();
         cJSON_AddStringToObject(m, "tipo", "aceptado");
         enviar_cifrado(m);
@@ -1454,7 +1489,18 @@ static void tarea_reiniciar(void *arg)
 static esp_err_t w_actualizar(httpd_req_t *req)
 {
     PROHIBIDO(req);
-    if (S.estado != E_NINGUNA) return error(req, "409 Conflict", "Hay una consulta en curso; termínala antes de actualizar");
+    if (S.estado != E_NINGUNA) {
+        // Actualizar manda: la consulta que haya (o una conexión colgada) se corta.
+        // El certificado nuevo, si llegó, ya está guardado: se usa tras actualizar.
+        s_cert_nuevo = false;
+        if (S.con_clave) {
+            cJSON *m = cJSON_CreateObject();
+            cJSON_AddStringToObject(m, "tipo", "fin");
+            enviar_cifrado(m);
+            cJSON_Delete(m);
+        }
+        terminar_sesion(true);
+    }
     const esp_partition_t *destino = esp_ota_get_next_update_partition(NULL);
     if (!destino) return error(req, "500 Internal Server Error", "El lector no tiene espacio para actualizarse");
     if (req->content_len < 64 * 1024 || req->content_len > destino->size + 0x20000)
@@ -1604,6 +1650,7 @@ void app_main(void)
     iniciar_pagina();
 
     xTaskCreate(tarea_procesar, "procesar", 12288, NULL, 5, &g_procesador);
+    xTaskCreate(tarea_vigilante, "vigilante", 8192, NULL, 4, NULL);
     ESP_ERROR_CHECK(nimble_port_init());
     ble_hs_cfg.sync_cb = al_sincronizar;
     nimble_port_freertos_init(tarea_bluetooth);
