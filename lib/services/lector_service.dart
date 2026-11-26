@@ -27,6 +27,9 @@ import 'package:cryptography/cryptography.dart';
 import 'package:ble_peripheral/ble_peripheral.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'notas_offline_service.dart';
+import 'storage_service.dart';
+import 'http_sesion.dart' as red;
+import '../config/app_config.dart';
 import 'traduccion_service.dart';
 
 const String _servicioBle = '6e8a0001-6b1f-4c39-9d0e-48495046b001';
@@ -296,7 +299,57 @@ class SesionLector {
     await _enviar({'tipo': 'ficha', 'ficha': TraduccionService.sinTraducciones(ficha)});
     estado = 'activa';
     _cambios.add(null);
+    unawaited(_enviarPermiso());
     return true;
+  }
+
+  // ── Permiso de consulta (dictar / ordenar) y certificado del lector ──
+  // Solo si el teléfono tiene internet; si no, la consulta sigue igual sin IA.
+  String? _permiso;
+
+  Future<void> _enviarPermiso() async {
+    try {
+      if (!await red.hayInternet()) return;
+      final token = await StorageService.obtenerToken();
+      if (token == null || token.isEmpty) return;
+      final r = await red.post(
+        Uri.parse('${AppConfig.backendBaseUrl}/api/lector/permiso'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+        body: jsonEncode({'rut_paciente': rutPaciente}),
+      ).timeout(const Duration(seconds: 15));
+      if (r.statusCode != 200 || _clave == null) return;
+      final d = jsonDecode(r.body) as Map<String, dynamic>;
+      _permiso = d['permiso'] as String?;
+      await _enviar({'tipo': 'permiso', 'permiso': _permiso, 'usos': d['usos'], 'ahora': d['ahora']});
+    } catch (_) {
+      // Sin permiso: dictar y ordenar quedan apagados en el lector
+    }
+  }
+
+  // El lector pide renovar su certificado https (lo emite nuestro servidor);
+  // el teléfono solo lleva la solicitud y trae la respuesta.
+  Future<void> _llevarCertificado(Map<String, dynamic> m) async {
+    String? cert;
+    String? error;
+    try {
+      if (_permiso == null) throw Exception('sin permiso');
+      final r = await red.post(
+        Uri.parse('${AppConfig.backendBaseUrl}/api/lector/certificado'),
+        headers: {'X-Permiso-Consulta': _permiso!, 'Content-Type': 'application/json'},
+        body: jsonEncode({'nombre': m['nombre'], 'csr': m['csr']}),
+      ).timeout(const Duration(minutes: 3));
+      if (r.statusCode == 200) {
+        cert = (jsonDecode(r.body) as Map<String, dynamic>)['certificado'] as String?;
+      } else {
+        error = 'HTTP ${r.statusCode}';
+      }
+    } catch (e) {
+      error = e.toString();
+    }
+    if (_clave == null || _canal == null) return;
+    try {
+      await _enviar({'tipo': 'certificado', if (cert != null) 'certificado': cert, if (error != null) 'error': error});
+    } catch (_) {}
   }
 
   Future<void> terminar({bool avisar = true}) async {
@@ -391,6 +444,9 @@ class SesionLector {
         } catch (e) {
           await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': false, 'detail': e.toString().replaceFirst('Exception: ', '')});
         }
+        break;
+      case 'certificado_pedir':
+        unawaited(_llevarCertificado(m));
         break;
       case 'fin':
         await terminar(avisar: false);
