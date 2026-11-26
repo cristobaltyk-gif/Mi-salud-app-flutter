@@ -37,6 +37,16 @@
  *       lector-placa.bin nuevo → listo (sin BOOT, RST ni ESP Tool). Solo
  *       sin una consulta en curso. Dos espacios de programa (ota_0/ota_1):
  *       si el nuevo no arranca, vuelve al anterior.
+ * v7: · Dirección segura (https) para dictar: cada lector tiene su nombre
+ *       (<id>.lector.hipokratia.health) y su llave P-256, que nunca sale del
+ *       chip. El certificado (Let's Encrypt) lo pide y lo trae la app del
+ *       paciente cuando tiene internet (/api/lector/certificado); el lector
+ *       no necesita internet propio. Sin certificado todavía: http como antes.
+ *     · El lector responde su propio nombre (DNS) para que funcione sin
+ *       internet; cualquier otro nombre lo rechaza (el PC usa su DNS normal).
+ *     · Permiso de consulta (transcribir / ordenar) que trae el teléfono:
+ *       la página lo usa para "Ordenar con Claude" cuando el PC tiene internet.
+ *
  * v6: · Solo acepta actualizaciones firmadas por HypokratIA (llave privada
  *       en el secreto LECTOR_FIRMA_KEY de GitHub; firma RSA-3072). Un archivo
  *       sin firma o firmado con otra llave se rechaza.
@@ -68,11 +78,188 @@
 #include "host/ble_hs.h"
 #include "freertos/semphr.h"
 #include "esp_ota_ops.h"
+#include "esp_https_server.h"
+#include "esp_mac.h"
+#include "mbedtls/pk.h"
+#include "mbedtls/x509_csr.h"
+#include "mbedtls/x509_crt.h"
+#include "mbedtls/sha256.h"
+#include "lwip/sockets.h"
+#include "nvs.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 static const char *TAG = "lector";
 static esp_netif_t *s_netif = NULL;
+
+/* ── Identidad del lector: nombre, llave y certificado (NVS) ───────────── */
+
+#define DOMINIO_LECTORES ".lector.hipokratia.health"
+static char s_nombre[24];                 // p. ej. "k3x7q2m9ab"
+static char s_dominio[64];                // p. ej. "k3x7q2m9ab.lector.hipokratia.health"
+static char *s_llave_pem = NULL;          // PEM de la llave privada (P-256)
+static char *s_cert = NULL;               // cadena PEM del certificado vigente (o NULL)
+static int64_t s_cert_vence = 0;          // segundos Unix (notAfter)
+static volatile bool s_cert_nuevo = false;   // se instaló uno nuevo: reiniciar al terminar la consulta
+
+static int azar_id(void *p, unsigned char *buf, size_t n) { esp_fill_random(buf, n); return 0; }
+
+static char *nvs_leer(const char *clave)
+{
+    nvs_handle_t h;
+    if (nvs_open("lector", NVS_READONLY, &h) != ESP_OK) return NULL;
+    size_t n = 0;
+    char *v = NULL;
+    if (nvs_get_str(h, clave, NULL, &n) == ESP_OK && n > 0) {
+        v = malloc(n);
+        if (v && nvs_get_str(h, clave, v, &n) != ESP_OK) { free(v); v = NULL; }
+    }
+    nvs_close(h);
+    return v;
+}
+
+static esp_err_t nvs_guardar(const char *clave, const char *valor)
+{
+    nvs_handle_t h;
+    esp_err_t r = nvs_open("lector", NVS_READWRITE, &h);
+    if (r != ESP_OK) return r;
+    r = nvs_set_str(h, clave, valor);
+    if (r == ESP_OK) r = nvs_commit(h);
+    nvs_close(h);
+    return r;
+}
+
+static int64_t dias_desde_civil(int y, int m, int d)   // días desde 1970-01-01
+{
+    y -= m <= 2;
+    int64_t era = (y >= 0 ? y : y - 399) / 400;
+    int64_t yoe = y - era * 400;
+    int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + doe - 719468;
+}
+
+// Revisa que el certificado sea de ESTE lector (misma llave) y devuelve su vencimiento
+static bool cert_valido(const char *pem, int64_t *vence)
+{
+    mbedtls_x509_crt crt;
+    mbedtls_pk_context llave;
+    mbedtls_x509_crt_init(&crt);
+    mbedtls_pk_init(&llave);
+    bool ok = mbedtls_x509_crt_parse(&crt, (const unsigned char *)pem, strlen(pem) + 1) == 0
+           && mbedtls_pk_parse_key(&llave, (const unsigned char *)s_llave_pem, strlen(s_llave_pem) + 1,
+                                   NULL, 0, azar_id, NULL) == 0
+           && mbedtls_pk_check_pair(&crt.pk, &llave, azar_id, NULL) == 0;
+    if (ok && vence) {
+        const mbedtls_x509_time *t = &crt.valid_to;
+        *vence = dias_desde_civil(t->year, t->mon, t->day) * 86400 + t->hour * 3600 + t->min * 60 + t->sec;
+    }
+    mbedtls_pk_free(&llave);
+    mbedtls_x509_crt_free(&crt);
+    return ok;
+}
+
+static void cargar_identidad(void)
+{
+    // Nombre: a partir de la MAC del chip (único por placa)
+    uint8_t mac[6], h[32];
+    esp_efuse_mac_get_default(mac);
+    mbedtls_sha256(mac, 6, h, 0);
+    static const char ALFA[] = "abcdefghijkmnpqrstuvwxyz23456789";
+    for (int i = 0; i < 10; i++) s_nombre[i] = ALFA[h[i] % 32];
+    s_nombre[10] = 0;
+    snprintf(s_dominio, sizeof(s_dominio), "%s" DOMINIO_LECTORES, s_nombre);
+
+    // Llave: se crea una sola vez, dentro del chip
+    s_llave_pem = nvs_leer("llave");
+    if (!s_llave_pem) {
+        mbedtls_pk_context k;
+        mbedtls_pk_init(&k);
+        char *pem = malloc(1024);
+        if (pem && mbedtls_pk_setup(&k, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY)) == 0
+                && mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, mbedtls_pk_ec(k), azar_id, NULL) == 0
+                && mbedtls_pk_write_key_pem(&k, (unsigned char *)pem, 1024) == 0
+                && nvs_guardar("llave", pem) == ESP_OK) {
+            s_llave_pem = pem;
+            ESP_LOGI(TAG, "Llave propia del lector creada");
+        } else {
+            free(pem);
+        }
+        mbedtls_pk_free(&k);
+    }
+    // Certificado: si hay uno y es de esta llave, se usa https
+    if (s_llave_pem) {
+        char *cert = nvs_leer("cert");
+        if (cert && cert_valido(cert, &s_cert_vence)) s_cert = cert;
+        else free(cert);
+    }
+    ESP_LOGI(TAG, "Lector %s · %s", s_dominio, s_cert ? "con certificado (https)" : "sin certificado todavía (http)");
+}
+
+// Solicitud de certificado (CSR) para el nombre del lector
+static char *crear_csr(void)
+{
+    if (!s_llave_pem) return NULL;
+    mbedtls_pk_context k;
+    mbedtls_x509write_csr req;
+    mbedtls_pk_init(&k);
+    mbedtls_x509write_csr_init(&req);
+    char *pem = malloc(1200), sujeto[96];
+    snprintf(sujeto, sizeof(sujeto), "CN=%s", s_dominio);
+    bool ok = pem && mbedtls_pk_parse_key(&k, (const unsigned char *)s_llave_pem, strlen(s_llave_pem) + 1,
+                                          NULL, 0, azar_id, NULL) == 0;
+    if (ok) {
+        mbedtls_x509write_csr_set_md_alg(&req, MBEDTLS_MD_SHA256);
+        mbedtls_x509write_csr_set_key(&req, &k);
+        ok = mbedtls_x509write_csr_set_subject_name(&req, sujeto) == 0
+          && mbedtls_x509write_csr_pem(&req, (unsigned char *)pem, 1200, azar_id, NULL) == 0;
+    }
+    mbedtls_x509write_csr_free(&req);
+    mbedtls_pk_free(&k);
+    if (!ok) { free(pem); return NULL; }
+    return pem;
+}
+
+// DNS mínimo: responde SOLO el nombre del lector; el resto se rechaza (REFUSED)
+// para que el PC pregunte enseguida a su DNS normal.
+static void tarea_dns(void *arg)
+{
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    struct sockaddr_in a = { .sin_family = AF_INET, .sin_port = htons(53), .sin_addr.s_addr = htonl(INADDR_ANY) };
+    if (s < 0 || bind(s, (struct sockaddr *)&a, sizeof(a)) != 0) { ESP_LOGE(TAG, "DNS no disponible"); vTaskDelete(NULL); }
+    uint8_t b[512];
+    for (;;) {
+        struct sockaddr_in de;
+        socklen_t ld = sizeof(de);
+        int n = recvfrom(s, b, sizeof(b), 0, (struct sockaddr *)&de, &ld);
+        if (n < 12 || (b[2] & 0x80) || b[4] != 0 || b[5] != 1) continue;   // solo preguntas con 1 consulta
+        char nombre[128];
+        int i = 12, j = 0;
+        while (i < n && b[i] && j < (int)sizeof(nombre) - 2) {
+            int largo = b[i++];
+            if (largo > 63 || i + largo > n) { j = -1; break; }
+            if (j) nombre[j++] = '.';
+            for (int k = 0; k < largo && j < (int)sizeof(nombre) - 1; k++) nombre[j++] = tolower(b[i++]);
+        }
+        if (j < 0 || i + 5 > n) continue;
+        nombre[j] = 0;
+        i++;                                                   // 0 final del nombre
+        uint16_t tipo = b[i] << 8 | b[i + 1];
+        int fin_pregunta = i + 4;
+        bool nuestro = strcmp(nombre, s_dominio) == 0;
+        b[2] = 0x80 | (b[2] & 0x79) | (nuestro ? 0x04 : 0);   // respuesta, AA si es nuestro, RD copiado
+        b[3] = nuestro ? 0x00 : 0x05;                          // NOERROR / REFUSED
+        b[6] = b[7] = b[8] = b[9] = b[10] = b[11] = 0;
+        int largo_resp = fin_pregunta;
+        if (nuestro && tipo == 1 && fin_pregunta + 16 <= (int)sizeof(b)) {
+            b[7] = 1;                                          // 1 respuesta (A)
+            uint8_t r[] = { 0xC0, 0x0C, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 172, 29, 77, 1 };
+            memcpy(b + fin_pregunta, r, sizeof(r));
+            largo_resp += sizeof(r);
+        }
+        sendto(s, b, largo_resp, 0, (struct sockaddr *)&de, ld);
+    }
+}
 
 /* ── Red USB (NCM) ↔ lwIP ─────────────────────────────────────────────── */
 
@@ -233,6 +420,14 @@ static esp_err_t iniciar_red_usb(void)
     uint8_t sin_router = 0;   // dhcps_offer_t: 0 = no ofrecer router
     esp_netif_dhcps_option(s_netif, ESP_NETIF_OP_SET, ESP_NETIF_ROUTER_SOLICITATION_ADDRESS,
                            &sin_router, sizeof(sin_router));
+    if (s_cert) {
+        // El nombre del lector se resuelve aquí, aunque no haya internet
+        esp_netif_dns_info_t dns = { .ip.u_addr.ip4.addr = ESP_IP4TOADDR(172, 29, 77, 1), .ip.type = ESP_IPADDR_TYPE_V4 };
+        esp_netif_set_dns_info(s_netif, ESP_NETIF_DNS_MAIN, &dns);
+        uint8_t ofrecer_dns = 0x02;   // OFFER_DNS
+        esp_netif_dhcps_option(s_netif, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
+                               &ofrecer_dns, sizeof(ofrecer_dns));
+    }
     uint32_t arriendo = 120;   // minutos
     esp_netif_dhcps_option(s_netif, ESP_NETIF_OP_SET, IP_ADDRESS_LEASE_TIME,
                            &arriendo, sizeof(arriendo));
@@ -244,7 +439,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.2"
+#define VERSION        "placa-1.3"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -285,7 +480,9 @@ static void tarea_abrir_pagina(void *arg)
         ESP_LOGI(TAG, "Abriendo la página (Windows)");
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);          // Ejecutar
         vTaskDelay(pdMS_TO_TICKS(400));
-        escribir("msedge " DIRECCION);
+        char orden[96];
+        snprintf(orden, sizeof(orden), "msedge %s", s_cert ? s_dominio : DIRECCION);
+        escribir(orden);
         tecla(0, HID_KEY_ENTER);
     } else {
         ESP_LOGI(TAG, "Abriendo la página (Mac)");
@@ -297,7 +494,7 @@ static void tarea_abrir_pagina(void *arg)
         vTaskDelay(pdMS_TO_TICKS(2500));
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_N);          // ventana nueva (dirección lista para escribir)
         vTaskDelay(pdMS_TO_TICKS(800));
-        escribir(DIRECCION);
+        escribir(s_cert ? s_dominio : DIRECCION);
         vTaskDelay(pdMS_TO_TICKS(100));
         tecla(0, HID_KEY_ENTER);
     }
@@ -361,6 +558,8 @@ static struct {
     bool con_clave;
     char codigo[5];
     char paciente[96];
+    char *permiso;            // permiso de consulta (transcribir / ordenar), si el teléfono tenía internet
+    bool pidio_certificado;
     char *ficha;              // JSON de la ficha (solo en memoria)
     bool nota_guardada;       // una atención por consulta
     int sec;
@@ -564,6 +763,42 @@ static void recibir(const char *raw)
             m = NULL;
             xSemaphoreGive(g_resp);
         }
+    } else if (strcmp(t, "permiso") == 0) {
+        cJSON *p = cJSON_GetObjectItem(m, "permiso"), *ahora = cJSON_GetObjectItem(m, "ahora");
+        free(S.permiso);
+        S.permiso = cJSON_IsString(p) ? strdup(p->valuestring) : NULL;
+        bool renovar = !S.pidio_certificado && s_llave_pem && cJSON_IsNumber(ahora)
+                       && (!s_cert || s_cert_vence - (int64_t)ahora->valuedouble < 30 * 86400);
+        if (renovar) S.pidio_certificado = true;
+        xSemaphoreGive(g_mutex);
+        ESP_LOGI(TAG, "Permiso de consulta recibido");
+        if (renovar) {
+            char *csr = crear_csr();
+            if (csr) {
+                cJSON *q = cJSON_CreateObject();
+                cJSON_AddStringToObject(q, "tipo", "certificado_pedir");
+                cJSON_AddStringToObject(q, "nombre", s_nombre);
+                cJSON_AddStringToObject(q, "csr", csr);
+                enviar_cifrado(q);
+                cJSON_Delete(q);
+                free(csr);
+                ESP_LOGI(TAG, "Certificado pedido al teléfono");
+            }
+        }
+        cJSON_Delete(m);
+        return;
+    } else if (strcmp(t, "certificado") == 0) {
+        cJSON *c = cJSON_GetObjectItem(m, "certificado");
+        xSemaphoreGive(g_mutex);
+        int64_t vence = 0;
+        if (cJSON_IsString(c) && cert_valido(c->valuestring, &vence) && nvs_guardar("cert", c->valuestring) == ESP_OK) {
+            s_cert_nuevo = true;                         // se activa al terminar la consulta
+            ESP_LOGI(TAG, "Certificado nuevo guardado");
+        } else {
+            ESP_LOGW(TAG, "El certificado recibido no sirve");
+        }
+        cJSON_Delete(m);
+        return;
     } else if (strcmp(t, "fin") == 0) {
         xSemaphoreGive(g_mutex);
         ESP_LOGI(TAG, "El paciente terminó la consulta");
@@ -631,12 +866,20 @@ static void terminar_sesion(bool desconectar)
     mbedtls_ecp_group_free(&S.grupo);
     mbedtls_mpi_free(&S.privada);
     mbedtls_ecp_point_free(&S.publica);
+    free(S.permiso);
+    S.permiso = NULL;
+    S.pidio_certificado = false;
     S.estado = E_NINGUNA;
     S.con_clave = false;
     if (S.esperando) xSemaphoreGive(g_resp);                  // libera a quien espera
     xSemaphoreGive(g_mutex);
     if (desconectar) ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
     ESP_LOGI(TAG, "Consulta terminada; ficha borrada");
+    if (s_cert_nuevo) {                                       // estrenar el certificado (https)
+        ESP_LOGI(TAG, "Reiniciando para usar el certificado nuevo");
+        vTaskDelay(pdMS_TO_TICKS(1500));
+        esp_restart();
+    }
 }
 
 /* ── Bluetooth: el TELÉFONO se anuncia ("HypokratIA") y el lector lo busca ── */
@@ -839,10 +1082,14 @@ extern const char PAGINA_FIN[] asm("_binary_atencion_html_end");
 
 static bool permitido(httpd_req_t *req)
 {
-    char v[64];
-    if (httpd_req_get_hdr_value_str(req, "Host", v, sizeof(v)) != ESP_OK || strcmp(v, DIRECCION) != 0) return false;
+    char v[96], origen[96];
+    if (httpd_req_get_hdr_value_str(req, "Host", v, sizeof(v)) != ESP_OK) return false;
+    bool por_nombre = s_cert && strcasecmp(v, s_dominio) == 0;
+    if (!por_nombre && strcmp(v, DIRECCION) != 0) return false;
     if (req->method != HTTP_GET) {
-        if (httpd_req_get_hdr_value_str(req, "Origin", v, sizeof(v)) != ESP_OK || strcmp(v, "http://" DIRECCION) != 0)
+        if (por_nombre) snprintf(origen, sizeof(origen), "https://%s", s_dominio);
+        else snprintf(origen, sizeof(origen), "http://" DIRECCION);
+        if (httpd_req_get_hdr_value_str(req, "Origin", v, sizeof(v)) != ESP_OK || strcasecmp(v, origen) != 0)
             return false;
     }
     return true;
@@ -954,6 +1201,8 @@ static esp_err_t w_estado(httpd_req_t *req)
     cJSON *o = cJSON_CreateObject();
     xSemaphoreTake(g_mutex, portMAX_DELAY);
     cJSON_AddStringToObject(o, "estado", NOMBRE_ESTADO[S.estado]);
+    cJSON_AddBoolToObject(o, "https", s_cert != NULL);
+    if (S.permiso && S.estado >= E_ACEPTADA) cJSON_AddStringToObject(o, "permiso", S.permiso);
     if (S.estado >= E_SOLICITUD) {
         cJSON_AddStringToObject(o, "paciente", S.paciente);
         cJSON_AddStringToObject(o, "codigo", S.codigo);
@@ -1221,29 +1470,75 @@ static esp_err_t w_actualizar(httpd_req_t *req)
     return ESP_OK;
 }
 
+static const httpd_uri_t RUTAS[] = {
+    { .uri = "/",                .method = HTTP_GET,  .handler = w_pagina },
+    { .uri = "/api/estado",      .method = HTTP_GET,  .handler = w_estado },
+    { .uri = "/api/aceptar",     .method = HTTP_POST, .handler = w_aceptar },
+    { .uri = "/api/rechazar",    .method = HTTP_POST, .handler = w_rechazar },
+    { .uri = "/api/terminar",    .method = HTTP_POST, .handler = w_terminar },
+    { .uri = "/api/identificar", .method = HTTP_POST, .handler = w_identificar },
+    { .uri = "/api/nota",        .method = HTTP_POST, .handler = w_nota },
+    { .uri = "/api/idioma",      .method = HTTP_POST, .handler = w_idioma },
+    { .uri = "/actualizar",      .method = HTTP_GET,  .handler = w_actualizar_pagina },
+    { .uri = "/api/actualizar",  .method = HTTP_POST, .handler = w_actualizar },
+};
+
+static void registrar_rutas(httpd_handle_t srv)
+{
+    for (size_t i = 0; i < sizeof(RUTAS) / sizeof(RUTAS[0]); i++) httpd_register_uri_handler(srv, &RUTAS[i]);
+}
+
+// Con https activo, http solo redirige al nombre seguro
+static esp_err_t w_a_https(httpd_req_t *req)
+{
+    char destino[160];
+    snprintf(destino, sizeof(destino), "https://%s%s", s_dominio, req->uri);
+    httpd_resp_set_status(req, "301 Moved Permanently");
+    httpd_resp_set_hdr(req, "Location", destino);
+    return httpd_resp_send(req, "", 0);
+}
+
 static void iniciar_pagina(void)
 {
-    httpd_handle_t srv = NULL;
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
-    cfg.stack_size = 12288;
     cfg.max_uri_handlers = 14;
     cfg.recv_wait_timeout = 30;
-    cfg.lru_purge_enable = true;
     cfg.send_wait_timeout = 30;
+    cfg.lru_purge_enable = true;
+
+    if (s_cert) {
+        httpd_ssl_config_t ssl = HTTPD_SSL_CONFIG_DEFAULT();
+        ssl.httpd = cfg;
+        ssl.httpd.stack_size = 16384;
+        ssl.httpd.max_open_sockets = 5;
+        ssl.httpd.ctrl_port = 32770;
+        ssl.servercert = (const uint8_t *)s_cert;
+        ssl.servercert_len = strlen(s_cert) + 1;
+        ssl.prvtkey_pem = (const uint8_t *)s_llave_pem;
+        ssl.prvtkey_len = strlen(s_llave_pem) + 1;
+        httpd_handle_t seguro = NULL;
+        if (httpd_ssl_start(&seguro, &ssl) == ESP_OK) {
+            registrar_rutas(seguro);
+            httpd_config_t simple = HTTPD_DEFAULT_CONFIG();
+            simple.uri_match_fn = httpd_uri_match_wildcard;
+            simple.max_open_sockets = 3;
+            httpd_handle_t srv = NULL;
+            if (httpd_start(&srv, &simple) == ESP_OK) {
+                const httpd_uri_t todo_get = { .uri = "/*", .method = HTTP_GET, .handler = w_a_https };
+                httpd_register_uri_handler(srv, &todo_get);
+            }
+            xTaskCreate(tarea_dns, "dns", 4096, NULL, 4, NULL);
+            ESP_LOGI(TAG, "Página segura: https://%s", s_dominio);
+            return;
+        }
+        ESP_LOGE(TAG, "No partió https; se usa http");
+        free(s_cert);
+        s_cert = NULL;
+    }
+    cfg.stack_size = 12288;
+    httpd_handle_t srv = NULL;
     ESP_ERROR_CHECK(httpd_start(&srv, &cfg));
-    const httpd_uri_t rutas[] = {
-        { .uri = "/",                .method = HTTP_GET,  .handler = w_pagina },
-        { .uri = "/api/estado",      .method = HTTP_GET,  .handler = w_estado },
-        { .uri = "/api/aceptar",     .method = HTTP_POST, .handler = w_aceptar },
-        { .uri = "/api/rechazar",    .method = HTTP_POST, .handler = w_rechazar },
-        { .uri = "/api/terminar",    .method = HTTP_POST, .handler = w_terminar },
-        { .uri = "/api/identificar", .method = HTTP_POST, .handler = w_identificar },
-        { .uri = "/api/nota",        .method = HTTP_POST, .handler = w_nota },
-        { .uri = "/api/idioma",      .method = HTTP_POST, .handler = w_idioma },
-        { .uri = "/actualizar",      .method = HTTP_GET,  .handler = w_actualizar_pagina },
-        { .uri = "/api/actualizar",  .method = HTTP_POST, .handler = w_actualizar },
-    };
-    for (size_t i = 0; i < sizeof(rutas) / sizeof(rutas[0]); i++) httpd_register_uri_handler(srv, &rutas[i]);
+    registrar_rutas(srv);
 }
 
 void app_main(void)
@@ -1259,6 +1554,7 @@ void app_main(void)
     g_resp = xSemaphoreCreateBinary();
     g_escrito = xSemaphoreCreateBinary();
 
+    cargar_identidad();
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED,
