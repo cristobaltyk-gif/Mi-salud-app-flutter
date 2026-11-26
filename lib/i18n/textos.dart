@@ -2480,4 +2480,34 @@ const Map<String, Map<String, String>> textos = {
     'de': 'Prüfen Sie, ob das HypokratIA-Lesegerät am Computer angeschlossen und Bluetooth am Telefon eingeschaltet ist.',
     'fr': 'Vérifiez que le Lecteur HypokratIA est branché à l\'ordinateur et que le Bluetooth du téléphone est activé.',
   },
+  'Registrado en la Superintendencia de Salud (RNPI)': {
+    'en': 'Registered with the Chilean Health Superintendency (RNPI)',
+    'de': 'Bei der chilenischen Gesundheitsaufsicht registriert (RNPI)',
+    'fr': 'Inscrit auprès de la Surintendance de la santé du Chili (RNPI)',
+  },
+  'No aparece en el RNPI. Su nota quedará en revisión.': {
+    'en': 'Not found in the RNPI. Their note will be reviewed.',
+    'de': 'Nicht im RNPI gefunden. Die Notiz wird geprüft.',
+    'fr': 'Introuvable dans le RNPI. Sa note sera examinée.',
+  },
+  'Se verificará en el RNPI cuando vuelva internet.': {
+    'en': 'Will be verified in the RNPI when internet returns.',
+    'de': 'Wird im RNPI geprüft, sobald wieder Internet verfügbar ist.',
+    'fr': 'Sera vérifié dans le RNPI au retour d\'internet.',
+  },
+  'El RNPI no respondió. Se verificará más tarde.': {
+    'en': 'The RNPI did not respond. It will be verified later.',
+    'de': 'Das RNPI hat nicht geantwortet. Es wird später geprüft.',
+    'fr': 'Le RNPI n\'a pas répondu. La vérification se fera plus tard.',
+  },
+  'Verificando en el RNPI…': {
+    'en': 'Checking the RNPI…',
+    'de': 'Wird im RNPI geprüft…',
+    'fr': 'Vérification dans le RNPI…',
+  },
+  'Especialidad': {
+    'en': 'Specialty',
+    'de': 'Fachgebiet',
+    'fr': 'Spécialité',
+  },
 };

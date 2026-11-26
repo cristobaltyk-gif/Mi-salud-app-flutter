@@ -322,6 +322,36 @@ class _LectorScreenState extends State<LectorScreen> {
         ),
       ]);
 
+  // Nombre y RUT que dio el profesional + lo que dice el RNPI de él
+  Widget _profesional(ProfesionalLector p) {
+    final d = p.rnpi ?? const {};
+    final especialidades = ((d['especialidades'] as List?) ?? const []).join(', ');
+    final (IconData icono, Color color, String texto) = switch (p.estadoRnpi) {
+      'ok' => (Icons.verified, const Color(0xFF15803D), tr('Registrado en la Superintendencia de Salud (RNPI)')),
+      'no' => (Icons.warning_amber_rounded, const Color(0xFFB45309), tr('No aparece en el RNPI. Su nota quedará en revisión.')),
+      'sin_red' => (Icons.schedule, const Color(0xFF6B7280), tr('Se verificará en el RNPI cuando vuelva internet.')),
+      'error' => (Icons.schedule, const Color(0xFF6B7280), tr('El RNPI no respondió. Se verificará más tarde.')),
+      _ => (Icons.hourglass_top, const Color(0xFF6B7280), tr('Verificando en el RNPI…')),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('• ${p.estadoRnpi == 'ok' && d['nombre'] != null ? d['nombre'] : p.nombre} (${p.rut})',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        if (p.estadoRnpi == 'ok') ...[
+          if ((d['titulo'] ?? '').toString().isNotEmpty) Text('   ${d['titulo']}'),
+          if (especialidades.isNotEmpty) Text('   ${tr('Especialidad')}: $especialidades'),
+          if ((d['universidad'] ?? '').toString().isNotEmpty) Text('   ${d['universidad']}'),
+        ],
+        Row(children: [
+          Icon(icono, size: 18, color: color),
+          const SizedBox(width: 6),
+          Expanded(child: Text(texto, style: TextStyle(color: color, fontSize: 13))),
+        ]),
+      ]),
+    );
+  }
+
   Widget _vistaSesion() {
     final s = _sesion!;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -347,7 +377,7 @@ class _LectorScreenState extends State<LectorScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(s.profesionales.isEmpty ? tr('El médico aún no se identifica.') : tr('Profesionales:'),
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            for (final p in s.profesionales) Text('• $p'),
+            for (final p in s.profesionales) _profesional(p),
             const SizedBox(height: 6),
             Text(trp('Notas guardadas: {0} — se enviarán solas cuando vuelva internet.', [s.notas])),
           ]),

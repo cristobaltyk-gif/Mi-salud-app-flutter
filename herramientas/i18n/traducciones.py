@@ -504,4 +504,10 @@ T.update({
 "Sigo buscando el lector…": ("Still looking for the reader…","Suche weiter nach dem Lesegerät…","Je cherche toujours le lecteur…"),
 "No se encontró el lector del médico": ("The doctor's reader was not found","Das Lesegerät des Arztes wurde nicht gefunden","Le lecteur du médecin est introuvable"),
 "Verifica que el Lector HypokratIA esté enchufado al computador y que el Bluetooth del teléfono esté encendido.": ("Check that the HypokratIA Reader is plugged into the computer and that the phone's Bluetooth is on.","Prüfen Sie, ob das HypokratIA-Lesegerät am Computer angeschlossen und Bluetooth am Telefon eingeschaltet ist.","Vérifiez que le Lecteur HypokratIA est branché à l'ordinateur et que le Bluetooth du téléphone est activé."),
+"Registrado en la Superintendencia de Salud (RNPI)": ("Registered with the Chilean Health Superintendency (RNPI)","Bei der chilenischen Gesundheitsaufsicht registriert (RNPI)","Inscrit auprès de la Surintendance de la santé du Chili (RNPI)"),
+"No aparece en el RNPI. Su nota quedará en revisión.": ("Not found in the RNPI. Their note will be reviewed.","Nicht im RNPI gefunden. Die Notiz wird geprüft.","Introuvable dans le RNPI. Sa note sera examinée."),
+"Se verificará en el RNPI cuando vuelva internet.": ("Will be verified in the RNPI when internet returns.","Wird im RNPI geprüft, sobald wieder Internet verfügbar ist.","Sera vérifié dans le RNPI au retour d'internet."),
+"El RNPI no respondió. Se verificará más tarde.": ("The RNPI did not respond. It will be verified later.","Das RNPI hat nicht geantwortet. Es wird später geprüft.","Le RNPI n'a pas répondu. La vérification se fera plus tard."),
+"Verificando en el RNPI…": ("Checking the RNPI…","Wird im RNPI geprüft…","Vérification dans le RNPI…"),
+"Especialidad": ("Specialty","Fachgebiet","Spécialité"),
 })

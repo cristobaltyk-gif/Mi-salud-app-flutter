@@ -238,7 +238,7 @@ class SesionLector {
   String estado = 'conectando';
   String codigo = '';
   String equipo = '';
-  final List<String> profesionales = [];
+  final List<ProfesionalLector> profesionales = [];
   int notas = 0;
   final Map<String, String> _accesoPorRut = {};
   final StreamController<void> _cambios = StreamController<void>.broadcast();
@@ -326,6 +326,37 @@ class SesionLector {
     }
   }
 
+  // Datos públicos del RNPI del profesional, para que el paciente vea a quién
+  // le está mostrando su ficha (cualquier profesión). Sin red: queda pendiente.
+  Future<void> _verificarRnpi(ProfesionalLector p) async {
+    try {
+      if (!await red.hayInternet()) {
+        p.estadoRnpi = 'sin_red';
+      } else {
+        final token = await StorageService.obtenerToken();
+        final r = await red.post(
+          Uri.parse('${AppConfig.backendBaseUrl}/api/lector/rnpi'),
+          headers: {'Authorization': 'Bearer ${token ?? ''}', 'Content-Type': 'application/json'},
+          body: jsonEncode({'rut': p.rut}),
+        ).timeout(const Duration(seconds: 25));
+        if (r.statusCode == 200) {
+          final d = jsonDecode(r.body) as Map<String, dynamic>;
+          if (d['encontrado'] == true) {
+            p.rnpi = d;
+            p.estadoRnpi = 'ok';
+          } else {
+            p.estadoRnpi = d['consultado'] == true ? 'no' : 'error';
+          }
+        } else {
+          p.estadoRnpi = 'error';
+        }
+      }
+    } catch (_) {
+      p.estadoRnpi = 'error';
+    }
+    if (!_cambios.isClosed) _cambios.add(null);
+  }
+
   // El lector pide renovar su certificado https (lo emite nuestro servidor);
   // el teléfono solo lleva la solicitud y trae la respuesta.
   Future<void> _llevarCertificado(Map<String, dynamic> m) async {
@@ -409,8 +440,10 @@ class SesionLector {
             medicoNombre: nombre,
             fin: DateTime.now().add(const Duration(hours: 3)),
           );
-          profesionales.add('$nombre ($rut)');
+          final p = ProfesionalLector(nombre: nombre, rut: rut);
+          profesionales.add(p);
           _cambios.add(null);
+          unawaited(_verificarRnpi(p));
         }
         await _enviar({'tipo': 'ok', 'n': m['n'], 'ok': true});
         break;
@@ -480,4 +513,15 @@ class SesionLector {
     final claro = await AesGcm.with256bits().decrypt(caja, secretKey: _clave!);
     return jsonDecode(utf8.decode(claro)) as Map<String, dynamic>;
   }
+}
+
+/// Profesional identificado en el lector, con sus datos del RNPI.
+/// estadoRnpi: 'verificando' | 'ok' | 'no' (no está en RNPI) |
+/// 'sin_red' (se verificará al volver internet) | 'error' (RNPI no respondió)
+class ProfesionalLector {
+  final String nombre;
+  final String rut;
+  String estadoRnpi = 'verificando';
+  Map<String, dynamic>? rnpi;
+  ProfesionalLector({required this.nombre, required this.rut});
 }
