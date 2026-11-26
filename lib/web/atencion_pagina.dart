@@ -1109,6 +1109,7 @@ const String atencionPagina = r'''<!DOCTYPE html><html lang="es"><head><meta cha
       <div class="da-meta-item"><span class="da-meta-label" data-i="hora">Hora</span><span class="da-meta-value" id="pHora"></span></div>
       <div class="da-meta-item"><span class="da-meta-label" data-i="profesional">Profesional</span><span class="da-meta-value" id="pProf"></span></div>
     </div>
+    <div id="resumenAnt" style="padding:0 0 4px"></div>
     <div class="da-tools">
       <p class="da-tools-label" data-i="herramientas">Herramientas</p>
       <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span><span data-i="historial">Historial clínico</span></button>
@@ -1273,7 +1274,21 @@ function idProfesional(){
 function pintarPaciente(){const p=ficha.paciente||{};
  const nombre=[p.nombre,p.apellido_paterno,p.apellido_materno].filter(Boolean).join(' ');
  $('pNombre').textContent=nombre;$('pRut').textContent=p.rut||'';$('avatar').textContent=(nombre||'P').charAt(0).toUpperCase();
- $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—'}
+ $('pEdad').textContent=edad(p.fecha_nacimiento);$('pSexo').textContent=p.sexo||'—';$('pPrev').textContent=p.prevision||'—';pintarResumen()}
+// Resumen de antecedentes siempre visible, igual que en la Ficha (alergias, medicamentos habituales, enfermedades crónicas)
+Object.assign(I18N.es,{res_t:'Antecedentes clínicos',r_alergia:'Alergias',r_medicamento_habitual:'Medicamentos habituales',r_enfermedad_cronica:'Enfermedades crónicas',v_alergia:'SIN ALERGIAS CONOCIDAS',v_medicamento_habitual:'Sin medicamentos registrados',v_enfermedad_cronica:'Sin enfermedades crónicas registradas'});
+Object.assign(I18N.en,{res_t:'Clinical background',r_alergia:'Allergies',r_medicamento_habitual:'Regular medications',r_enfermedad_cronica:'Chronic conditions',v_alergia:'NO KNOWN ALLERGIES',v_medicamento_habitual:'No medications recorded',v_enfermedad_cronica:'No chronic conditions recorded'});
+Object.assign(I18N.de,{res_t:'Klinische Vorgeschichte',r_alergia:'Allergien',r_medicamento_habitual:'Dauermedikation',r_enfermedad_cronica:'Chronische Erkrankungen',v_alergia:'KEINE BEKANNTEN ALLERGIEN',v_medicamento_habitual:'Keine Medikamente erfasst',v_enfermedad_cronica:'Keine chronischen Erkrankungen erfasst'});
+Object.assign(I18N.fr,{res_t:'Antécédents cliniques',r_alergia:'Allergies',r_medicamento_habitual:'Traitements habituels',r_enfermedad_cronica:'Maladies chroniques',v_alergia:'AUCUNE ALLERGIE CONNUE',v_medicamento_habitual:'Aucun médicament enregistré',v_enfermedad_cronica:'Aucune maladie chronique enregistrée'});
+const BLOQUES_RES=[['alergia','⚠️','#991b1b','#fef2f2','#fecaca','#fee2e2'],['medicamento_habitual','💊','#1e40af','#eff6ff','#bfdbfe','#dbeafe'],['enfermedad_cronica','🩺','#065f46','#f0fdf4','#86efac','#dcfce7']];
+function pintarResumen(){const caja=$('resumenAnt');if(!caja)return;if(!ficha.paciente){caja.innerHTML='';return}const a=ficha.antecedentes||{};
+ let h='<div style="margin-bottom:16px"><p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#64748b;margin:0 0 8px">'+esc(t('res_t'))+'</p><div style="display:flex;flex-direction:column;gap:8px">';
+ for(const [k,emo,col,bg,bor,tag] of BLOQUES_RES){const it=(a[k]||[]).filter(x=>x&&x.descripcion);const vac=!it.length;
+  h+='<div style="border-radius:10px;border:1.5px solid '+bor+';background:'+bg+';padding:10px 14px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:'+(vac?0:8)+'px"><span style="font-size:14px">'+emo+'</span><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:'+col+'">'+esc(t('r_'+k))+'</span></div>';
+  h+=vac?'<p style="margin:0;font-size:12px;font-weight:700;color:'+(k==='alergia'?'#991b1b':'#94a3b8')+';font-style:'+(k==='alergia'?'normal':'italic')+'">'+esc(t('v_'+k))+'</p>'
+   :'<div style="display:flex;flex-wrap:wrap;gap:5px">'+it.map(x=>'<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:'+tag+';color:'+col+';border:1px solid '+bor+'">'+esc(x.descripcion)+'</span>').join('')+'</div>';
+  h+='</div>'}
+ caja.innerHTML=h+'</div></div>'}
 async function entrar(){$('e1').textContent='';const id=idProfesional();yo={nombre:$('nom').value.trim(),rut:id};
  if(yo.nombre.length<3||!id){$('e1').textContent=t('err_ident');return}
  try{const j=await post('/api/identificar',yo);fichaOriginal=j.ficha||{};ficha=fichaOriginal;fichaTrad={};verOriginal=false;

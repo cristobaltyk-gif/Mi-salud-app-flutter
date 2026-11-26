@@ -439,7 +439,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-1.3"
+#define VERSION        "placa-1.4"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;

@@ -60,7 +60,7 @@ async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{meth
 async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
 function reiniciar(){yo=null;ficha={};fichaOriginal={};fichaTrad={};verOriginal=false;$('avisoTrad').hidden=true;$('esExt').checked=false;$('campoRut').hidden=false;$('campoExt').hidden=true;guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
  for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';
- $('avatar').textContent='P';$('nom').value='';$('rut').value=''}
+ $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML=''}
 function mostrarEstado(j){window._ultimoEstado=j;
  $('espera').hidden=j.estado!=='espera';
  $('solicitud').hidden=j.estado!=='solicitud';
