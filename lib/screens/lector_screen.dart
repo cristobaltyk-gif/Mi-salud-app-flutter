@@ -322,126 +322,208 @@ class _LectorScreenState extends State<LectorScreen> {
         ),
       ]);
 
-  // Carnet del profesional (colores HypokratIA) con sello del RNPI
+  // ── Credencial del profesional (diseño aprobado): datos del RNPI en orden,
+  //    sello del título y sello de la especialidad ──
+  static const _lila = Color(0xFF534AB7);
+  static const _tinta = Color(0xFF2E1065);
+  static const _linea = Color(0xFFCECBF6);
+
   Widget _profesional(ProfesionalLector p) {
     final d = p.rnpi ?? const {};
     final ok = p.estadoRnpi == 'ok';
     final nombre = (ok && d['nombre'] != null ? d['nombre'] : p.nombre).toString();
     final titulo = (d['titulo'] ?? '').toString();
-    final especialidades = ((d['especialidades'] as List?) ?? const []).join(' · ');
     final universidad = (d['universidad'] ?? '').toString();
-    const lila = Color(0xFFCECBF6);
-    final aviso = switch (p.estadoRnpi) {
-      'ok' => tr('Superintendencia de Salud · Registro Nacional de Prestadores'),
-      'no' => tr('No aparece en el RNPI. Su nota quedará en revisión.'),
-      'sin_red' => tr('Se verificará en el RNPI cuando vuelva internet.'),
-      'error' => tr('El RNPI no respondió. Se verificará más tarde.'),
-      _ => tr('Verificando en el RNPI…'),
-    };
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      constraints: const BoxConstraints(minHeight: 200),
-      decoration: BoxDecoration(color: _morado, borderRadius: BorderRadius.circular(18)),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(children: [
-        Positioned(right: -40, top: -40, child: _aro(170)),
-        Positioned(right: -10, top: -10, child: _aro(110)),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+    final especialidades = ((d['especialidades_detalle'] as List?) ??
+            ((d['especialidades'] as List?) ?? const []).map((e) => {'nombre': e}).toList())
+        .whereType<Map>()
+        .toList();
+    final tratamiento = ok ? _tratamiento(titulo, nombre) : '';
+
+    Widget etiqueta(String t) => Text(t, style: const TextStyle(fontSize: 13, color: _lila));
+    const divisor = Padding(
+      padding: EdgeInsets.symmetric(vertical: 14),
+      child: Divider(height: 1, thickness: 1, color: _linea),
+    );
+
+    final hijos = <Widget>[
+      etiqueta(tr('Nombre')),
+      const SizedBox(height: 2),
+      Text(tratamiento.isEmpty ? nombre : '$tratamiento $nombre',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, height: 1.25, color: _tinta)),
+      const SizedBox(height: 10),
+      etiqueta(tr('RUT')),
+      const SizedBox(height: 2),
+      Text(_rutConPuntos(p.rut), style: const TextStyle(fontSize: 16, color: _tinta)),
+      divisor,
+    ];
+
+    if (ok) {
+      hijos.add(Row(children: [
+        Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Icon(Icons.monitor_heart_outlined, color: Colors.white, size: 20),
-              const SizedBox(width: 6),
-              const Text('HypokratIA',
-                  style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-              const Spacer(),
-              Text(tr('Profesional de la salud'), style: const TextStyle(color: lila, fontSize: 12, letterSpacing: 0.8)),
-            ]),
-            const SizedBox(height: 14),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                width: 60,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: const Color(0xFFEEEDFE), borderRadius: BorderRadius.circular(10)),
-                child: Text(nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
-                    style: const TextStyle(color: _morado, fontSize: 30, fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 76),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(nombre,
-                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, height: 1.2)),
-                    const SizedBox(height: 2),
-                    Text('RUT ${p.rut}', style: const TextStyle(color: lila, fontSize: 13)),
-                    if (ok && (especialidades.isNotEmpty || titulo.isNotEmpty)) ...[
-                      const SizedBox(height: 10),
-                      Text(especialidades.isNotEmpty ? especialidades : titulo,
-                          style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, height: 1.15)),
-                      const SizedBox(height: 3),
-                      Text(
-                        [if (especialidades.isNotEmpty) titulo, universidad].where((x) => x.isNotEmpty).join(' · '),
-                        style: const TextStyle(color: lila, fontSize: 13),
-                      ),
-                    ],
-                  ]),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.only(right: 86),
-              child: Text(aviso, style: const TextStyle(color: lila, fontSize: 11.5)),
-            ),
+            etiqueta(tr('Título profesional')),
+            const SizedBox(height: 2),
+            Text(titulo.isEmpty ? '—' : titulo, style: const TextStyle(fontSize: 16, color: _tinta)),
+            if (universidad.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(universidad, style: const TextStyle(fontSize: 14, color: _lila)),
+            ],
           ]),
         ),
-        Positioned(right: 14, bottom: 12, child: _sello(p.estadoRnpi)),
-      ]),
+        const SizedBox(width: 10),
+        _sello(const ['Título', 'verificado', 'RNPI'], _Sello.verde, -0.17),
+      ]));
+      hijos.add(divisor);
+      if (especialidades.isEmpty) {
+        hijos.add(Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              etiqueta(tr('Especialidad')),
+              const SizedBox(height: 2),
+              Text(tr('No registra especialidad en el RNPI'),
+                  style: const TextStyle(fontSize: 16, color: Color(0xFF791F1F))),
+            ]),
+          ),
+          const SizedBox(width: 10),
+          _sello(const ['Sin', 'especialidad', 'certificada'], _Sello.rojo, 0.14),
+        ]));
+      } else {
+        hijos.add(Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              etiqueta(especialidades.length > 1 ? tr('Especialidades') : tr('Especialidad')),
+              for (final e in especialidades) ...[
+                const SizedBox(height: 4),
+                Text('${e['nombre'] ?? ''}',
+                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600, height: 1.2, color: _morado)),
+                if ((e['institucion'] ?? '').toString().isNotEmpty)
+                  Text('${e['institucion']}', style: const TextStyle(fontSize: 14, color: _lila)),
+              ],
+            ]),
+          ),
+          const SizedBox(width: 10),
+          _sello(const ['Especialidad', 'certificada', 'RNPI'], _Sello.verde, 0.14),
+        ]));
+      }
+    } else {
+      final (String texto, _Sello tono, List<String> lineas) = switch (p.estadoRnpi) {
+        'no' => (tr('No aparece en el RNPI. Su nota quedará en revisión.'), _Sello.ambar, const ['No', 'registrado', 'RNPI']),
+        'sin_red' => (tr('Se verificará en el RNPI cuando vuelva internet.'), _Sello.gris, const ['Pendiente', 'RNPI']),
+        'error' => (tr('El RNPI no respondió. Se verificará más tarde.'), _Sello.gris, const ['Pendiente', 'RNPI']),
+        _ => (tr('Verificando en el RNPI…'), _Sello.gris, const ['Verificando', 'RNPI']),
+      };
+      hijos.add(Row(children: [
+        Expanded(child: Text(texto, style: const TextStyle(fontSize: 15, color: _tinta))),
+        const SizedBox(width: 10),
+        _sello(lineas, tono, -0.17),
+      ]));
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBFAFF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFAFA9EC), width: 1.5),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: hijos),
     );
   }
 
-  Widget _aro(double t) => Container(
-        width: t,
-        height: t,
-        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.12))),
-      );
-
-  // Sello oficial: blanco con morado (verificado), ámbar (no registrado), gris (pendiente)
-  Widget _sello(String estado) {
-    final (Color c, IconData icono, String linea1) = switch (estado) {
-      'ok' => (_morado, Icons.verified, tr('Verificado')),
-      'no' => (const Color(0xFFB45309), Icons.warning_amber_rounded, tr('No registrado')),
-      _ => (const Color(0xFF6B7280), Icons.hourglass_top, tr('Pendiente')),
+  // Sello redondo, notorio: anillo grueso, anillo fino interior y 2-3 líneas
+  Widget _sello(List<String> lineas, _Sello tono, double giro) {
+    final (Color fondo, Color borde, Color texto) = switch (tono) {
+      _Sello.verde => (const Color(0xFFEAF3DE), const Color(0xFF3B6D11), const Color(0xFF27500A)),
+      _Sello.rojo => (const Color(0xFFFCEBEB), const Color(0xFFA32D2D), const Color(0xFF791F1F)),
+      _Sello.ambar => (const Color(0xFFFAEEDA), const Color(0xFF854F0B), const Color(0xFF633806)),
+      _Sello.gris => (const Color(0xFFF1EFE8), const Color(0xFF5F5E5A), const Color(0xFF444441)),
     };
     return Transform.rotate(
-      angle: -0.21,
+      angle: giro,
       child: Container(
-        width: 80,
-        height: 80,
+        width: 82,
+        height: 82,
         alignment: Alignment.center,
-        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: fondo, shape: BoxShape.circle, border: Border.all(color: borde, width: 4)),
         child: Container(
-          width: 70,
-          height: 70,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c, width: 2)),
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.withOpacity(0.5), width: 1)),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(icono, color: c, size: 20),
-              Text(linea1,
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: borde, width: 1.2)),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            for (final l in lineas)
+              Text(l == 'RNPI' ? l : tr(l),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: c, fontSize: 9.5, fontWeight: FontWeight.w800, height: 1.1)),
-              Text('RNPI', style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-            ]),
-          ),
+                  style: TextStyle(
+                    color: texto,
+                    fontSize: l == 'RNPI' ? 11 : (l.length > 10 ? 8.5 : 10),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: l == 'RNPI' ? 1.5 : 0,
+                    height: 1.15,
+                  )),
+          ]),
         ),
       ),
     );
+  }
+
+  static String _rutConPuntos(String rut) {
+    final r = rut.replaceAll('.', '').toUpperCase();
+    final partes = r.split('-');
+    if (partes.length != 2 || int.tryParse(partes[0]) == null) return rut;
+    final n = partes[0];
+    final b = StringBuffer();
+    for (var i = 0; i < n.length; i++) {
+      if (i > 0 && (n.length - i) % 3 == 0) b.write('.');
+      b.write(n[i]);
+    }
+    return '$b-${partes[1]}';
+  }
+
+  // Dr. / Dra. / Klgo. / Klga. … según el título del RNPI y, si el título no
+  // dice el género, según el primer nombre. Si no se puede saber: Dr(a).
+  static String _tratamiento(String titulo, String nombre) {
+    final t = titulo.toLowerCase();
+    bool? mujer;
+    if (RegExp(r'(médica|medica|cirujana|enfermera|kinesióloga|kinesiologa|psicóloga|psicologa|fonoaudióloga|fonoaudiologa|matrona|tecnóloga|tecnologa|odontóloga|odontologa|dentista mujer)').hasMatch(t)) {
+      mujer = true;
+    } else if (RegExp(r'(enfermero|kinesiólogo|kinesiologo|psicólogo|psicologo|fonoaudiólogo|fonoaudiologo|matrón|matron|tecnólogo|tecnologo)').hasMatch(t)) {
+      mujer = false;
+    }
+    final bool? g = mujer ?? _mujerPorNombre(nombre);
+    String par(String h, String m, String n) => g == null ? n : (g ? m : h);
+    if (t.contains('médic') || t.contains('medic') || t.contains('dentista') || t.contains('odont')) {
+      return par('Dr.', 'Dra.', 'Dr(a).');
+    }
+    if (t.contains('kinesi')) return par('Klgo.', 'Klga.', 'Klgo(a).');
+    if (t.contains('enfermer')) return 'E.U.';
+    if (t.contains('psicól') || t.contains('psicol')) return 'Ps.';
+    if (t.contains('nutricion')) return 'Nut.';
+    if (t.contains('terapeuta ocupacional')) return 'T.O.';
+    if (t.contains('fonoaudi')) return par('Flgo.', 'Flga.', 'Flgo(a).');
+    if (t.contains('matr')) return par('Matrón', 'Matrona', 'Matrón(a)');
+    if (t.contains('tecnólog') || t.contains('tecnolog')) return 'T.M.';
+    return '';
+  }
+
+  static const _nombresMujer = {
+    'isabel', 'carmen', 'raquel', 'belén', 'belen', 'pilar', 'beatriz', 'inés', 'ines', 'ruth', 'rut', 'ester', 'esther',
+    'mercedes', 'dolores', 'soledad', 'trinidad', 'consuelo', 'rocío', 'rocio', 'abigail', 'maite', 'noemí', 'noemi',
+    'nicole', 'michelle', 'karen', 'lisette', 'ingrid', 'astrid', 'denisse', 'jacqueline', 'scarlett', 'evelyn',
+    'carol', 'marisol', 'maribel', 'maría', 'maria', 'luz', 'paz', 'flor', 'margarita', 'yasmín', 'yasmin', 'jazmín',
+    'jazmin', 'nayadeth', 'solange', 'ivonne', 'yvonne', 'denise', 'madeleine', 'génesis', 'genesis', 'anaís', 'anais',
+  };
+  static const _nombresHombreConA = {'bautista', 'luca', 'joshua', 'nicola', 'borja', 'josé', 'jose', 'elia'};
+
+  static bool? _mujerPorNombre(String nombre) {
+    final primero = nombre.trim().split(RegExp(r'\s+')).first.toLowerCase();
+    if (primero.isEmpty) return null;
+    if (_nombresMujer.contains(primero)) return true;
+    if (_nombresHombreConA.contains(primero)) return false;
+    if (primero.endsWith('a')) return true;
+    if (primero.endsWith('o') || RegExp(r'[nsldrzlb]$').hasMatch(primero) || primero.endsWith('el')) return false;
+    return null;
   }
 
   Widget _vistaSesion() {
@@ -507,3 +589,5 @@ class _LectorScreenState extends State<LectorScreen> {
     ]);
   }
 }
+
+enum _Sello { verde, rojo, ambar, gris }

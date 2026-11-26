@@ -2545,4 +2545,59 @@ const Map<String, Map<String, String>> textos = {
     'de': 'Ausstehend',
     'fr': 'En attente',
   },
+  'Título profesional': {
+    'en': 'Professional degree',
+    'de': 'Berufsabschluss',
+    'fr': 'Diplôme professionnel',
+  },
+  'Especialidades': {
+    'en': 'Specialties',
+    'de': 'Fachgebiete',
+    'fr': 'Spécialités',
+  },
+  'No registra especialidad en el RNPI': {
+    'en': 'No specialty registered in the RNPI',
+    'de': 'Kein Fachgebiet im RNPI registriert',
+    'fr': 'Aucune spécialité inscrite au RNPI',
+  },
+  'Título': {
+    'en': 'Degree',
+    'de': 'Abschluss',
+    'fr': 'Diplôme',
+  },
+  'verificado': {
+    'en': 'verified',
+    'de': 'verifiziert',
+    'fr': 'vérifié',
+  },
+  'certificada': {
+    'en': 'certified',
+    'de': 'zertifiziert',
+    'fr': 'certifiée',
+  },
+  'Sin': {
+    'en': 'No',
+    'de': 'Ohne',
+    'fr': 'Sans',
+  },
+  'especialidad': {
+    'en': 'specialty',
+    'de': 'Fachgebiet',
+    'fr': 'spécialité',
+  },
+  'No': {
+    'en': 'Not',
+    'de': 'Nicht',
+    'fr': 'Non',
+  },
+  'registrado': {
+    'en': 'registered',
+    'de': 'registriert',
+    'fr': 'inscrit',
+  },
+  'Verificando': {
+    'en': 'Checking',
+    'de': 'Prüfung',
+    'fr': 'Vérification',
+  },
 };
