@@ -2510,4 +2510,14 @@ const Map<String, Map<String, String>> textos = {
     'de': 'Fachgebiet',
     'fr': 'Spécialité',
   },
+  'CERTIFICADO': {
+    'en': 'CERTIFIED',
+    'de': 'ZERTIFIZIERT',
+    'fr': 'CERTIFIÉ',
+  },
+  'NO REGISTRADO': {
+    'en': 'NOT REGISTERED',
+    'de': 'NICHT REGISTRIERT',
+    'fr': 'NON INSCRIT',
+  },
 };

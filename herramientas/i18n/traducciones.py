@@ -510,4 +510,6 @@ T.update({
 "El RNPI no respondió. Se verificará más tarde.": ("The RNPI did not respond. It will be verified later.","Das RNPI hat nicht geantwortet. Es wird später geprüft.","Le RNPI n'a pas répondu. La vérification se fera plus tard."),
 "Verificando en el RNPI…": ("Checking the RNPI…","Wird im RNPI geprüft…","Vérification dans le RNPI…"),
 "Especialidad": ("Specialty","Fachgebiet","Spécialité"),
+"CERTIFICADO": ("CERTIFIED","ZERTIFIZIERT","CERTIFIÉ"),
+"NO REGISTRADO": ("NOT REGISTERED","NICHT REGISTRIERT","NON INSCRIT"),
 })

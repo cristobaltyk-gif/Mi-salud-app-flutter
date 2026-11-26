@@ -322,10 +322,14 @@ class _LectorScreenState extends State<LectorScreen> {
         ),
       ]);
 
-  // Nombre y RUT que dio el profesional + lo que dice el RNPI de él
+  // Tarjeta del profesional: lo que dice el RNPI de él, con un timbre
   Widget _profesional(ProfesionalLector p) {
     final d = p.rnpi ?? const {};
-    final especialidades = ((d['especialidades'] as List?) ?? const []).join(', ');
+    final ok = p.estadoRnpi == 'ok';
+    final nombre = (ok && d['nombre'] != null ? d['nombre'] : p.nombre).toString();
+    final titulo = (d['titulo'] ?? '').toString();
+    final especialidades = ((d['especialidades'] as List?) ?? const []).join(' · ');
+    final universidad = (d['universidad'] ?? '').toString();
     final (IconData icono, Color color, String texto) = switch (p.estadoRnpi) {
       'ok' => (Icons.verified, const Color(0xFF15803D), tr('Registrado en la Superintendencia de Salud (RNPI)')),
       'no' => (Icons.warning_amber_rounded, const Color(0xFFB45309), tr('No aparece en el RNPI. Su nota quedará en revisión.')),
@@ -333,22 +337,93 @@ class _LectorScreenState extends State<LectorScreen> {
       'error' => (Icons.schedule, const Color(0xFF6B7280), tr('El RNPI no respondió. Se verificará más tarde.')),
       _ => (Icons.hourglass_top, const Color(0xFF6B7280), tr('Verificando en el RNPI…')),
     };
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 4),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('• ${p.estadoRnpi == 'ok' && d['nombre'] != null ? d['nombre'] : p.nombre} (${p.rut})',
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        if (p.estadoRnpi == 'ok') ...[
-          if ((d['titulo'] ?? '').toString().isNotEmpty) Text('   ${d['titulo']}'),
-          if (especialidades.isNotEmpty) Text('   ${tr('Especialidad')}: $especialidades'),
-          if ((d['universidad'] ?? '').toString().isNotEmpty) Text('   ${d['universidad']}'),
-        ],
-        Row(children: [
-          Icon(icono, size: 18, color: color),
-          const SizedBox(width: 6),
-          Expanded(child: Text(texto, style: TextStyle(color: color, fontSize: 13))),
-        ]),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ok ? const Color(0xFFBBF7D0) : const Color(0xFFE5E7EB), width: 1.5),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 4))],
+      ),
+      child: Stack(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: _morado,
+                child: Text(nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: (ok || p.estadoRnpi == 'no') ? 78 : 0),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(nombre, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, height: 1.2)),
+                    const SizedBox(height: 2),
+                    Text('RUT ${p.rut}', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                  ]),
+                ),
+              ),
+            ]),
+            if (ok && (especialidades.isNotEmpty || titulo.isNotEmpty)) ...[
+              const SizedBox(height: 14),
+              Text(especialidades.isNotEmpty ? especialidades : titulo,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _morado, height: 1.2)),
+              if (especialidades.isNotEmpty && titulo.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(titulo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              ],
+              if (universidad.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.school_outlined, size: 16, color: Color(0xFF6B7280)),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(universidad, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)))),
+                ]),
+              ],
+            ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                Icon(icono, size: 18, color: color),
+                const SizedBox(width: 8),
+                Expanded(child: Text(texto, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600))),
+              ]),
+            ),
+          ]),
+        ),
+        if (ok || p.estadoRnpi == 'no')
+          Positioned(top: 10, right: 10, child: _timbre(ok)),
       ]),
+    );
+  }
+
+  // Timbre tipo sello: "CERTIFICADO · RNPI" (verde) o "NO REGISTRADO" (ámbar)
+  Widget _timbre(bool ok) {
+    final c = ok ? const Color(0xFF15803D) : const Color(0xFFB45309);
+    return Transform.rotate(
+      angle: -0.18,
+      child: Container(
+        width: 74,
+        height: 74,
+        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c, width: 2.5)),
+        padding: const EdgeInsets.all(3),
+        child: Container(
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.withOpacity(0.6), width: 1)),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(ok ? Icons.verified : Icons.warning_amber_rounded, size: 18, color: c),
+            Text(ok ? tr('CERTIFICADO') : tr('NO REGISTRADO'),
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: ok ? 8.5 : 7.5, fontWeight: FontWeight.w900, color: c, letterSpacing: 0.4, height: 1.1)),
+            Text('RNPI', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: c, letterSpacing: 1.5)),
+          ]),
+        ),
+      ),
     );
   }
 
@@ -371,17 +446,26 @@ class _LectorScreenState extends State<LectorScreen> {
         _titulo(tr('Consulta en curso'), Icons.medical_services),
         Text(trp('Computador: {0}', [s.equipo]), textAlign: TextAlign.center),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(10)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.profesionales.isEmpty ? tr('El médico aún no se identifica.') : tr('Profesionales:'),
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            for (final p in s.profesionales) _profesional(p),
-            const SizedBox(height: 6),
-            Text(trp('Notas guardadas: {0} — se enviarán solas cuando vuelva internet.', [s.notas])),
-          ]),
-        ),
+        if (s.profesionales.isEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(16)),
+            child: Row(children: [
+              const Icon(Icons.hourglass_top, color: _morado),
+              const SizedBox(width: 10),
+              Expanded(child: Text(tr('El médico aún no se identifica.'), style: const TextStyle(fontSize: 15))),
+            ]),
+          ),
+        for (final p in s.profesionales) _profesional(p),
+        Row(children: [
+          const Icon(Icons.description_outlined, size: 18, color: Color(0xFF6B7280)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(trp('Notas guardadas: {0} — se enviarán solas cuando vuelva internet.', [s.notas]),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+          ),
+        ]),
         const SizedBox(height: 16),
         OutlinedButton(
           style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFB91C1C)),
