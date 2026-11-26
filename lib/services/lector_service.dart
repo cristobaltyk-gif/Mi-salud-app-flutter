@@ -149,8 +149,22 @@ class LectorService {
 
   /// Se anuncia por Bluetooth y, a la vez, busca un lector en la red local.
   /// Devuelve el primer canal que se conecte (o null si nadie llega a tiempo).
+  static Completer<_Canal?>? _esperando;
+
+  /// El paciente salió o terminó antes de que llegara el lector: se deja de
+  /// anunciar y la espera termina sin canal (ningún lector se conecta después).
+  static Future<void> cancelarEspera() async {
+    final e = _esperando;
+    _esperando = null;
+    if (e != null && !e.isCompleted) e.complete(null);
+    try {
+      await BlePeripheral.stopAdvertising();
+    } catch (_) {}
+  }
+
   static Future<_Canal?> esperarConexion({Duration limite = const Duration(seconds: 60)}) async {
     final listo = Completer<_Canal?>();
+    _esperando = listo;
     ultimoErrorBle = null;
     // ── Bluetooth: el PC encuentra al teléfono ──
     try {
@@ -184,6 +198,7 @@ class LectorService {
     }).catchError((_) {}));
 
     final canal = await listo.future.timeout(limite, onTimeout: () => null);
+    if (identical(_esperando, listo)) _esperando = null;
     if (canal is! _CanalBlePeriferico) {
       try {
         await BlePeripheral.stopAdvertising();
@@ -253,8 +268,24 @@ class SesionLector {
 
   /// Espera a que el PC del médico se conecte, intercambia llaves y deja el
   /// código listo para comparar. false = ningún lector llegó a tiempo.
+  /// La consulta en curso (una sola a la vez en el teléfono)
+  static SesionLector? actual;
+  bool _terminada = false;
+
   Future<bool> conectar({Duration limite = const Duration(seconds: 60)}) async {
+    // Si quedó otra consulta abierta (o esperando lector), se cierra antes
+    final previa = actual;
+    if (previa != null && !identical(previa, this)) await previa.terminar();
+    actual = this;
     _canal = await LectorService.esperarConexion(limite: limite);
+    if (_terminada) {
+      // El paciente salió mientras se buscaba el lector: no se comparte nada
+      try {
+        await _canal?.cerrar();
+      } catch (_) {}
+      _canal = null;
+      return false;
+    }
     if (_canal == null) return false;
     _canal!.entrada.listen(_recibirBytes, onDone: _cerrado, onError: (_) => _cerrado());
 
@@ -296,6 +327,7 @@ class SesionLector {
       await terminar(avisar: false);
       return true;
     }
+    if (_terminada) return false;   // el paciente salió: no se envía la ficha
     await _enviar({'tipo': 'ficha', 'ficha': TraduccionService.sinTraducciones(ficha)});
     estado = 'activa';
     _cambios.add(null);
@@ -384,6 +416,9 @@ class SesionLector {
   }
 
   Future<void> terminar({bool avisar = true}) async {
+    _terminada = true;
+    if (identical(actual, this)) actual = null;
+    if (_canal == null) await LectorService.cancelarEspera();
     if (avisar && _clave != null) {
       try {
         await _enviar({'tipo': 'fin'});
