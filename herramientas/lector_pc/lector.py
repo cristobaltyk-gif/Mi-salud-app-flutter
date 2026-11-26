@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-VERSION = "2.0"
+VERSION = "2.1"
 NOMBRE_EQUIPO = os.environ.get("HK_NOMBRE", socket.gethostname())[:40]
 
 # Mismos valores en la app (lib/services/lector_service.dart)

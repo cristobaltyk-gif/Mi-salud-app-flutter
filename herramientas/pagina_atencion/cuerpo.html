@@ -20,8 +20,8 @@
     <div id="resumenAnt" style="padding:0 0 4px"></div>
     <div class="da-tools">
       <p class="da-tools-label" data-i="herramientas">Herramientas</p>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span><span data-i="historial">Historial clínico</span></button>
-      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><span data-i="antecedentes">Antecedentes</span></button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('historial')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span data-i="historial">Ver historial</span></button>
+      <button class="da-tool-btn da-tool-btn--historial" onclick="abrir('antecedentes')"><span class="da-tool-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span data-i="antecedentes">Antecedentes</span></button>
     </div>
     <div class="da-sidebar-actions">
       <button class="da-btn-cancel" onclick="limpiar()" data-i="cancelar">Cancelar</button>
@@ -75,6 +75,7 @@
     <div class="hk-tarjeta-icono hk-ok"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg></div>
     <p class="hk-tarjeta-titulo" data-i="guardada_t">Atención guardada</p>
     <p class="hk-tarjeta-sub" id="guardadaTxt" data-i="guardada_s">Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.</p>
+    <div id="guardadaDocs"></div>
     <button class="hk-boton" id="guardadaBtn" onclick="terminarDesdeGuardada()" data-i="terminar">Terminar consulta</button>
   </div>
 </div>

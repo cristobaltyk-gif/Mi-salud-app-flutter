@@ -76,21 +76,24 @@ async function sondeo(){try{const r=await fetch('/api/estado');const j=await r.j
 //    teléfono del paciente ("transcribir" / "ordenar"). Si no, apagados. ──
 const API_MISALUD='https://portal-api.hipokratia.health';
 let permiso=null,dictando=false,reconocedor=null,ordenando=false;
-Object.assign(I18N.es,{sin_texto:'Escriba o dicte la atención primero.',dictar:'Dictar',detener:'Detener dictado',ordenar:'Ordenar con Claude',ordenando:'Ordenando…',ia_sin_red:'Dictar y ordenar necesitan internet en este computador',ia_sin_permiso:'Dictar y ordenar se activan cuando el teléfono del paciente tiene internet',ia_sin_https:'Este lector aún no tiene dirección segura: el dictado se activa sola cuando la tenga',err_ordenar:'No se pudo ordenar. Intenta de nuevo.',err_micro:'No hay acceso al micrófono. Revisa el permiso del navegador.'});
-Object.assign(I18N.en,{sin_texto:'Type or dictate the encounter first.',dictar:'Dictate',detener:'Stop dictation',ordenar:'Organize with Claude',ordenando:'Organizing…',ia_sin_red:'Dictation and organizing need internet on this computer',ia_sin_permiso:'Dictation and organizing turn on when the patient’s phone has internet',ia_sin_https:'This reader has no secure address yet: dictation turns on by itself once it does',err_ordenar:'Could not organize. Try again.',err_micro:'No microphone access. Check the browser permission.'});
-Object.assign(I18N.de,{sin_texto:'Bitte zuerst die Behandlung schreiben oder diktieren.',dictar:'Diktieren',detener:'Diktat beenden',ordenar:'Mit Claude ordnen',ordenando:'Wird geordnet…',ia_sin_red:'Diktat und Ordnen brauchen Internet auf diesem Computer',ia_sin_permiso:'Diktat und Ordnen werden aktiv, wenn das Telefon des Patienten Internet hat',ia_sin_https:'Dieses Lesegerät hat noch keine sichere Adresse: das Diktat wird automatisch aktiv, sobald es eine hat',err_ordenar:'Ordnen nicht möglich. Bitte erneut versuchen.',err_micro:'Kein Mikrofonzugriff. Prüfen Sie die Browserberechtigung.'});
-Object.assign(I18N.fr,{sin_texto:'Écrivez ou dictez d’abord la consultation.',dictar:'Dicter',detener:'Arrêter la dictée',ordenar:'Organiser avec Claude',ordenando:'Organisation…',ia_sin_red:'La dictée et l’organisation nécessitent internet sur cet ordinateur',ia_sin_permiso:'La dictée et l’organisation s’activent quand le téléphone du patient a internet',ia_sin_https:'Ce lecteur n’a pas encore d’adresse sécurisée : la dictée s’activera d’elle-même',err_ordenar:'Impossible d’organiser. Réessayez.',err_micro:'Pas d’accès au micro. Vérifiez l’autorisation du navigateur.'});
+Object.assign(I18N.es,{detener_ordenar:'Detener y ordenar',reordenar:'✨ Ordenar de nuevo',sin_texto:'Escriba o dicte la atención primero.',dictar:'Dictar',detener:'Detener dictado',ordenar:'Ordenar con Claude',ordenando:'Ordenando…',ia_sin_red:'Dictar y ordenar necesitan internet en este computador',ia_sin_permiso:'Dictar y ordenar se activan cuando el teléfono del paciente tiene internet',ia_sin_https:'Este lector aún no tiene dirección segura: el dictado se activa sola cuando la tenga',err_ordenar:'No se pudo ordenar. Intenta de nuevo.',err_micro:'No hay acceso al micrófono. Revisa el permiso del navegador.'});
+Object.assign(I18N.en,{detener_ordenar:'Stop and organize',reordenar:'✨ Organize again',sin_texto:'Type or dictate the encounter first.',dictar:'Dictate',detener:'Stop dictation',ordenar:'Organize with Claude',ordenando:'Organizing…',ia_sin_red:'Dictation and organizing need internet on this computer',ia_sin_permiso:'Dictation and organizing turn on when the patient’s phone has internet',ia_sin_https:'This reader has no secure address yet: dictation turns on by itself once it does',err_ordenar:'Could not organize. Try again.',err_micro:'No microphone access. Check the browser permission.'});
+Object.assign(I18N.de,{detener_ordenar:'Stoppen und ordnen',reordenar:'✨ Erneut ordnen',sin_texto:'Bitte zuerst die Behandlung schreiben oder diktieren.',dictar:'Diktieren',detener:'Diktat beenden',ordenar:'Mit Claude ordnen',ordenando:'Wird geordnet…',ia_sin_red:'Diktat und Ordnen brauchen Internet auf diesem Computer',ia_sin_permiso:'Diktat und Ordnen werden aktiv, wenn das Telefon des Patienten Internet hat',ia_sin_https:'Dieses Lesegerät hat noch keine sichere Adresse: das Diktat wird automatisch aktiv, sobald es eine hat',err_ordenar:'Ordnen nicht möglich. Bitte erneut versuchen.',err_micro:'Kein Mikrofonzugriff. Prüfen Sie die Browserberechtigung.'});
+Object.assign(I18N.fr,{detener_ordenar:'Arrêter et organiser',reordenar:'✨ Réorganiser',sin_texto:'Écrivez ou dictez d’abord la consultation.',dictar:'Dicter',detener:'Arrêter la dictée',ordenar:'Organiser avec Claude',ordenando:'Organisation…',ia_sin_red:'La dictée et l’organisation nécessitent internet sur cet ordinateur',ia_sin_permiso:'La dictée et l’organisation s’activent quand le téléphone du patient a internet',ia_sin_https:'Ce lecteur n’a pas encore d’adresse sécurisée : la dictée s’activera d’elle-même',err_ordenar:'Impossible d’organiser. Réessayez.',err_micro:'Pas d’accès au micro. Vérifiez l’autorisation du navigateur.'});
 function usosPermiso(){try{const c=permiso.split('.')[0].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(c+'==='.slice((c.length+3)%4))).usos||[]}catch(e){return []}}
 function herramientasIA(){const usos=permiso?usosPermiso():[];const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  const red=navigator.onLine,seguro=window.isSecureContext;
  const pDictar=!!SR&&seguro&&red&&usos.includes('transcribir'),pOrdenar=red&&usos.includes('ordenar');
- $('btnDictar').disabled=!pDictar&&!dictando;$('btnOrdenar').disabled=!pOrdenar||ordenando;
- $('txtDictar').textContent=t(dictando?'detener':'dictar');$('txtOrdenar').textContent=t(ordenando?'ordenando':'ordenar');
- $('btnDictar').classList.toggle('da-tool-btn--recording',dictando);
+ $('btnDictar').disabled=(!pDictar&&!dictando)||ordenando;
+ $('txtDictar').textContent=ordenando?t('ordenando'):dictando?t(pOrdenar?'detener_ordenar':'detener'):t('dictar');
+ $('btnDictar').classList.toggle('da-tool-btn--recording',dictando);$('btnDictar').classList.toggle('da-tool-btn--claude',ordenando);
+ $('btnReordenar').hidden=!pOrdenar;$('btnReordenar').disabled=ordenando||dictando||!$('atencion').value.trim();$('btnReordenar').textContent=t('reordenar');
  const aviso=!red?'ia_sin_red':!permiso?'ia_sin_permiso':(!seguro&&usos.includes('transcribir'))?'ia_sin_https':'';
  $('avisoIA').textContent=aviso?t(aviso):'';$('avisoIA').hidden=!aviso}
 const IDIOMA_VOZ={es:'es-CL',en:'en-US',de:'de-DE',fr:'fr-FR'};
-function alternarDictado(){if(dictando){dictando=false;try{reconocedor&&reconocedor.stop()}catch(e){}herramientasIA();return}
+function alternarDictado(){if(dictando){dictando=false;try{reconocedor&&reconocedor.stop()}catch(e){}herramientasIA();
+  // Como en la Ficha: al detener, Claude ordena (si el permiso lo incluye)
+  if(navigator.onLine&&usosPermiso().includes('ordenar')&&$('atencion').value.trim())setTimeout(ordenarConClaude,600);return}
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;dictando=true;herramientasIA();escuchar(SR)}
 function escuchar(SR){const r=new SR();reconocedor=r;r.lang=IDIOMA_VOZ[LANG]||'es-CL';r.continuous=true;r.interimResults=false;
  r.onresult=e=>{let txt='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)txt+=e.results[i][0].transcript.trim()+' ';
@@ -100,7 +103,7 @@ function escuchar(SR){const r=new SR();reconocedor=r;r.lang=IDIOMA_VOZ[LANG]||'e
  try{r.start()}catch(e){}}
 async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!permiso||ordenando)return;
  if(!texto){const m=$('msg');m.className='hk-msg err';m.textContent=t('sin_texto');$('atencion').focus();return}
- if(dictando)alternarDictado();ordenando=true;herramientasIA();const m=$('msg');m.textContent='';
+ if(dictando){dictando=false;try{reconocedor&&reconocedor.stop()}catch(e){}}ordenando=true;herramientasIA();const m=$('msg');m.textContent='';
  try{const r=await fetch(API_MISALUD+'/api/lector/ordenar',{method:'POST',headers:{'Content-Type':'application/json','X-Permiso-Consulta':permiso},body:JSON.stringify({text:texto})});
   if(!r.ok)throw new Error();const d=await r.json();
   $('atencion').value=d.atencion||texto;$('diagnostico').value=d.diagnostico||'';$('examenes').value=d.examenes||'';
@@ -111,9 +114,9 @@ async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!per
 (function(){const caja=document.querySelector('.da-tools');const icMic='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>';
  const icIA='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/></svg>';
  caja.insertAdjacentHTML('beforeend','<button class="da-tool-btn" id="btnDictar" onclick="alternarDictado()" disabled><span class="da-tool-icon">'+icMic+'</span><span id="txtDictar"></span></button>'
-  +'<button class="da-tool-btn da-tool-btn--claude" id="btnOrdenar" onclick="ordenarConClaude()" disabled><span class="da-tool-icon">'+icIA+'</span><span id="txtOrdenar"></span></button>'
+  +'<button type="button" class="da-link-reordenar" id="btnReordenar" onclick="ordenarConClaude()" disabled hidden></button>'
   +'<p id="avisoIA" class="da-tools-label" style="text-transform:none;letter-spacing:0;font-weight:500;line-height:1.35" hidden></p>');
- addEventListener('online',herramientasIA);addEventListener('offline',herramientasIA);herramientasIA()})();
+ addEventListener('online',herramientasIA);addEventListener('offline',herramientasIA);$('atencion').addEventListener('input',herramientasIA);herramientasIA()})();
 (function(){const h=document.querySelector('.da-main-header');const b=document.createElement('button');
  b.className='da-btn-cancel';b.dataset.i='terminar';b.textContent=t('terminar');b.style.marginLeft='auto';b.onclick=terminarConsulta;h.appendChild(b)})();
 // ── Imprimir y enviar por email (como en la Ficha): con internet y solo si el
@@ -155,11 +158,21 @@ async function emitir(accion,docs){const m=$('msg');m.className='hk-msg';
  const icM='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><polyline points="22 6 12 13 2 6"/></svg>';
  for(const [k,tipo] of Object.entries(SECCION_DOC)){const tit=document.querySelector('.da-panel-title[data-i="'+k+'"]');if(!tit)continue;
   tit.parentElement.insertAdjacentHTML('beforeend','<button class="da-print-btn hk-doc" hidden onclick="emitir(\\'imprimir\\',[documentoDe(\\''+tipo+'\\')].filter(Boolean))">'+icP+'<span class="hk-doc-txt" data-k="imprimir"></span></button>')}
- document.querySelector('.da-tools').insertAdjacentHTML('beforeend','<button class="da-tool-btn hk-doc" hidden onclick="emitir(\\'imprimir\\',docsAtencion())"><span class="da-tool-icon">'+icP+'</span><span class="hk-doc-txt" data-k="imprimir_todo"></span></button>'
-  +'<button class="da-tool-btn hk-doc" hidden onclick="emitir(\\'email\\',docsAtencion())"><span class="da-tool-icon">'+icM+'</span><span class="hk-doc-txt" data-k="enviar_email"></span></button>'
-  +'<p id="avisoDoc" class="da-tools-label" style="text-transform:none;letter-spacing:0;font-weight:500;line-height:1.35" hidden></p>');
+ document.querySelector('.da-tools').insertAdjacentHTML('beforeend','<p id="avisoDoc" class="da-tools-label" style="text-transform:none;letter-spacing:0;font-weight:500;line-height:1.35" hidden></p>');
  addEventListener('online',herramientasDoc);addEventListener('offline',herramientasDoc);
  setInterval(()=>{if(!yo&&profHabil!==null){profHabil=null;herramientasDoc()}revisarProfesional();herramientasDoc()},2000)})();
+// Después de guardar (como la Ficha): el correo al paciente sale solo y
+// aparece "Imprimir todo" + un botón por documento.
+Object.assign(I18N.es,{doc_receta:'Receta',doc_informe:'Informe de atención',doc_examenes:'Orden de exámenes',doc_kinesiologia:'Orden kinésica',doc_quirurgica:'Indicación quirúrgica',imprimir_entregar:'Imprime los documentos para entregarlos al paciente.'});
+Object.assign(I18N.en,{doc_receta:'Prescription',doc_informe:'Encounter report',doc_examenes:'Test order',doc_kinesiologia:'Physiotherapy order',doc_quirurgica:'Surgical indication',imprimir_entregar:'Print the documents to hand them to the patient.'});
+Object.assign(I18N.de,{doc_receta:'Rezept',doc_informe:'Behandlungsbericht',doc_examenes:'Untersuchungsauftrag',doc_kinesiologia:'Physiotherapie-Verordnung',doc_quirurgica:'OP-Indikation',imprimir_entregar:'Drucken Sie die Dokumente für den Patienten aus.'});
+Object.assign(I18N.fr,{doc_receta:'Ordonnance',doc_informe:'Compte rendu',doc_examenes:'Demande d’examens',doc_kinesiologia:'Prescription de kinésithérapie',doc_quirurgica:'Indication chirurgicale',imprimir_entregar:'Imprimez les documents à remettre au patient.'});
+const _guardar=guardar;guardar=async function(){await _guardar();if(!guardado)return;const caja=$('guardadaDocs');caja.innerHTML='';
+ const docs=docsAtencion();if(!docs.length||!yo||!permiso||!navigator.onLine||profHabil!==true)return;
+ const b='style="width:100%;margin:6px 0;padding:11px 14px;border-radius:10px;font-weight:700;cursor:pointer;';
+ let h='<p class="hk-tarjeta-sub">'+esc(t('imprimir_entregar'))+'</p><button class="hk-doc" '+b+'border:none;background:#1B3B8C;color:#fff" onclick="emitir(\\'imprimir\\',docsAtencion())">🖨️ '+esc(t('imprimir_todo'))+' ('+docs.length+')</button>';
+ for(const d of docs)h+='<button class="hk-doc" '+b+'border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a;text-align:left" onclick="emitir(\\'imprimir\\',[documentoDe(\\''+d.tipo+'\\')].filter(Boolean))">🖨️ '+esc(t('doc_'+d.tipo))+'</button>';
+ caja.innerHTML=h;herramientasDoc();emitir('email',docs)};
 const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc()};
 aplicarIdioma();
 sondeo();
