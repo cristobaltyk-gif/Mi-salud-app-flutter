@@ -322,7 +322,7 @@ class _LectorScreenState extends State<LectorScreen> {
         ),
       ]);
 
-  // Tarjeta del profesional: lo que dice el RNPI de él, con un timbre
+  // Carnet del profesional (colores HypokratIA) con sello del RNPI
   Widget _profesional(ProfesionalLector p) {
     final d = p.rnpi ?? const {};
     final ok = p.estadoRnpi == 'ok';
@@ -330,98 +330,115 @@ class _LectorScreenState extends State<LectorScreen> {
     final titulo = (d['titulo'] ?? '').toString();
     final especialidades = ((d['especialidades'] as List?) ?? const []).join(' · ');
     final universidad = (d['universidad'] ?? '').toString();
-    final (IconData icono, Color color, String texto) = switch (p.estadoRnpi) {
-      'ok' => (Icons.verified, const Color(0xFF15803D), tr('Registrado en la Superintendencia de Salud (RNPI)')),
-      'no' => (Icons.warning_amber_rounded, const Color(0xFFB45309), tr('No aparece en el RNPI. Su nota quedará en revisión.')),
-      'sin_red' => (Icons.schedule, const Color(0xFF6B7280), tr('Se verificará en el RNPI cuando vuelva internet.')),
-      'error' => (Icons.schedule, const Color(0xFF6B7280), tr('El RNPI no respondió. Se verificará más tarde.')),
-      _ => (Icons.hourglass_top, const Color(0xFF6B7280), tr('Verificando en el RNPI…')),
+    const lila = Color(0xFFCECBF6);
+    final aviso = switch (p.estadoRnpi) {
+      'ok' => tr('Superintendencia de Salud · Registro Nacional de Prestadores'),
+      'no' => tr('No aparece en el RNPI. Su nota quedará en revisión.'),
+      'sin_red' => tr('Se verificará en el RNPI cuando vuelva internet.'),
+      'error' => tr('El RNPI no respondió. Se verificará más tarde.'),
+      _ => tr('Verificando en el RNPI…'),
     };
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ok ? const Color(0xFFBBF7D0) : const Color(0xFFE5E7EB), width: 1.5),
-        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 4))],
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
+      constraints: const BoxConstraints(minHeight: 200),
+      decoration: BoxDecoration(color: _morado, borderRadius: BorderRadius.circular(18)),
+      clipBehavior: Clip.antiAlias,
       child: Stack(children: [
+        Positioned(right: -40, top: -40, child: _aro(170)),
+        Positioned(right: -10, top: -10, child: _aro(110)),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: _morado,
+              const Icon(Icons.monitor_heart_outlined, color: Colors.white, size: 20),
+              const SizedBox(width: 6),
+              const Text('HypokratIA',
+                  style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+              const Spacer(),
+              Text(tr('Profesional de la salud'), style: const TextStyle(color: lila, fontSize: 12, letterSpacing: 0.8)),
+            ]),
+            const SizedBox(height: 14),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 60,
+                height: 72,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: const Color(0xFFEEEDFE), borderRadius: BorderRadius.circular(10)),
                 child: Text(nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(color: _morado, fontSize: 30, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: (ok || p.estadoRnpi == 'no') ? 78 : 0),
+                  padding: const EdgeInsets.only(right: 76),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(nombre, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, height: 1.2)),
+                    Text(nombre,
+                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, height: 1.2)),
                     const SizedBox(height: 2),
-                    Text('RUT ${p.rut}', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                    Text('RUT ${p.rut}', style: const TextStyle(color: lila, fontSize: 13)),
+                    if (ok && (especialidades.isNotEmpty || titulo.isNotEmpty)) ...[
+                      const SizedBox(height: 10),
+                      Text(especialidades.isNotEmpty ? especialidades : titulo,
+                          style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, height: 1.15)),
+                      const SizedBox(height: 3),
+                      Text(
+                        [if (especialidades.isNotEmpty) titulo, universidad].where((x) => x.isNotEmpty).join(' · '),
+                        style: const TextStyle(color: lila, fontSize: 13),
+                      ),
+                    ],
                   ]),
                 ),
               ),
             ]),
-            if (ok && (especialidades.isNotEmpty || titulo.isNotEmpty)) ...[
-              const SizedBox(height: 14),
-              Text(especialidades.isNotEmpty ? especialidades : titulo,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _morado, height: 1.2)),
-              if (especialidades.isNotEmpty && titulo.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(titulo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-              ],
-              if (universidad.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Row(children: [
-                  const Icon(Icons.school_outlined, size: 16, color: Color(0xFF6B7280)),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(universidad, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)))),
-                ]),
-              ],
-            ],
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
-              child: Row(children: [
-                Icon(icono, size: 18, color: color),
-                const SizedBox(width: 8),
-                Expanded(child: Text(texto, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600))),
-              ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(right: 86),
+              child: Text(aviso, style: const TextStyle(color: lila, fontSize: 11.5)),
             ),
           ]),
         ),
-        if (ok || p.estadoRnpi == 'no')
-          Positioned(top: 10, right: 10, child: _timbre(ok)),
+        Positioned(right: 14, bottom: 12, child: _sello(p.estadoRnpi)),
       ]),
     );
   }
 
-  // Timbre tipo sello: "CERTIFICADO · RNPI" (verde) o "NO REGISTRADO" (ámbar)
-  Widget _timbre(bool ok) {
-    final c = ok ? const Color(0xFF15803D) : const Color(0xFFB45309);
+  Widget _aro(double t) => Container(
+        width: t,
+        height: t,
+        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.12))),
+      );
+
+  // Sello oficial: blanco con morado (verificado), ámbar (no registrado), gris (pendiente)
+  Widget _sello(String estado) {
+    final (Color c, IconData icono, String linea1) = switch (estado) {
+      'ok' => (_morado, Icons.verified, tr('Verificado')),
+      'no' => (const Color(0xFFB45309), Icons.warning_amber_rounded, tr('No registrado')),
+      _ => (const Color(0xFF6B7280), Icons.hourglass_top, tr('Pendiente')),
+    };
     return Transform.rotate(
-      angle: -0.18,
+      angle: -0.21,
       child: Container(
-        width: 74,
-        height: 74,
-        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c, width: 2.5)),
-        padding: const EdgeInsets.all(3),
+        width: 80,
+        height: 80,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
         child: Container(
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.withOpacity(0.6), width: 1)),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(ok ? Icons.verified : Icons.warning_amber_rounded, size: 18, color: c),
-            Text(ok ? tr('CERTIFICADO') : tr('NO REGISTRADO'),
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: ok ? 8.5 : 7.5, fontWeight: FontWeight.w900, color: c, letterSpacing: 0.4, height: 1.1)),
-            Text('RNPI', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: c, letterSpacing: 1.5)),
-          ]),
+          width: 70,
+          height: 70,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c, width: 2)),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.withOpacity(0.5), width: 1)),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icono, color: c, size: 20),
+              Text(linea1,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: c, fontSize: 9.5, fontWeight: FontWeight.w800, height: 1.1)),
+              Text('RNPI', style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+            ]),
+          ),
         ),
       ),
     );

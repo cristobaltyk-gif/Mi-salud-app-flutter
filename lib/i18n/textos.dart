@@ -2520,4 +2520,29 @@ const Map<String, Map<String, String>> textos = {
     'de': 'NICHT REGISTRIERT',
     'fr': 'NON INSCRIT',
   },
+  'Profesional de la salud': {
+    'en': 'Health professional',
+    'de': 'Gesundheitsfachperson',
+    'fr': 'Professionnel de santé',
+  },
+  'Superintendencia de Salud · Registro Nacional de Prestadores': {
+    'en': 'Chilean Health Superintendency · National Provider Registry',
+    'de': 'Chilenische Gesundheitsaufsicht · Nationales Register',
+    'fr': 'Surintendance de la santé du Chili · Registre national',
+  },
+  'Verificado': {
+    'en': 'Verified',
+    'de': 'Verifiziert',
+    'fr': 'Vérifié',
+  },
+  'No registrado': {
+    'en': 'Not registered',
+    'de': 'Nicht registriert',
+    'fr': 'Non inscrit',
+  },
+  'Pendiente': {
+    'en': 'Pending',
+    'de': 'Ausstehend',
+    'fr': 'En attente',
+  },
 };

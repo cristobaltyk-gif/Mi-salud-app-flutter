@@ -512,4 +512,9 @@ T.update({
 "Especialidad": ("Specialty","Fachgebiet","Spécialité"),
 "CERTIFICADO": ("CERTIFIED","ZERTIFIZIERT","CERTIFIÉ"),
 "NO REGISTRADO": ("NOT REGISTERED","NICHT REGISTRIERT","NON INSCRIT"),
+"Profesional de la salud": ("Health professional","Gesundheitsfachperson","Professionnel de santé"),
+"Superintendencia de Salud · Registro Nacional de Prestadores": ("Chilean Health Superintendency · National Provider Registry","Chilenische Gesundheitsaufsicht · Nationales Register","Surintendance de la santé du Chili · Registre national"),
+"Verificado": ("Verified","Verifiziert","Vérifié"),
+"No registrado": ("Not registered","Nicht registriert","Non inscrit"),
+"Pendiente": ("Pending","Ausstehend","En attente"),
 })
