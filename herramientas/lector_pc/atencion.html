@@ -1448,7 +1448,51 @@ async function ordenarConClaude(){const texto=$('atencion').value.trim();if(!tex
  addEventListener('online',herramientasIA);addEventListener('offline',herramientasIA);herramientasIA()})();
 (function(){const h=document.querySelector('.da-main-header');const b=document.createElement('button');
  b.className='da-btn-cancel';b.dataset.i='terminar';b.textContent=t('terminar');b.style.marginLeft='auto';b.onclick=terminarConsulta;h.appendChild(b)})();
-const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA()};
+// ── Imprimir y enviar por email (como en la Ficha): con internet y solo si el
+//    profesional está registrado en el RNPI. Sin firma registrada: firma a mano.
+Object.assign(I18N.es,{imprimir:'Imprimir',imprimir_todo:'Imprimir todo',enviar_email:'Enviar por email',imprimiendo:'Preparando documentos…',enviando:'Enviando…',enviado:'Documentos enviados a',sin_docs:'No hay documentos para emitir.',err_docs:'No se pudieron emitir los documentos:',doc_rnpi:'Imprimir y enviar documentos: solo profesionales registrados en el RNPI.',doc_firma:'Los documentos salen sin firma registrada: fírmelos a mano.'});
+Object.assign(I18N.en,{imprimir:'Print',imprimir_todo:'Print all',enviar_email:'Send by email',imprimiendo:'Preparing documents…',enviando:'Sending…',enviado:'Documents sent to',sin_docs:'There are no documents to issue.',err_docs:'Could not issue the documents:',doc_rnpi:'Printing and sending documents: only professionals registered in the Chilean RNPI.',doc_firma:'Documents come out without a registered signature: sign them by hand.'});
+Object.assign(I18N.de,{imprimir:'Drucken',imprimir_todo:'Alles drucken',enviar_email:'Per E-Mail senden',imprimiendo:'Dokumente werden vorbereitet…',enviando:'Wird gesendet…',enviado:'Dokumente gesendet an',sin_docs:'Keine Dokumente zum Ausstellen.',err_docs:'Dokumente konnten nicht ausgestellt werden:',doc_rnpi:'Dokumente drucken und senden: nur im chilenischen RNPI registrierte Fachpersonen.',doc_firma:'Die Dokumente haben keine hinterlegte Unterschrift: bitte von Hand unterschreiben.'});
+Object.assign(I18N.fr,{imprimir:'Imprimer',imprimir_todo:'Tout imprimer',enviar_email:'Envoyer par e-mail',imprimiendo:'Préparation des documents…',enviando:'Envoi…',enviado:'Documents envoyés à',sin_docs:'Aucun document à émettre.',err_docs:'Impossible d’émettre les documents :',doc_rnpi:'Imprimer et envoyer des documents : seulement les professionnels inscrits au RNPI chilien.',doc_firma:'Les documents sortent sans signature enregistrée : signez-les à la main.'});
+let profHabil=null,profRevisando=false,emitiendo=false;
+const SECCION_DOC={p_receta:'receta',p_examenes:'examenes',p_indicaciones:'informe',p_kine:'kinesiologia',p_quirurgica:'quirurgica'};
+function documentoDe(tipo){const p=(fichaOriginal&&fichaOriginal.paciente)||{};const v=id=>($(id)?$(id).value:'').trim();
+ const base={nombre:p.nombre,apellido_paterno:p.apellido_paterno,apellido_materno:p.apellido_materno,fecha_nacimiento:p.fecha_nacimiento,edad:edad(p.fecha_nacimiento),rut:p.rut,diagnostico:v('diagnostico')};
+ if(tipo==='receta'){const r=recetaTxt().trim();return r&&{tipo,datos:{...base,medicamentos:[],indicaciones:r}}}
+ if(tipo==='informe')return v('atencion')&&{tipo,datos:{...base,indicaciones:v('indicaciones')}};
+ if(tipo==='examenes')return v('examenes')&&{tipo,datos:{...base,examenes:v('examenes')}};
+ if(tipo==='kinesiologia')return v('orden_kinesiologia')&&{tipo,datos:{...base,lado:'',indicaciones:v('orden_kinesiologia')}};
+ if(tipo==='quirurgica')return v('indicacion_quirurgica')&&{tipo,datos:{...base,indicaciones:v('indicacion_quirurgica')}};
+ return null}
+function docsAtencion(){return ['receta','informe','examenes','kinesiologia','quirurgica'].map(documentoDe).filter(Boolean)}
+async function revisarProfesional(){if(profRevisando||profHabil!==null||!yo||!permiso||!navigator.onLine||!usosPermiso().includes('documentos'))return;
+ profRevisando=true;try{const r=await fetch(API_MISALUD+'/api/lector/profesional',{method:'POST',headers:{'Content-Type':'application/json','X-Permiso-Consulta':permiso},body:JSON.stringify({rut:yo.rut})});
+  if(r.ok){const j=await r.json();profHabil=!!j.habilitado}}catch(e){}profRevisando=false;herramientasDoc()}
+function herramientasDoc(){const ok=!!yo&&!!permiso&&navigator.onLine&&profHabil===true;
+ document.querySelectorAll('.hk-doc').forEach(b=>{b.hidden=!ok;b.disabled=emitiendo});
+ document.querySelectorAll('.hk-doc-txt').forEach(s=>s.textContent=t(s.dataset.k));
+ const a=$('avisoDoc');const msg=(yo&&permiso&&navigator.onLine&&profHabil===false)?t('doc_rnpi'):ok?t('doc_firma'):'';a.textContent=msg;a.hidden=!msg}
+async function emitir(accion,docs){const m=$('msg');m.className='hk-msg';
+ if(!docs.length){m.textContent=t('sin_docs');return}
+ emitiendo=true;herramientasDoc();m.textContent=t(accion==='email'?'enviando':'imprimiendo');
+ try{const r=await fetch(API_MISALUD+'/api/lector/documentos',{method:'POST',headers:{'Content-Type':'application/json','X-Permiso-Consulta':permiso},
+   body:JSON.stringify({accion,rut_profesional:yo.rut,fecha:new Date().toISOString().slice(0,10),documentos:docs})});
+  if(!r.ok){let d='';try{d=(await r.json()).detail||''}catch(e){}throw new Error(d||('HTTP '+r.status))}
+  if(accion==='email'){const j=await r.json();m.textContent=t('enviado')+' '+(j.email||'')}
+  else{const url=URL.createObjectURL(await r.blob());let f=$('marcoPdf');if(f)f.remove();f=document.createElement('iframe');f.id='marcoPdf';f.style.display='none';f.src=url;
+   f.onload=()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){window.open(url,'_blank')}};document.body.appendChild(f);m.textContent=''}}
+ catch(x){m.className='hk-msg err';m.textContent=t('err_docs')+' '+x.message}
+ emitiendo=false;herramientasDoc()}
+(function(){const icP='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
+ const icM='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><polyline points="22 6 12 13 2 6"/></svg>';
+ for(const [k,tipo] of Object.entries(SECCION_DOC)){const tit=document.querySelector('.da-panel-title[data-i="'+k+'"]');if(!tit)continue;
+  tit.parentElement.insertAdjacentHTML('beforeend','<button class="da-print-btn hk-doc" hidden onclick="emitir(\'imprimir\',[documentoDe(\''+tipo+'\')].filter(Boolean))">'+icP+'<span class="hk-doc-txt" data-k="imprimir"></span></button>')}
+ document.querySelector('.da-tools').insertAdjacentHTML('beforeend','<button class="da-tool-btn hk-doc" hidden onclick="emitir(\'imprimir\',docsAtencion())"><span class="da-tool-icon">'+icP+'</span><span class="hk-doc-txt" data-k="imprimir_todo"></span></button>'
+  +'<button class="da-tool-btn hk-doc" hidden onclick="emitir(\'email\',docsAtencion())"><span class="da-tool-icon">'+icM+'</span><span class="hk-doc-txt" data-k="enviar_email"></span></button>'
+  +'<p id="avisoDoc" class="da-tools-label" style="text-transform:none;letter-spacing:0;font-weight:500;line-height:1.35" hidden></p>');
+ addEventListener('online',herramientasDoc);addEventListener('offline',herramientasDoc);
+ setInterval(()=>{if(!yo&&profHabil!==null){profHabil=null;herramientasDoc()}revisarProfesional();herramientasDoc()},2000)})();
+const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc()};
 aplicarIdioma();
 sondeo();
 </script></body></html>
