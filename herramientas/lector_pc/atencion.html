@@ -1393,7 +1393,7 @@ async function responder(si){await fetch(si?'/api/aceptar':'/api/rechazar',{meth
 async function terminarConsulta(){await fetch('/api/terminar',{method:'POST'})}
 function reiniciar(){yo=null;ficha={};fichaOriginal={};fichaTrad={};verOriginal=false;$('avisoTrad').hidden=true;$('esExt').checked=false;$('campoRut').hidden=false;$('campoExt').hidden=true;guardado=false;$('btnGuardar').disabled=false;$('guardada').hidden=true;cerrarCajon();limpiar();
  for(const id of ['pNombre','pRut','pProf'])$(id).textContent='';for(const id of ['pEdad','pSexo','pPrev'])$(id).textContent='—';
- $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML=''}
+ $('avatar').textContent='P';$('nom').value='';$('rut').value='';$('resumenAnt').innerHTML='';enLinea=false}
 function mostrarEstado(j){window._ultimoEstado=j;
  $('espera').hidden=j.estado!=='espera';
  $('solicitud').hidden=j.estado!=='solicitud';
@@ -1402,7 +1402,15 @@ function mostrarEstado(j){window._ultimoEstado=j;
  if(j.estado==='espera'){reiniciar();if(dictando)alternarDictado()}}
 async function sondeo(){try{const r=await fetch('/api/estado');const j=await r.json();
  if(j.estado!==estadoPrevio){estadoPrevio=j.estado;mostrarEstado(j)}
- if((j.permiso||null)!==permiso){permiso=j.permiso||null;herramientasIA()}}catch(e){}setTimeout(sondeo,1000)}
+ if((j.permiso||null)!==permiso){permiso=j.permiso||null;herramientasIA()}
+ if(j.enlace&&!yo&&!enLinea&&(j.estado==='aceptada'||j.estado==='activa'))irEnLinea(j.enlace)}catch(e){}setTimeout(sondeo,1000)}
+// ── Con internet en el teléfono y en este PC: se abre la atención normal en
+//    línea (la misma del QR), con todo: dictado, Claude, guardado directo.
+//    Sin internet en el PC, sigue esta página (la ficha llegó por el lector).
+let enLinea=false;
+async function irEnLinea(url){enLinea=true;try{const c=new AbortController();setTimeout(()=>c.abort(),4000);
+ await fetch('https://portal-api.hipokratia.health/',{mode:'no-cors',cache:'no-store',signal:c.signal});location.replace(url)}
+ catch(e){/* el PC no tiene internet: la consulta sigue en esta página */}}
 
 // ── Dictar y Ordenar con Claude: solo con página segura (https o el PC
 //    mismo), internet en el PC y el permiso de la consulta que trajo el
