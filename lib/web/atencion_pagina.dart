@@ -1090,6 +1090,12 @@ const String atencionPagina = r'''<!DOCTYPE html><html lang="es"><head><meta cha
 .hk-check{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:#475569;cursor:pointer}
 .hk-aviso{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;font-size:13px;margin:0 0 12px;font-family:'DM Sans','Segoe UI',system-ui,sans-serif}
 .hk-link{background:none;border:0;color:#2563eb;font:inherit;font-weight:600;cursor:pointer;padding:0;margin-left:6px}
+
+/* Igual que en la Ficha (dashboard-pacientes.css + login.css sobre los botones) */
+.da-tool-btn--historial{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
+.da-tool-btn--historial:hover{background:#e0f2fe;border-color:#7dd3fc}
+.da-tool-btn--historial .da-tool-icon{color:#0369a1}
+.da-link-reordenar{font-weight:600;color:#60a5fa;opacity:1}
 </style></head><body><div class="da-root">
   <aside class="da-sidebar">
     <div class="da-brand">
@@ -1131,7 +1137,7 @@ const String atencionPagina = r'''<!DOCTYPE html><html lang="es"><head><meta cha
         <textarea class="da-textarea" id="diagnostico" rows="2" placeholder="Diagnóstico médico con lateralidad si corresponde…" data-ip="ph_diagnostico"></textarea></section>
       <section class="da-panel"><div class="da-panel-header"><span class="da-panel-title" data-i="p_receta">Receta</span></div>
         <div class="da-medicamentos-editor">
-          <p class="da-medicamentos-vacio" id="medVacio" data-i="sin_meds">Sin medicamentos agregados. Agrega uno con el botón.</p>
+          <p class="da-medicamentos-vacio" id="medVacio" data-i="sin_meds">Sin medicamentos agregados. Usa "Ordenar con Claude" o agrega uno manualmente.</p>
           <div id="meds"></div>
           <button type="button" class="da-med-agregar" onclick="agregarMed()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i="agregar_med">Agregar medicamento</span></button>
           <div class="da-med-preview" id="preview" hidden><p class="da-med-preview-label" data-i="vista_receta">Vista previa de la receta</p><p class="da-med-preview-texto" id="previewTxt"></p></div>
@@ -1188,7 +1194,7 @@ const I18N={
 es:{anios:'años',brand:'Atención Clínica',edad:'Edad',sexo:'Sexo',prevision:'Previsión',fecha:'Fecha',hora:'Hora',profesional:'Profesional',herramientas:'Herramientas',historial:'Ver historial',antecedentes:'Antecedentes',cancelar:'Cancelar',guardar:'Guardar',registro:'Registro clínico',sesion:'Sesión activa',
  p_atencion:'Atención',p_diagnostico:'Diagnóstico',p_receta:'Receta',p_examenes:'Exámenes',p_indicaciones:'Indicaciones',p_kine:'Orden kinésica',p_quirurgica:'Indicación quirúrgica',
  ph_atencion:'Anamnesis, motivo de consulta, evolución…',ph_diagnostico:'Diagnóstico médico con lateralidad si corresponde…',ph_examenes:'Imágenes o laboratorio con región y lateralidad…',ph_indicaciones:'Indicaciones post-consulta…',ph_kine:'Objetivos, técnicas, frecuencia…',ph_quirurgica:'Indicación quirúrgica si aplica…',
- sin_meds:'Sin medicamentos agregados. Agrega uno con el botón.',agregar_med:'Agregar medicamento',vista_receta:'Vista previa de la receta',ph_med:'Medicamento (ej. Ibuprofeno 400mg)',ph_dosis:'Dosis (ej. 1 comprimido)',cada:'cada',horas:'horas',por:'por',dias:'días',cronico:'uso crónico',eliminar_med:'Eliminar medicamento',
+ sin_meds:'Sin medicamentos agregados. Usa "Ordenar con Claude" o agrega uno manualmente.',agregar_med:'Agregar medicamento',vista_receta:'Vista previa de la receta',ph_med:'Medicamento (ej. Ibuprofeno 400mg)',ph_dosis:'Dosis (ej. 1 comprimido)',cada:'cada',horas:'horas',por:'por',dias:'días',cronico:'uso crónico',eliminar_med:'Eliminar medicamento',
  ident_t:'Identificación del profesional',ident_s:'El paciente le comparte su ficha. Su identidad queda registrada y se verifica cuando vuelva la conexión.',nombre:'Nombre completo',ph_nombre:'Dr. Juan Pérez',rut:'RUT',extranjero:'Profesional extranjero (sin RUT chileno)',registro_n:'N° de registro profesional',pais:'País',ingresar:'Ingresar',
  guardada_t:'Atención guardada',guardada_s:'Quedó sellada en el teléfono del paciente y se registrará en su ficha cuando vuelva la conexión.',terminar:'Terminar consulta',terminada:'Consulta terminada. Puede cerrar esta ventana.',
  h_atenciones:'atenciones',h_vacio:'Sin atenciones previas registradas',sin_dx:'Sin diagnóstico',anterior:'Anterior',siguiente:'Siguiente',c_motivo:'Motivo de consulta',a_registrados:'registrados',a_vacio:'Sin antecedentes registrados',
@@ -1266,7 +1272,9 @@ async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponen
  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(td(j.detail||'Error'));return j}
 function edad(f){if(!f)return '—';const [a,m,d]=String(f).slice(0,10).split('-').map(Number);const h=new Date();
  return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' '+t('anios')}
-function reloj(){const h=new Date();$('pFecha').textContent=h.toLocaleDateString(LANG==='es'?'es-CL':LANG);$('pHora').textContent=h.toTimeString().slice(0,5)}
+// Nombre como en la Ficha: "Cristóbal Huerta", no en mayúsculas
+function nombrePropio(s){return String(s||'').toLowerCase().replace(/(^|[\s-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase())}
+function reloj(){const h=new Date();$('pFecha').textContent=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('pHora').textContent=h.toTimeString().slice(0,5)}
 let fichaOriginal={},fichaTrad={},verOriginal=false;
 function idProfesional(){
  if($('esExt').checked){const reg=$('regExt').value.trim().replace(/\s+/g,'');const pais=$('paisExt').value.trim().toUpperCase();
@@ -1293,7 +1301,7 @@ function pintarResumen(){const caja=$('resumenAnt');if(!caja)return;if(!ficha.pa
 async function entrar(){$('e1').textContent='';const id=idProfesional();yo={nombre:$('nom').value.trim(),rut:id};
  if(yo.nombre.length<3||!id){$('e1').textContent=t('err_ident');return}
  try{const j=await post('/api/identificar',yo);fichaOriginal=j.ficha||{};ficha=fichaOriginal;fichaTrad={};verOriginal=false;
-  pintarPaciente();$('pProf').textContent=yo.nombre;reloj();setInterval(reloj,30000);$('ident').hidden=true;
+  pintarPaciente();$('pProf').textContent=nombrePropio(yo.nombre);reloj();setInterval(reloj,30000);$('ident').hidden=true;
   if(LANG!=='es')traducirFicha()}catch(x){$('e1').textContent=x.message}}
 // El teléfono del paciente traduce la ficha, sin internet
 async function traducirFicha(){if(!yo)return;

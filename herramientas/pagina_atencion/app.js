@@ -6,7 +6,9 @@ async function post(ruta,datos){const r=await fetch(ruta+'?k='+encodeURIComponen
  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(td(j.detail||'Error'));return j}
 function edad(f){if(!f)return '—';const [a,m,d]=String(f).slice(0,10).split('-').map(Number);const h=new Date();
  return (h.getFullYear()-a-((h.getMonth()+1<m||(h.getMonth()+1===m&&h.getDate()<d))?1:0))+' '+t('anios')}
-function reloj(){const h=new Date();$('pFecha').textContent=h.toLocaleDateString(LANG==='es'?'es-CL':LANG);$('pHora').textContent=h.toTimeString().slice(0,5)}
+// Nombre como en la Ficha: "Cristóbal Huerta", no en mayúsculas
+function nombrePropio(s){return String(s||'').toLowerCase().replace(/(^|[\s-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase())}
+function reloj(){const h=new Date();$('pFecha').textContent=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('pHora').textContent=h.toTimeString().slice(0,5)}
 let fichaOriginal={},fichaTrad={},verOriginal=false;
 function idProfesional(){
  if($('esExt').checked){const reg=$('regExt').value.trim().replace(/\s+/g,'');const pais=$('paisExt').value.trim().toUpperCase();
@@ -33,7 +35,7 @@ function pintarResumen(){const caja=$('resumenAnt');if(!caja)return;if(!ficha.pa
 async function entrar(){$('e1').textContent='';const id=idProfesional();yo={nombre:$('nom').value.trim(),rut:id};
  if(yo.nombre.length<3||!id){$('e1').textContent=t('err_ident');return}
  try{const j=await post('/api/identificar',yo);fichaOriginal=j.ficha||{};ficha=fichaOriginal;fichaTrad={};verOriginal=false;
-  pintarPaciente();$('pProf').textContent=yo.nombre;reloj();setInterval(reloj,30000);$('ident').hidden=true;
+  pintarPaciente();$('pProf').textContent=nombrePropio(yo.nombre);reloj();setInterval(reloj,30000);$('ident').hidden=true;
   if(LANG!=='es')traducirFicha()}catch(x){$('e1').textContent=x.message}}
 // El teléfono del paciente traduce la ficha, sin internet
 async function traducirFicha(){if(!yo)return;

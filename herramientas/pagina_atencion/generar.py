@@ -142,7 +142,7 @@ async function revisarProfesional(){if(profRevisando||profHabil!==null||!yo||!pe
 function herramientasDoc(){const ok=!!yo&&!!permiso&&navigator.onLine&&profHabil===true;
  document.querySelectorAll('.hk-doc').forEach(b=>{b.hidden=!ok;b.disabled=emitiendo});
  document.querySelectorAll('.hk-doc-txt').forEach(s=>s.textContent=t(s.dataset.k));
- const a=$('avisoDoc');const msg=(yo&&permiso&&navigator.onLine&&profHabil===false)?t('doc_rnpi'):ok?t('doc_firma'):'';a.textContent=msg;a.hidden=!msg}
+ const a=$('avisoDoc');const msg=(yo&&permiso&&navigator.onLine&&profHabil===false)?t('doc_rnpi'):'';a.textContent=msg;a.hidden=!msg}
 async function emitir(accion,docs){const m=$('msg');m.className='hk-msg';
  if(!docs.length){m.textContent=t('sin_docs');return}
  emitiendo=true;herramientasDoc();m.textContent=t(accion==='email'?'enviando':'imprimiendo');
@@ -170,7 +170,7 @@ Object.assign(I18N.fr,{doc_receta:'Ordonnance',doc_informe:'Compte rendu',doc_ex
 const _guardar=guardar;guardar=async function(){await _guardar();if(!guardado)return;const caja=$('guardadaDocs');caja.innerHTML='';
  const docs=docsAtencion();if(!docs.length||!yo||!permiso||!navigator.onLine||profHabil!==true)return;
  const b='style="width:100%;margin:6px 0;padding:11px 14px;border-radius:10px;font-weight:700;cursor:pointer;';
- let h='<p class="hk-tarjeta-sub">'+esc(t('imprimir_entregar'))+'</p><button class="hk-doc" '+b+'border:none;background:#1B3B8C;color:#fff" onclick="emitir(\\'imprimir\\',docsAtencion())">🖨️ '+esc(t('imprimir_todo'))+' ('+docs.length+')</button>';
+ let h='<p class="hk-tarjeta-sub">'+esc(t('imprimir_entregar'))+' '+esc(t('doc_firma'))+'</p><button class="hk-doc" '+b+'border:none;background:#1B3B8C;color:#fff" onclick="emitir(\\'imprimir\\',docsAtencion())">🖨️ '+esc(t('imprimir_todo'))+' ('+docs.length+')</button>';
  for(const d of docs)h+='<button class="hk-doc" '+b+'border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a;text-align:left" onclick="emitir(\\'imprimir\\',[documentoDe(\\''+d.tipo+'\\')].filter(Boolean))">🖨️ '+esc(t('doc_'+d.tipo))+'</button>';
  caja.innerHTML=h;herramientasDoc();emitir('email',docs)};
 const _alCambiarIdioma=alCambiarIdioma;alCambiarIdioma=function(){_alCambiarIdioma();herramientasIA();herramientasDoc()};
