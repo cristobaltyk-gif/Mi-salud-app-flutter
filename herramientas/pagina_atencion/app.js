@@ -40,8 +40,13 @@ async function traducirFicha(){if(!yo)return;
  if(LANG==='es'){ficha=fichaOriginal;$('avisoTrad').hidden=true;pintarPaciente();return}
  if(fichaTrad[LANG]){ficha=verOriginal?fichaOriginal:fichaTrad[LANG];mostrarAviso();pintarPaciente();return}
  $('avisoTrad').hidden=false;$('avisoTxt').textContent=t('traduciendo');$('btnOriginal').hidden=true;
- try{const j=await post('/api/idioma',{idioma:LANG});fichaTrad[LANG]=j.ficha||{};verOriginal=false;ficha=fichaTrad[LANG];mostrarAviso();pintarPaciente()}
- catch(x){$('avisoTxt').textContent=t('err_traducir')+' '+x.message;ficha=fichaOriginal}}
+ // El idioma se fija al pedir: si el médico cambia de idioma mientras traduce,
+ // la respuesta anterior se guarda con SU idioma y no pisa la pantalla actual.
+ const lang=LANG;
+ try{const j=await post('/api/idioma',{idioma:lang});const f=j.ficha||{};
+  if(f.idioma&&f.idioma!==lang)throw new Error('idioma distinto');
+  fichaTrad[lang]=f;if(LANG!==lang)return;verOriginal=false;ficha=f;mostrarAviso();pintarPaciente()}
+ catch(x){if(LANG!==lang)return;$('avisoTxt').textContent=t('err_traducir')+' '+x.message;ficha=fichaOriginal;pintarPaciente()}}
 function mostrarAviso(){$('avisoTrad').hidden=false;$('avisoTxt').textContent=verOriginal?'':t((fichaTrad[LANG]||{}).traduccion_fuente==='telefono'?'traducida':'traducida_ia');
  $('btnOriginal').hidden=false;$('btnOriginal').textContent=verOriginal?t('ver_traduccion'):t('ver_original')}
 function alternarOriginal(){verOriginal=!verOriginal;ficha=verOriginal?fichaOriginal:(fichaTrad[LANG]||fichaOriginal);mostrarAviso();pintarPaciente();
