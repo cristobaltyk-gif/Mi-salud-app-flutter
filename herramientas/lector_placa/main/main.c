@@ -1492,7 +1492,8 @@ static void registrar_rutas(httpd_handle_t srv)
 static esp_err_t w_a_https(httpd_req_t *req)
 {
     char destino[160];
-    snprintf(destino, sizeof(destino), "https://%s%s", s_dominio, req->uri);
+    int n = snprintf(destino, sizeof(destino), "https://%s", s_dominio);
+    strlcpy(destino + n, req->uri, sizeof(destino) - n);   // la ruta, recortada si es muy larga
     httpd_resp_set_status(req, "301 Moved Permanently");
     httpd_resp_set_hdr(req, "Location", destino);
     return httpd_resp_send(req, "", 0);
