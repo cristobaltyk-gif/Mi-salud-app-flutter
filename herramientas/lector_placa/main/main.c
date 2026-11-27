@@ -67,6 +67,7 @@
 #include "tusb.h"
 #include "esp_random.h"
 #include "esp_timer.h"
+#include "esp_rom_sys.h"
 #include "cJSON.h"
 #include "mbedtls/ecdh.h"
 #include "mbedtls/hkdf.h"
@@ -469,7 +470,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-2.4"
+#define VERSION        "placa-2.5"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -481,16 +482,43 @@ static void pc_recibio_direccion(void *arg, esp_event_base_t base, int32_t id, v
     s_pc_con_direccion = true;
 }
 
-static void tecla(uint8_t modificador, uint8_t codigo)
+// Espera a que el PC lea el informe anterior. Sondea cada 0,1 ms (el PC lee
+// cada 1 ms) en vez de dormir un tick de 10 ms: escribir es ~10 veces más
+// rápido. Corre en el núcleo 1; USB va en el 0, así que no lo frena.
+static void esperar_hid(void)
 {
-    uint8_t teclas[6] = { codigo, 0, 0, 0, 0, 0 };
-    for (int i = 0; i < 100 && !tud_hid_ready(); i++) vTaskDelay(1);
-    tud_hid_keyboard_report(0, modificador, teclas);
-    for (int i = 0; i < 100 && !tud_hid_ready(); i++) vTaskDelay(1);
-    tud_hid_keyboard_report(0, 0, NULL);
+    for (int i = 0; i < 300 && !tud_hid_ready(); i++) esp_rom_delay_us(100);
 }
 
-// Solo minúsculas, números, punto y espacio (misma tecla en teclado español e inglés)
+static void informe(uint8_t modificador, uint8_t codigo)
+{
+    uint8_t teclas[6] = { codigo, 0, 0, 0, 0, 0 };
+    esperar_hid();
+    tud_hid_keyboard_report(0, modificador, codigo ? teclas : NULL);
+}
+
+static void tecla(uint8_t modificador, uint8_t codigo)
+{
+    informe(modificador, codigo);
+    informe(0, 0);
+}
+
+// Un carácter por su código Alt (Alt + teclado numérico): sale igual en
+// teclados en español y en inglés. Ej.: ':' = Alt 58, '/' = Alt 47.
+static void alt_codigo(const char *digitos)
+{
+    static const uint8_t NUM[10] = { HID_KEY_KEYPAD_0, HID_KEY_KEYPAD_1, HID_KEY_KEYPAD_2, HID_KEY_KEYPAD_3,
+        HID_KEY_KEYPAD_4, HID_KEY_KEYPAD_5, HID_KEY_KEYPAD_6, HID_KEY_KEYPAD_7, HID_KEY_KEYPAD_8, HID_KEY_KEYPAD_9 };
+    informe(KEYBOARD_MODIFIER_LEFTALT, 0);
+    for (const char *d = digitos; *d; d++) {
+        informe(KEYBOARD_MODIFIER_LEFTALT, NUM[*d - '0']);
+        informe(KEYBOARD_MODIFIER_LEFTALT, 0);
+    }
+    informe(0, 0);
+}
+
+// Minúsculas, números, punto y espacio (misma tecla en teclado español e
+// inglés); ':' y '/' van por código Alt.
 static void escribir(const char *texto)
 {
     for (const char *c = texto; *c; c++) {
@@ -500,6 +528,8 @@ static void escribir(const char *texto)
         else if (*c == '0') k = HID_KEY_0;
         else if (*c == '.') k = HID_KEY_PERIOD;
         else if (*c == ' ') k = HID_KEY_SPACE;
+        else if (*c == ':') { alt_codigo("58"); continue; }
+        else if (*c == '/') { alt_codigo("47"); continue; }
         if (k) tecla(0, k);
     }
 }
@@ -507,16 +537,25 @@ static void escribir(const char *texto)
 static void tarea_abrir_pagina(void *arg)
 {
     if (s_es_windows) {
-        ESP_LOGI(TAG, "Abriendo la página (Windows)");
+        // Se abre el navegador PREDETERMINADO del PC (Chrome, Edge, Firefox...):
+        // Ejecutar con la dirección http://... lo hace Windows solo. Con https
+        // activo, la placa redirige al nombre seguro (w_a_https).
+        ESP_LOGI(TAG, "Abriendo la página (Windows, navegador predeterminado)");
+        int64_t desde = esp_timer_get_time();
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);          // Ejecutar
         vTaskDelay(pdMS_TO_TICKS(400));
-        char orden[96];
-        // Se escribe la dirección corta: con https activo, la placa redirige
-        // sola al nombre seguro (w_a_https). Escribir el nombre largo tardaba
-        // el doble y se veía en pantalla.
-        snprintf(orden, sizeof(orden), "msedge %s", DIRECCION);
-        escribir(orden);
+        escribir("http://" DIRECCION);
         tecla(0, HID_KEY_ENTER);
+        // Respaldo: si a los 8 s la página no consultó al lector, se abre Edge
+        // (viene siempre con Windows).
+        for (int i = 0; i < 80 && s_ultimo_sondeo < desde; i++) vTaskDelay(pdMS_TO_TICKS(100));
+        if (s_ultimo_sondeo < desde) {
+            ESP_LOGW(TAG, "No se abrió con el predeterminado: se abre Edge");
+            tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);
+            vTaskDelay(pdMS_TO_TICKS(400));
+            escribir("msedge " DIRECCION);
+            tecla(0, HID_KEY_ENTER);
+        }
     } else {
         ESP_LOGI(TAG, "Abriendo la página (Mac)");
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_SPACE);      // Spotlight
@@ -545,7 +584,7 @@ static void abrir_pagina(void)
         return;
     }
     s_abriendo = true;
-    xTaskCreate(tarea_abrir_pagina, "abrir_pagina", 4096, NULL, 5, NULL);
+    xTaskCreatePinnedToCore(tarea_abrir_pagina, "abrir_pagina", 4096, NULL, 5, NULL, 1);
 }
 
 /* ── Cifrado (igual que lector_pc/lector.py) ─────────────────────────── */
