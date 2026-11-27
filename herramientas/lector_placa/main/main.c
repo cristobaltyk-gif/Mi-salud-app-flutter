@@ -469,7 +469,7 @@ static esp_err_t iniciar_red_usb(void)
 
 /* ── Teclado: abre la página sola ─────────────────────────────────────── */
 
-#define VERSION        "placa-2.3"
+#define VERSION        "placa-2.4"
 #define DIRECCION      "172.29.77.1"
 
 static volatile bool s_pc_con_direccion = false;
@@ -511,7 +511,10 @@ static void tarea_abrir_pagina(void *arg)
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_R);          // Ejecutar
         vTaskDelay(pdMS_TO_TICKS(400));
         char orden[96];
-        snprintf(orden, sizeof(orden), "msedge %s", s_cert ? s_dominio : DIRECCION);
+        // Se escribe la dirección corta: con https activo, la placa redirige
+        // sola al nombre seguro (w_a_https). Escribir el nombre largo tardaba
+        // el doble y se veía en pantalla.
+        snprintf(orden, sizeof(orden), "msedge %s", DIRECCION);
         escribir(orden);
         tecla(0, HID_KEY_ENTER);
     } else {
@@ -524,7 +527,7 @@ static void tarea_abrir_pagina(void *arg)
         vTaskDelay(pdMS_TO_TICKS(2500));
         tecla(KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_N);          // ventana nueva (dirección lista para escribir)
         vTaskDelay(pdMS_TO_TICKS(800));
-        escribir(s_cert ? s_dominio : DIRECCION);
+        escribir(DIRECCION);                                  // redirige sola a https
         vTaskDelay(pdMS_TO_TICKS(100));
         tecla(0, HID_KEY_ENTER);
     }
